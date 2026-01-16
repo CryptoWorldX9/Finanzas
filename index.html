@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finanzas PRO | Registro Maestro</title>
+    <title>Finanzas PRO | Independencia Total</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -36,7 +36,6 @@
         input, select, textarea { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px; }
         
         .btn-p { background: var(--acc); color: white; border: none; padding: 12px 20px; border-radius: 10px; cursor: pointer; font-weight: 700; width: 100%; transition: 0.2s; }
-        .btn-p:hover { filter: brightness(1.1); }
         .nav-link { display: flex; align-items: center; gap: 12px; padding: 14px; color: #cbd5e1; cursor: pointer; border-radius: 12px; margin-bottom: 8px; }
         .nav-link.active { background: var(--acc); color: white; }
 
@@ -46,7 +45,6 @@
         td { padding: 15px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
 
         .btn-action { background: none; border: 1px solid #e2e8f0; padding: 6px; border-radius: 6px; cursor: pointer; margin-right: 5px; }
-        
         .filter-header { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 15px; background: #f1f5f9; padding: 15px; border-radius: 12px; }
 
         @media (max-width: 900px) {
@@ -88,7 +86,7 @@
                 <div><label>Presupuesto ($)</label><input type="number" id="f_presupuesto" oninput="calcLogic()"></div>
             </div>
             <div class="form-grid">
-                <div><label>Concepto</label><input type="text" id="f_concepto" placeholder="Ej: Pago de agua"></div>
+                <div><label>Concepto</label><input type="text" id="f_concepto" placeholder="Ej: Pago agua"></div>
                 <div><label>Categoría</label><select id="f_cat" onchange="loadSubs()"></select></div>
                 <div><label>Subcategoría</label><select id="f_subcat"></select></div>
                 <div><label>Proveedor</label><select id="f_proveedor"></select></div>
@@ -106,38 +104,16 @@
         </div>
 
         <div class="card">
-            <h3>Movimientos Recientes & Filtros</h3><br>
-            
+            <h3>Listado de Registro (Filtros Independientes)</h3><br>
             <div class="filter-header">
-                <div style="flex:2; min-width:200px;">
-                    <label>Buscador (Concepto, Cat, Prov)</label>
-                    <input type="text" id="r_search" placeholder="Buscar..." oninput="refreshUI()">
-                </div>
-                <div style="flex:1;">
-                    <label>Filtrar por Día</label>
-                    <input type="date" id="r_filter_day" onchange="refreshUI()">
-                </div>
-                <div style="flex:1;">
-                    <label>Filtrar por Mes</label>
-                    <input type="month" id="r_filter_month" onchange="refreshUI()">
-                </div>
-                <button class="btn-p" style="width:auto; height:45px; background:#64748b;" onclick="clearFilters()">🔄 Reset</button>
+                <div style="flex:2;"><label>Buscador</label><input type="text" id="reg_q" placeholder="Buscar..." oninput="refreshUI()"></div>
+                <div style="flex:1;"><label>Día</label><input type="date" id="reg_d" onchange="refreshUI()"></div>
+                <div style="flex:1;"><label>Mes</label><input type="month" id="reg_m" onchange="refreshUI()"></div>
             </div>
-
             <div class="table-wrap">
                 <table>
-                    <thead>
-                        <tr>
-                            <th>Fecha</th>
-                            <th>Concepto</th>
-                            <th>Monto</th>
-                            <th>Categoría / Sub</th>
-                            <th>Proveedor</th>
-                            <th>Estado</th>
-                            <th style="text-align:center;">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="list_reg_hist"></tbody>
+                    <thead><tr><th>Fecha</th><th>Concepto</th><th>Monto</th><th>Categoría</th><th>Proveedor</th><th>Estado</th><th>Acciones</th></tr></thead>
+                    <tbody id="list_reg_table"></tbody>
                 </table>
             </div>
         </div>
@@ -145,13 +121,20 @@
 
     <div id="historial" class="tab-content" style="display:none;">
         <div class="card">
-            <h3>Historial Completo</h3><br>
+            <h3>Historial General (Filtros Independientes)</h3><br>
+            <div class="filter-header">
+                <div style="flex:2;"><label>Buscador</label><input type="text" id="his_q" placeholder="Buscar..." oninput="refreshUI()"></div>
+                <div style="flex:1;"><label>Día</label><input type="date" id="his_d" onchange="refreshUI()"></div>
+                <div style="flex:1;"><label>Mes</label><input type="month" id="his_m" onchange="refreshUI()"></div>
+                <div style="display:flex; gap:5px;">
+                    <button class="btn-p" style="background:#10b981; width:auto;" onclick="exportExcel()">📊 Excel</button>
+                    <button class="btn-p" style="background:#ef4444; width:auto;" onclick="exportPDF()">📄 PDF</button>
+                </div>
+            </div>
             <div class="table-wrap">
-                <table id="table-hist-main">
-                    <thead>
-                        <tr><th>Fecha</th><th>Concepto</th><th>Monto</th><th>Categoría</th><th>Acciones</th></tr>
-                    </thead>
-                    <tbody id="list_hist_main"></tbody>
+                <table>
+                    <thead><tr><th>Fecha</th><th>Concepto</th><th>Monto</th><th>Categoría</th><th>Proveedor</th><th>Estado</th><th>Acciones</th></tr></thead>
+                    <tbody id="list_his_table"></tbody>
                 </table>
             </div>
         </div>
@@ -175,7 +158,7 @@
     let rawData = {};
     let settings = JSON.parse(localStorage.getItem('fpro_v6_settings')) || {
         cats: ['Servicios básicos', 'Alimentación', 'Transporte', 'Salud', 'Ocio'],
-        subs: {'Servicios básicos': ['Agua potable', 'Luz', 'Gas', 'Internet'], 'Alimentación': ['Supermercado', 'Restaurante']},
+        subs: {'Servicios básicos': ['Agua potable', 'Luz', 'Gas', 'Internet']},
         provs: ['Aguas Andinas', 'Enel', 'Metrogas', 'Lider'],
         pagos: ['Débito', 'Crédito', 'Efectivo']
     };
@@ -189,44 +172,39 @@
         });
     }
 
+    // REFRESH UI CON LOGICA DE FILTROS INDEPENDIENTES
     function refreshUI() {
-        const query = document.getElementById('r_search').value.toLowerCase();
-        const filterDay = document.getElementById('r_filter_day').value;
-        const filterMonth = document.getElementById('r_filter_month').value;
-        
         let ing = 0, eg = 0;
-        const listReg = document.getElementById('list_reg_hist');
-        const listHistMain = document.getElementById('list_hist_main');
         
-        listReg.innerHTML = '';
-        if(listHistMain) listHistMain.innerHTML = '';
+        // Captura de valores de REGISTRO
+        const rq = document.getElementById('reg_q').value.toLowerCase();
+        const rd = document.getElementById('reg_d').value;
+        const rm = document.getElementById('reg_m').value;
+
+        // Captura de valores de HISTORIAL
+        const hq = document.getElementById('his_q').value.toLowerCase();
+        const hd = document.getElementById('his_d').value;
+        const hm = document.getElementById('his_m').value;
+
+        const tableReg = document.getElementById('list_reg_table');
+        const tableHis = document.getElementById('list_his_table');
+        
+        tableReg.innerHTML = '';
+        tableHis.innerHTML = '';
 
         Object.keys(rawData).reverse().forEach(key => {
             const d = rawData[key];
             if(d.tipo === 'Ingreso') ing += d.monto; else eg += d.monto;
 
             const searchBody = `${d.concepto} ${d.cat} ${d.subcat} ${d.proveedor}`.toLowerCase();
-            const matchQuery = searchBody.includes(query);
-            const matchDay = filterDay ? d.fecha === filterDay : true;
-            const matchMonth = filterMonth ? d.fecha.substring(0,7) === filterMonth : true;
+            
+            // Lógica Independiente para REGISTRO
+            const regMatch = searchBody.includes(rq) && (rd ? d.fecha === rd : true) && (rm ? d.fecha.substring(0,7) === rm : true);
+            if(regMatch) tableReg.innerHTML += renderRow(key, d);
 
-            if(matchQuery && matchDay && matchMonth) {
-                const row = `
-                <tr>
-                    <td>${d.fecha}</td>
-                    <td><b>${d.concepto}</b></td>
-                    <td style="color:${d.tipo==='Ingreso'?'green':'red'}"><b>$${d.monto.toLocaleString()}</b></td>
-                    <td><small>${d.cat}<br><span style="color:#64748b">${d.subcat}</span></small></td>
-                    <td>${d.proveedor}</td>
-                    <td><span style="font-size:11px; padding:3px 8px; border-radius:10px; background:${d.estado==='Pagado'?'#dcfce7':'#fee2e2'}; color:${d.estado==='Pagado'?'#166534':'#991b1b'}">${d.estado}</span></td>
-                    <td style="text-align:center;">
-                        <button class="btn-action" onclick="editItem('${key}')">✏️</button>
-                        <button class="btn-action" onclick="deleteItem('${key}')" style="color:red;">🗑️</button>
-                    </td>
-                </tr>`;
-                listReg.innerHTML += row;
-                if(listHistMain) listHistMain.innerHTML += row;
-            }
+            // Lógica Independiente para HISTORIAL
+            const hisMatch = searchBody.includes(hq) && (hd ? d.fecha === hd : true) && (hm ? d.fecha.substring(0,7) === hm : true);
+            if(hisMatch) tableHis.innerHTML += renderRow(key, d);
         });
 
         document.getElementById('total-ingresos').innerText = `$${ing.toLocaleString()}`;
@@ -234,18 +212,19 @@
         document.getElementById('total-saldo').innerText = `$${(ing - eg).toLocaleString()}`;
     }
 
-    function clearFilters() {
-        document.getElementById('r_search').value = '';
-        document.getElementById('r_filter_day').value = '';
-        document.getElementById('r_filter_month').value = '';
-        refreshUI();
-    }
-
-    function calcLogic() {
-        const monto = parseFloat(document.getElementById('f_monto').value) || 0;
-        const presu = parseFloat(document.getElementById('f_presupuesto').value) || 0;
-        document.getElementById('f_diff').innerText = `$${(presu - monto).toLocaleString()}`;
-        document.getElementById('f_diff').style.color = (presu - monto) < 0 ? 'red' : 'green';
+    function renderRow(key, d) {
+        return `<tr>
+            <td>${d.fecha}</td>
+            <td><b>${d.concepto}</b></td>
+            <td style="color:${d.tipo==='Ingreso'?'green':'red'}"><b>$${d.monto.toLocaleString()}</b></td>
+            <td><small>${d.cat}</small></td>
+            <td>${d.proveedor}</td>
+            <td><span style="font-size:11px; padding:3px 8px; border-radius:10px; background:${d.estado==='Pagado'?'#dcfce7':'#fee2e2'}; color:${d.estado==='Pagado'?'#166534':'#991b1b'}">${d.estado}</span></td>
+            <td>
+                <button class="btn-action" onclick="editItem('${key}')">✏️</button>
+                <button class="btn-action" onclick="deleteItem('${key}')" style="color:red;">🗑️</button>
+            </td>
+        </tr>`;
     }
 
     function saveData() {
@@ -280,23 +259,26 @@
         document.getElementById('f_subcat').value = d.subcat;
         document.getElementById('f_proveedor').value = d.proveedor;
         document.getElementById('f_tipo').value = d.tipo;
-        document.getElementById('form-title').innerText = "✏️ Editando...";
+        document.getElementById('form-title').innerText = "✏️ Modificando...";
         window.scrollTo({ top: 0, behavior: 'smooth' });
-        calcLogic();
         showTab('registro');
     }
 
     function deleteItem(key) { if(confirm("¿Eliminar?")) db.ref('movimientos/' + key).remove(); }
-    
-    function clearForm() {
-        document.getElementById('edit-id').value = '';
-        document.getElementById('f_monto').value = '';
-        document.getElementById('f_concepto').value = '';
-        document.getElementById('form-title').innerText = "Nueva Operación";
+    function clearForm() { document.getElementById('edit-id').value = ''; document.getElementById('f_monto').value = ''; document.getElementById('f_concepto').value = ''; document.getElementById('form-title').innerText = "Nueva Operación"; }
+    function calcLogic() {
+        const monto = parseFloat(document.getElementById('f_monto').value) || 0;
+        const presu = parseFloat(document.getElementById('f_presupuesto').value) || 0;
+        const diff = presu - monto;
+        document.getElementById('f_diff').innerText = `$${diff.toLocaleString()}`;
+        document.getElementById('f_diff').style.color = diff < 0 ? 'red' : 'green';
     }
 
     function loadDropdowns() {
-        const fill = (id, arr) => document.getElementById(id).innerHTML = arr.map(i => `<option>${i}</option>`).join('');
+        const fill = (id, arr) => {
+            const el = document.getElementById(id);
+            if(el) el.innerHTML = arr.map(i => `<option>${i}</option>`).join('');
+        };
         fill('f_cat', settings.cats);
         fill('f_proveedor', settings.provs);
         fill('f_pago', settings.pagos);
