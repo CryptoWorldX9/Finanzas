@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finanzas PRO | Master Edition</title>
+    <title>Finanzas PRO | Corporativo</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -12,87 +12,87 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     
     <style>
-        :root { 
-            --p: #0f172a; --acc: #2563eb; --bg: #f8fafc; 
-            --danger: #ef4444; --success: #10b981; 
-            --sidebar-w: 260px;
-        }
-        * { margin:0; padding:0; box-sizing:border-box; font-family: 'Inter', sans-serif; }
+        :root { --p: #0f172a; --acc: #2563eb; --bg: #f1f5f9; --danger: #ef4444; --success: #10b981; --card: #ffffff; }
+        * { margin:0; padding:0; box-sizing:border-box; font-family: 'Inter', system-ui, sans-serif; }
+        
         body { background: var(--bg); display: flex; min-height: 100vh; color: #1e293b; overflow-x: hidden; }
 
-        /* Sidebar */
+        /* Sidebar - Oculta en móvil, fija en escritorio */
         .sidebar { 
-            width: var(--sidebar-w); background: var(--p); color: white; padding: 25px; 
-            position: fixed; height: 100vh; z-index: 1000; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
+            width: 260px; background: var(--p); color: white; padding: 25px; 
+            position: fixed; height: 100vh; z-index: 1100; transition: transform 0.3s ease;
         }
-        .main-content { margin-left: var(--sidebar-w); padding: 20px; width: calc(100% - var(--sidebar-w)); margin-top: 85px; transition: 0.4s; }
 
-        /* Top Bar */
-        .top-bar { 
-            position: fixed; top: 0; left: var(--sidebar-w); right: 0; height: 75px; 
-            background: white; display: flex; align-items: center; padding: 0 30px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05); z-index: 900; gap: 20px; transition: 0.4s;
+        .main-content { 
+            margin-left: 260px; padding: 20px; width: 100%; transition: 0.3s; 
+            margin-top: 75px; max-width: 1400px;
         }
+
+        /* Top Bar Pro */
+        .top-bar { 
+            position: fixed; top: 0; left: 260px; right: 0; height: 75px; 
+            background: rgba(255,255,255,0.9); backdrop-filter: blur(10px);
+            display: flex; align-items: center; padding: 0 30px;
+            box-shadow: 0 1px 0px rgba(0,0,0,0.05); z-index: 1000; gap: 15px;
+        }
+
         .balance-card { display: flex; gap: 20px; flex-grow: 1; justify-content: flex-end; }
         .bal-item { text-align: right; }
-        .bal-item small { font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; display: block; }
-        .bal-item p { font-size: 16px; font-weight: 900; }
+        .bal-item small { font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+        .bal-item p { font-size: 15px; font-weight: 900; }
 
-        /* Botón Menú: Solo visible en móviles */
-        .menu-toggle { display: none; background: var(--p); color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; }
-
-        /* DISEÑO COACH / DIÁLOGO */
-        .coach-box {
-            background: white; border-radius: 20px; padding: 15px 25px; margin-bottom: 25px;
-            display: flex; align-items: center; gap: 20px; border: 1px solid #e2e8f0;
-            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.04);
+        /* Botón Menú - Solo móvil */
+        .menu-toggle { 
+            display: none; background: var(--p); color: white; border: none; 
+            padding: 10px; border-radius: 8px; cursor: pointer;
         }
-        .coach-avatar { 
-            width: 50px; height: 50px; background: linear-gradient(135deg, #2563eb, #1e40af); 
-            border-radius: 15px; display: flex; align-items: center; justify-content: center; 
-            font-size: 24px; flex-shrink: 0; color: white; box-shadow: 0 5px 15px rgba(37,99,235,0.3);
-        }
-        .coach-content { flex-grow: 1; }
-        .coach-label { font-size: 10px; font-weight: 800; color: var(--acc); text-transform: uppercase; letter-spacing: 1px; }
-        #tips-text { font-size: 14px; font-weight: 500; color: #334155; line-height: 1.4; transition: opacity 0.5s; }
 
-        /* Cards & Forms */
-        .card { background: white; border-radius: 16px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); margin-bottom: 25px; border: 1px solid #e2e8f0; }
-        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 15px; }
-        label { font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 5px; display: block; }
-        input, select { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px; }
+        /* Nuevo Sistema de Tips (Diálogo Assistant) */
+        .assistant-box {
+            display: flex; align-items: center; gap: 15px;
+            background: white; padding: 15px; border-radius: 15px;
+            margin-bottom: 25px; border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        }
+        .avatar { width: 45px; height: 45px; background: var(--acc); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; color: white; flex-shrink: 0; }
+        .speech-bubble { font-size: 14px; line-height: 1.5; color: #475569; position: relative; transition: opacity 0.5s; }
+
+        /* Cards y Forms */
+        .card { background: var(--card); border-radius: 20px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 25px; border: 1px solid #e2e8f0; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; }
         
-        .btn-p { background: var(--acc); color: white; border: none; padding: 12px 20px; border-radius: 10px; cursor: pointer; font-weight: 700; transition: 0.2s; }
-        .nav-link { display: flex; align-items: center; gap: 12px; padding: 14px; color: #cbd5e1; cursor: pointer; border-radius: 12px; margin-bottom: 8px; transition: 0.3s; }
-        .nav-link.active { background: var(--acc); color: white; }
+        label { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 6px; display: block; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 12px; font-size: 14px; outline: none; transition: 0.2s; }
+        input:focus { border-color: var(--acc); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+        
+        .btn-p { background: var(--acc); color: white; border: none; padding: 14px; border-radius: 12px; cursor: pointer; font-weight: 700; transition: 0.3s; }
+        .btn-p:hover { opacity: 0.9; transform: translateY(-1px); }
 
-        .table-wrap { overflow-x: auto; margin-top: 15px; border-radius: 12px; border: 1px solid #f1f5f9; }
-        table { width: 100%; border-collapse: collapse; min-width: 800px; }
-        th { text-align: left; padding: 15px; background: #f8fafc; color: #64748b; font-size: 11px; }
-        td { padding: 15px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+        .nav-link { display: flex; align-items: center; gap: 12px; padding: 14px; color: #94a3b8; cursor: pointer; border-radius: 12px; margin-bottom: 5px; transition: 0.2s; }
+        .nav-link:hover { background: rgba(255,255,255,0.05); color: white; }
+        .nav-link.active { background: var(--acc); color: white; box-shadow: 0 4px 12px rgba(37,99,235,0.3); }
 
-        /* RESPONSIVE */
+        /* Responsive Móvil */
         @media (max-width: 900px) {
+            .sidebar { transform: translateX(-100%); width: 280px; }
+            .sidebar.open { transform: translateX(0); }
+            .main-content { margin-left: 0; padding: 15px; }
+            .top-bar { left: 0; padding: 0 15px; }
             .menu-toggle { display: block; }
-            .sidebar { left: -100%; }
-            .sidebar.open { left: 0; }
-            .top-bar { left: 0; height: auto; padding: 15px; flex-wrap: wrap; }
-            .main-content { margin-left: 0; margin-top: 130px; padding: 15px; }
-            .balance-card { justify-content: space-around; width: 100%; order: 2; margin-top: 10px; }
-            .coach-box { padding: 15px; gap: 12px; }
-            .coach-avatar { width: 40px; height: 40px; font-size: 20px; }
-            #tips-text { font-size: 13px; }
+            .balance-card { gap: 10px; }
+            .bal-item p { font-size: 13px; }
+            .form-grid { grid-template-columns: 1fr; }
+            .table-wrap { margin: 0 -15px; padding: 0 15px; }
         }
     </style>
 </head>
 <body>
 
 <nav class="sidebar" id="sidebar">
-    <h1 style="margin-bottom: 30px; font-weight: 900;">Finanzas PRO</h1>
+    <h1 style="margin-bottom: 40px; font-weight: 900; font-size: 22px; color: white; text-align: center;">Finanzas<span style="color:var(--acc)">PRO</span></h1>
     <div class="nav-link active" onclick="showTab('registro')">📝 <span>Registro</span></div>
     <div class="nav-link" onclick="showTab('historial')">📜 <span>Historial</span></div>
     <div class="nav-link" onclick="showTab('analisis')">📊 <span>Análisis</span></div>
-    <div class="nav-link" onclick="showTab('ajustes')">⚙️ <span>Ajustes</span></div>
 </nav>
 
 <div class="top-bar">
@@ -100,22 +100,22 @@
     <div class="balance-card">
         <div class="bal-item"><small>Ingresos</small><p style="color:var(--success)" id="total-ingresos">$0</p></div>
         <div class="bal-item"><small>Egresos</small><p style="color:var(--danger)" id="total-egresos">$0</p></div>
-        <div class="bal-item"><small>Saldo</small><p id="total-saldo" style="font-weight:900;">$0</p></div>
+        <div class="bal-item"><small>Saldo</small><p id="total-saldo" style="color:var(--p)">$0</p></div>
     </div>
 </div>
 
 <main class="main-content">
-    <div class="coach-box">
-        <div class="coach-avatar">🤵</div>
-        <div class="coach-content">
-            <span class="coach-label">Sabiduría Financiera</span>
-            <p id="tips-text">Cargando tu dosis de inteligencia financiera...</p>
+    <div class="assistant-box">
+        <div class="avatar">💡</div>
+        <div class="speech-bubble">
+            <strong>Tip Financiero:</strong><br>
+            <span id="tip-text">Analizando tus finanzas...</span>
         </div>
     </div>
 
     <div id="registro" class="tab-content">
         <div class="card">
-            <h3 id="form-title">Nueva Operación</h3><br>
+            <h3 id="form-title" style="font-size: 18px;">Nueva Operación</h3><br>
             <input type="hidden" id="edit-id">
             <div class="form-grid">
                 <div><label>Fecha</label><input type="date" id="f_fecha"></div>
@@ -124,7 +124,7 @@
                 <div><label>Presupuesto ($)</label><input type="number" id="f_presupuesto" oninput="calcLogic()"></div>
             </div>
             <div class="form-grid">
-                <div><label>Concepto</label><input type="text" id="f_concepto" placeholder="Ej: Pago de luz"></div>
+                <div><label>Concepto</label><input type="text" id="f_concepto" placeholder="Ej: Supermercado"></div>
                 <div><label>Categoría</label><select id="f_cat" onchange="loadSubs()"></select></div>
                 <div><label>Subcategoría</label><select id="f_subcat"></select></div>
                 <div><label>Proveedor</label><select id="f_proveedor"></select></div>
@@ -132,32 +132,29 @@
             <div class="form-grid">
                 <div><label>Pago</label><select id="f_pago"></select></div>
                 <div><label>Estado</label><select id="f_estado"><option>Pagado</option><option>Pendiente</option></select></div>
-                <div><label>Recurrente</label><select id="f_recurrente"><option>No</option><option>Sí</option></select></div>
-                <div><label>Diferencia</label><p id="f_diff" style="font-weight:900; font-size:18px;">$0</p></div>
+                <div><label>Diferencia</label><p id="f_diff" style="font-weight:900; font-size:20px; color:var(--success)">$0</p></div>
             </div>
-            <div style="display:flex; gap:10px; margin-top:20px;">
-                <button class="btn-p" style="flex:2;" onclick="saveData()">💾 GUARDAR</button>
-                <button class="btn-p" style="background:#64748b; flex:1;" onclick="clearForm()">🧹 LIMPIAR</button>
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="btn-p" style="flex: 2;" onclick="saveData()">💾 GUARDAR</button>
+                <button class="btn-p" style="background:#64748b; flex: 1;" onclick="clearForm()">🧹</button>
             </div>
         </div>
 
         <div class="card">
-            <h3>Movimientos Recientes</h3><br>
-            <div class="form-grid" style="background: #f1f5f9; padding: 15px; border-radius: 12px;">
-                <div style="grid-column: span 2;"><label>Buscador</label><input type="text" id="reg_q" placeholder="Concepto, categoría..." oninput="refreshUI()"></div>
-                <div><label>Mes</label>
+            <h3 style="font-size: 16px;">Movimientos Recientes & Filtros</h3><br>
+            <div class="filter-header">
+                <div style="flex:2; width: 100%;"><label>Buscador</label><input type="text" id="reg_q" placeholder="Buscar concepto..." oninput="refreshUI()"></div>
+                <div style="flex:1; width: 100%;">
+                    <label>Filtrar Mes</label>
                     <select id="reg_m" onchange="refreshUI()">
-                        <option value="">Todo el año</option>
-                        <option value="-01">Enero</option><option value="-02">Febrero</option><option value="-03">Marzo</option>
-                        <option value="-04">Abril</option><option value="-05">Mayo</option><option value="-06">Junio</option>
-                        <option value="-07">Julio</option><option value="-08">Agosto</option><option value="-09">Septiembre</option>
-                        <option value="-10">Octubre</option><option value="-11">Noviembre</option><option value="-12">Diciembre</option>
+                        <option value="">Cualquier mes</option>
+                        <option value="-01">Enero</option><option value="-02">Febrero</option><option value="-03">Marzo</option><option value="-04">Abril</option><option value="-05">Mayo</option><option value="-06">Junio</option><option value="-07">Julio</option><option value="-08">Agosto</option><option value="-09">Septiembre</option><option value="-10">Octubre</option><option value="-11">Noviembre</option><option value="-12">Diciembre</option>
                     </select>
                 </div>
             </div>
             <div class="table-wrap">
-                <table>
-                    <thead><tr><th>Fecha</th><th>Concepto</th><th>Monto</th><th>Categoría</th><th>Estado</th><th>Acciones</th></tr></thead>
+                <table id="table-reg">
+                    <thead><tr><th>Fecha</th><th>Concepto</th><th>Monto</th><th>Estado</th><th>Acciones</th></tr></thead>
                     <tbody id="list_reg_table"></tbody>
                 </table>
             </div>
@@ -166,31 +163,47 @@
 
     <div id="historial" class="tab-content" style="display:none;">
         <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h3>Historial General</h3>
-                <div style="display:flex; gap:5px;">
-                    <button class="btn-p" style="background:#10b981; padding:8px 12px;" onclick="exportExcel()">📊 Excel</button>
-                    <button class="btn-p" style="background:#ef4444; padding:8px 12px;" onclick="exportPDF()">📄 PDF</button>
+            <h3 style="font-size: 16px;">Historial General</h3><br>
+            <div class="filter-header">
+                <div style="flex:2; width: 100%;"><input type="text" id="his_q" placeholder="Buscar en historial..." oninput="refreshUI()"></div>
+                <div style="flex:1; width: 100%;">
+                    <select id="his_m" onchange="refreshUI()">
+                        <option value="">Mes</option>
+                        <option value="-01">Enero</option><option value="-02">Febrero</option><option value="-03">Marzo</option><option value="-04">Abril</option><option value="-05">Mayo</option><option value="-06">Junio</option><option value="-07">Julio</option><option value="-08">Agosto</option><option value="-09">Septiembre</option><option value="-10">Octubre</option><option value="-11">Noviembre</option><option value="-12">Diciembre</option>
+                    </select>
                 </div>
-            </div><br>
-            <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Concepto</th><th>Monto</th><th>Categoría</th><th>Acciones</th></tr></thead><tbody id="list_his_table"></tbody></table></div>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Fecha</th><th>Concepto</th><th>Monto</th><th>Categoría</th><th>Estado</th><th>Acciones</th></tr></thead>
+                    <tbody id="list_his_table"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
     <div id="analisis" class="tab-content" style="display:none;">
         <div class="form-grid">
-            <div class="card"><h3>Distribución</h3><div style="height:300px;"><canvas id="chartDona"></canvas></div></div>
-            <div class="card"><h3>Top Gastos</h3><table style="width:100%"><tbody id="ana-table-body"></tbody></table></div>
+            <div class="card">
+                <h3>Gastos por Categoría</h3><br>
+                <div style="height: 300px;"><canvas id="chartDona"></canvas></div>
+            </div>
+            <div class="card">
+                <h3>Ranking de Gasto</h3><br>
+                <div style="background:var(--bg); padding:15px; border-radius:12px; margin-bottom:15px; text-align:center;">
+                    <small>MÁXIMO GASTO</small>
+                    <p id="ana-top-cat" style="font-size:20px; font-weight:900; color:var(--acc)">---</p>
+                </div>
+                <table style="min-width: 100%;">
+                    <tbody id="ana-table-body"></tbody>
+                </table>
+            </div>
         </div>
-    </div>
-
-    <div id="ajustes" class="tab-content" style="display:none;">
-        <div class="card"><h3>Configuración del Sistema</h3><p>Use WPCode para añadir parámetros adicionales.</p></div>
     </div>
 </main>
 
 <script>
-    // FIREBASE
+    // FIREBASE CONFIG
     const firebaseConfig = {
       apiKey: "AIzaSyCO6WXu9iZsyEUmNNxrE4oWToLYY8wl-y4",
       authDomain: "misfinanzaspro-d2f3f.firebaseapp.com",
@@ -203,58 +216,29 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // 70 FRASES DE SABIDURÍA
-    const tips = [
-        "Ahorra primero, gasta después.", "El interés compuesto es la octava maravilla del mundo.",
-        "Un pequeño agujero hunde un gran barco. Cuida los gastos hormiga.", "No pongas todos los huevos en la misma canasta.",
-        "El mejor momento para invertir fue ayer, el segundo mejor es hoy.", "Si compras cosas que no necesitas, pronto venderás lo que necesitas.",
-        "El dinero es un buen siervo pero un mal amo.", "La riqueza no consiste en tener grandes posesiones, sino en tener pocas necesidades.",
-        "Invertir en conocimientos produce siempre los mejores beneficios.", "Gasta lo que te queda después de ahorrar.",
-        "Tu nivel de gastos no debe crecer al ritmo de tus ingresos.", "Págate a ti mismo primero: reserva el 10% mínimo.",
-        "El crédito es un sistema de esclavitud si no se usa para activos.", "Tener un fondo de emergencia te da libertad.",
-        "Las ofertas no son ahorro si no tenías planeado comprar.", "La inflación es el impuesto silencioso, invierte para superarla.",
-        "Revisa tus suscripciones: el dinero se fuga en los goteos mensuales.", "Compra calidad, lo barato sale caro a largo plazo.",
-        "La mejor inversión es tu propia salud y educación.", "Ahorrar sin propósito es difícil. Define una meta.",
-        "Anota cada gasto por 30 días, te sorprenderá el resultado.", "Evita las deudas de consumo como la peste.",
-        "Las tarjetas de crédito son herramientas, no dinero extra.", "Si no puedes pagarlo dos veces, no puedes permitírtelo.",
-        "El delivery es el mayor enemigo del presupuesto mensual.", "Invierte en activos que pongan dinero en tu bolsillo.",
-        "El lujo es para cuando ya eres rico, no para parecerlo.", "Aprende a decir NO a compromisos que no puedes costear.",
-        "Ahorra para el retiro desde hoy, el tiempo es tu aliado.", "Diversifica: diferentes monedas, diferentes mercados.",
-        "No sigas consejos de personas que no están donde tú quieres estar.", "La paciencia es la clave de las inversiones exitosas.",
-        "Crea múltiples fuentes de ingresos.", "Usa la regla de las 24 horas antes de compras impulsivas.",
-        "La libertad financiera no es trabajar menos, es elegir en qué.", "Un presupuesto te dice a dónde ir, no te pregunta a dónde fue.",
-        "Automatiza tus ahorros, así no tienes que pensarlo.", "Vivir por debajo de tus posibilidades es la verdadera riqueza.",
-        "Compara precios siempre, internet es tu herramienta.", "No ignores las facturas, los intereses de mora son basura.",
-        "Usa efectivo si pierdes el control con la tarjeta.", "Mantén tu coche un par de años más de lo planeado.",
-        "Educa a tus hijos sobre finanzas, es el mejor legado.", "La envidia financiera es el camino rápido a la quiebra.",
-        "Aprende a cocinar: es una habilidad muy rentable.", "Revisa tus seguros anualmente buscando mejores primas.",
-        "Vende lo que no usas, limpia tu casa y llena tu cartera.", "El tiempo vale más que el dinero, gástalo con sabiduría.",
-        "No te compares con el vecino, sus deudas pueden ser mayores.", "La disciplina financiera es libertad.",
-        "Entiende qué compras antes de invertir un solo dólar.", "Las crisis son oportunidades para los que tienen efectivo.",
-        "Ahorrar es un hábito, no una cantidad.", "Aprende la diferencia entre precio y valor.",
-        "Nunca inviertas dinero que necesites para vivir el mes.", "Mide tu riqueza por cuántos días podrías vivir sin trabajar.",
-        "La simplicidad es la máxima sofisticación financiera.", "Protege tu capacidad de generar ingresos.",
-        "Haz un inventario de lo que tienes antes de ir de compras.", "La gratificación instantánea es el enemigo del éxito.",
-        "Sé generoso cuando puedas, el dinero fluye al compartirlo.", "El optimismo es una estrategia de inversión.",
-        "No asumas riesgos que no puedas explicar a un niño.", "Mantén tus gastos fijos lo más bajos posible.",
-        "El éxito financiero es 20% conocimiento y 80% comportamiento.", "Tu casa es un activo solo si te genera ingresos.",
-        "No dejes que tus emociones manejen tu billetera.", "La mejor deuda es la que no existe.",
-        "Ahorrar es comprar tu libertad futura.", "Finanzas PRO es tu mejor aliado, úsalo a diario."
-    ];
-
     let rawData = {};
     let donaChart = null;
     let settings = JSON.parse(localStorage.getItem('fpro_v6_settings')) || {
         cats: ['Servicios básicos', 'Alimentación', 'Transporte', 'Salud', 'Ocio'],
-        subs: {'Servicios básicos': ['Agua', 'Luz', 'Internet']},
-        provs: ['General'],
+        subs: {'Servicios básicos': ['Agua potable', 'Luz', 'Gas', 'Internet']},
+        provs: ['Aguas Andinas', 'Enel', 'Metrogas', 'Lider'],
         pagos: ['Débito', 'Crédito', 'Efectivo']
     };
 
+    const tips = [
+        "Ahorra el 10% de tus ingresos apenas los recibas.", "Usa la regla 50/30/20: 50% Necesidades, 30% Deseos, 20% Ahorro.",
+        "Los 'gastos hormiga' pueden sumar una fortuna al año. ¡Cuidado!", "Antes de una compra grande, espera 24 horas para evitar impulsos.",
+        "Revisa tus suscripciones digitales. ¿Realmente usas todas?", "Un fondo de emergencia debe cubrir al menos 3 meses de gastos.",
+        "Pagar tus deudas más pequeñas primero te da motivación psicológica.", "Comprar a granel ahorra hasta un 20% en tu cesta mensual.",
+        "Planifica tus comidas de la semana para no gastar de más afuera.", "Ahorrar es el camino a la libertad financiera, no solo a comprar cosas.",
+        "Invierte en educación, es el activo que más rentabilidad genera.", "No gastes dinero que aún no has ganado (tarjetas de crédito).",
+        "El interés compuesto es la octava maravilla. Empieza a invertir hoy.", "Paga tus tarjetas a tiempo para no regalar dinero en intereses."
+    ];
+
     function init() {
         document.getElementById('f_fecha').valueAsDate = new Date();
+        rotateTips();
         loadDropdowns();
-        startCoach();
         db.ref('movimientos').on('value', snap => {
             rawData = snap.val() || {};
             refreshUI();
@@ -262,45 +246,92 @@
         });
     }
 
-    function startCoach() {
-        const textEl = document.getElementById('tips-text');
+    function rotateTips() {
+        const el = document.getElementById('tip-text');
         let i = 0;
         setInterval(() => {
-            textEl.style.opacity = 0;
+            el.style.opacity = 0;
             setTimeout(() => {
-                textEl.innerText = tips[i];
-                textEl.style.opacity = 1;
+                el.innerText = tips[i];
+                el.style.opacity = 1;
                 i = (i + 1) % tips.length;
             }, 500);
         }, 8000);
-        textEl.innerText = tips[0];
     }
 
     function refreshUI() {
         let ing = 0, eg = 0;
         const rq = document.getElementById('reg_q').value.toLowerCase();
         const rm = document.getElementById('reg_m').value;
+        const hq = document.getElementById('his_q').value.toLowerCase();
+        const hm = document.getElementById('his_m').value;
+
         const tableReg = document.getElementById('list_reg_table');
         const tableHis = document.getElementById('list_his_table');
-        
         tableReg.innerHTML = ''; tableHis.innerHTML = '';
+
         Object.keys(rawData).reverse().forEach(key => {
             const d = rawData[key];
             if(d.tipo === 'Ingreso') ing += d.monto; else eg += d.monto;
             
-            const match = d.concepto.toLowerCase().includes(rq) && (rm ? d.fecha.includes(rm) : true);
-            if(match) {
-                const row = `<tr><td>${d.fecha}</td><td>${d.concepto}</td><td style="color:${d.tipo==='Ingreso'?'green':'red'}">$${d.monto.toLocaleString()}</td><td>${d.cat}</td><td>${d.estado}</td><td><button onclick="editItem('${key}')">✏️</button><button onclick="deleteItem('${key}')">🗑️</button></td></tr>`;
-                tableReg.innerHTML += row;
-                tableHis.innerHTML += row;
-            }
+            const searchBody = `${d.concepto} ${d.cat} ${d.proveedor}`.toLowerCase();
+            const regMatch = searchBody.includes(rq) && (rm ? d.fecha.includes(rm) : true);
+            if(regMatch) tableReg.innerHTML += renderRow(key, d, true);
+
+            const hisMatch = searchBody.includes(hq) && (hm ? d.fecha.includes(hm) : true);
+            if(hisMatch) tableHis.innerHTML += renderRow(key, d, false);
         });
+
         document.getElementById('total-ingresos').innerText = `$${ing.toLocaleString()}`;
         document.getElementById('total-egresos').innerText = `$${eg.toLocaleString()}`;
         document.getElementById('total-saldo').innerText = `$${(ing - eg).toLocaleString()}`;
     }
 
-    // Funciones de Lógica (Tal cual estaban)
+    function renderRow(key, d, mini) {
+        if(mini) {
+            return `<tr>
+                <td style="font-size:11px">${d.fecha.split('-').slice(1).join('/')}</td>
+                <td><b>${d.concepto}</b></td>
+                <td style="color:${d.tipo==='Ingreso'?'#10b981':'#ef4444'}">$${d.monto.toLocaleString()}</td>
+                <td><span style="font-size:10px; color:${d.estado==='Pagado'?'green':'orange'}">${d.estado}</span></td>
+                <td><button class="btn-action" onclick="editItem('${key}')">✏️</button></td>
+            </tr>`;
+        }
+        return `<tr>
+            <td>${d.fecha}</td>
+            <td><b>${d.concepto}</b></td>
+            <td style="color:${d.tipo==='Ingreso'?'#10b981':'#ef4444'}">$${d.monto.toLocaleString()}</td>
+            <td>${d.cat}</td>
+            <td>${d.estado}</td>
+            <td>
+                <button class="btn-action" onclick="editItem('${key}')">✏️</button>
+                <button class="btn-action" onclick="deleteItem('${key}')" style="color:red">🗑️</button>
+            </td>
+        </tr>`;
+    }
+
+    function updateCharts() {
+        const ctx = document.getElementById('chartDona');
+        if(!ctx) return;
+        let catTotals = {};
+        Object.values(rawData).forEach(d => {
+            if(d.tipo === 'Egreso') catTotals[d.cat] = (catTotals[d.cat] || 0) + d.monto;
+        });
+        if(donaChart) donaChart.destroy();
+        donaChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(catTotals),
+                datasets: [{ data: Object.values(catTotals), backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'] }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+        });
+        const sorted = Object.entries(catTotals).sort((a,b) => b[1] - a[1]);
+        document.getElementById('ana-top-cat').innerText = sorted[0] ? sorted[0][0] : '---';
+        document.getElementById('ana-table-body').innerHTML = sorted.map(i => `<tr><td>${i[0]}</td><td align="right"><b>$${i[1].toLocaleString()}</b></td></tr>`).join('');
+    }
+
+    // Funciones de Control
     function saveData() {
         const id = document.getElementById('edit-id').value;
         const data = {
@@ -314,12 +345,11 @@
             pago: document.getElementById('f_pago').value,
             estado: document.getElementById('f_estado').value,
             proveedor: document.getElementById('f_proveedor').value,
-            recurrente: document.getElementById('f_recurrente').value
+            recurrente: 'No'
         };
         if(id) db.ref('movimientos/' + id).set(data); else db.ref('movimientos').push(data);
         clearForm();
     }
-
     function editItem(key) {
         const d = rawData[key];
         document.getElementById('edit-id').value = key;
@@ -327,47 +357,36 @@
         document.getElementById('f_monto').value = d.monto;
         document.getElementById('f_concepto').value = d.concepto;
         document.getElementById('f_cat').value = d.cat;
-        loadSubs();
+        document.getElementById('form-title').innerText = "✏️ Editando...";
         showTab('registro');
     }
-
-    function deleteItem(key) { if(confirm("¿Eliminar?")) db.ref('movimientos/' + key).remove(); }
-    function clearForm() { document.getElementById('edit-id').value = ''; document.getElementById('f_monto').value = ''; document.getElementById('f_concepto').value = ''; }
+    function deleteItem(key) { if(confirm("¿Borrar registro?")) db.ref('movimientos/' + key).remove(); }
+    function clearForm() { document.getElementById('edit-id').value = ''; document.getElementById('f_monto').value = ''; document.getElementById('f_concepto').value = ''; document.getElementById('form-title').innerText = "Nueva Operación"; }
     function calcLogic() {
         const m = parseFloat(document.getElementById('f_monto').value) || 0;
         const p = parseFloat(document.getElementById('f_presupuesto').value) || 0;
-        document.getElementById('f_diff').innerText = `$${(p - m).toLocaleString()}`;
-        document.getElementById('f_diff').style.color = (p - m) < 0 ? 'red' : 'green';
+        const d = p - m;
+        document.getElementById('f_diff').innerText = `$${d.toLocaleString()}`;
+        document.getElementById('f_diff').style.color = d < 0 ? 'var(--danger)' : 'var(--success)';
     }
-
     function loadDropdowns() {
         const fill = (id, arr) => document.getElementById(id).innerHTML = arr.map(i => `<option>${i}</option>`).join('');
         fill('f_cat', settings.cats); fill('f_proveedor', settings.provs); fill('f_pago', settings.pagos);
         loadSubs();
     }
-
     function loadSubs() {
         const c = document.getElementById('f_cat').value;
         const s = settings.subs[c] || ['General'];
         document.getElementById('f_subcat').innerHTML = s.map(v => `<option>${v}</option>`).join('');
     }
-
     function toggleMenu() { document.getElementById('sidebar').classList.toggle('open'); }
     function showTab(id) {
         document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
         document.getElementById(id).style.display = 'block';
         document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        const activeLink = document.querySelector(`.nav-link[onclick*="${id}"]`);
+        if(activeLink) activeLink.classList.add('active');
         if(window.innerWidth < 900) document.getElementById('sidebar').classList.remove('open');
-        if(id === 'analisis') updateCharts();
-    }
-
-    function updateCharts() {
-        const ctx = document.getElementById('chartDona');
-        if(!ctx) return;
-        let catTotals = {};
-        Object.values(rawData).forEach(d => { if(d.tipo === 'Egreso') catTotals[d.cat] = (catTotals[d.cat] || 0) + d.monto; });
-        if(donaChart) donaChart.destroy();
-        donaChart = new Chart(ctx, { type: 'doughnut', data: { labels: Object.keys(catTotals), datasets: [{ data: Object.values(catTotals), backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'] }] }, options: { maintainAspectRatio: false } });
     }
 
     window.onload = init;
