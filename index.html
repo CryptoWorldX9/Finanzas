@@ -3,87 +3,144 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finanzas PRO | Master System</title>
+    <title>Finanzas PRO | Master Edition 2026</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     
     <style>
-        :root { --p: #0f172a; --acc: #2563eb; --bg: #f1f5f9; --danger: #ef4444; --success: #10b981; }
+        :root { 
+            --p: #0f172a; --acc: #2563eb; --bg: #f1f5f9; 
+            --danger: #ef4444; --success: #10b981; --warning: #f59e0b;
+        }
         * { margin:0; padding:0; box-sizing:border-box; font-family: 'Inter', sans-serif; }
         body { background: var(--bg); display: flex; min-height: 100vh; color: #1e293b; }
 
-        .sidebar { width: 260px; background: var(--p); color: white; padding: 20px; position: fixed; height: 100vh; z-index: 100; }
-        .main-content { margin-left: 260px; padding: 30px; width: 100%; }
+        /* Navegación */
+        .sidebar { width: 260px; background: var(--p); color: white; padding: 20px; position: fixed; height: 100vh; z-index: 100; transition: 0.3s; }
+        .main-content { margin-left: 260px; padding: 30px; width: calc(100% - 260px); transition: 0.3s; }
 
-        .nav-link { display: flex; align-items: center; gap: 10px; padding: 12px; color: #cbd5e1; cursor: pointer; border-radius: 8px; margin-bottom: 5px; }
-        .nav-link.active { background: var(--acc); color: white; }
+        .nav-link { display: flex; align-items: center; gap: 10px; padding: 12px; color: #cbd5e1; cursor: pointer; border-radius: 8px; margin-bottom: 5px; font-weight: 500; }
+        .nav-link:hover, .nav-link.active { background: var(--acc); color: white; }
 
-        .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 15px; }
-        
-        label { font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; display: block; margin-bottom: 5px; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; }
-        
-        .btn { padding: 12px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; transition: 0.2s; }
-        .btn-p { background: var(--acc); color: white; width: 100%; }
-        
-        table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 15px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #f1f5f9; }
+        /* Coach Bubble */
+        .coach-bubble { background: white; border-radius: 15px; padding: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-left: 5px solid var(--acc); margin-bottom: 25px; animation: float 3s ease-in-out infinite; }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
 
-        .config-item { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 8px 12px; border-radius: 6px; margin-bottom: 5px; }
-        .btn-danger { background: var(--danger); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
+        /* Cards */
+        .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.03); margin-bottom: 20px; border: 1px solid #e2e8f0; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        
+        label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 5px; display: block; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; transition: 0.2s; }
+        input:focus { border-color: var(--acc); outline: none; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+        
+        .btn { padding: 12px 20px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; transition: 0.2s; display: flex; align-items: center; gap: 8px; justify-content: center; }
+        .btn-p { background: var(--acc); color: white; }
+        .btn-s { background: #64748b; color: white; }
+        .btn-danger { background: var(--danger); color: white; padding: 5px 10px; }
+
+        /* Tablas */
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background: #f8fafc; padding: 12px; text-align: left; color: #64748b; border-bottom: 2px solid #edf2f7; }
+        td { padding: 12px; border-bottom: 1px solid #f1f5f9; }
+
+        .diff-neg { color: var(--danger); font-weight: 800; }
+        .diff-pos { color: var(--success); font-weight: 800; }
 
         @media (max-width: 768px) {
             .sidebar { width: 0; padding: 0; overflow: hidden; }
-            .main-content { margin-left: 0; }
+            .main-content { margin-left: 0; width: 100%; padding: 15px; }
         }
     </style>
 </head>
 <body>
 
 <nav class="sidebar">
-    <h2 style="margin-bottom: 25px;">FINANZAS PRO</h2>
-    <div class="nav-link active" onclick="showTab('registro')">🏠 <span>Registro</span></div>
+    <h2 style="margin-bottom: 30px; letter-spacing: 1px;">FINANZAS PRO</h2>
+    <div class="nav-link active" onclick="showTab('registro')">📝 <span>Registro</span></div>
+    <div class="nav-link" onclick="showTab('analisis')">📊 <span>Análisis</span></div>
     <div class="nav-link" onclick="showTab('ajustes')">⚙️ <span>Ajustes</span></div>
 </nav>
 
 <main class="main-content">
+    <div class="coach-bubble">
+        <small style="color: var(--acc); font-weight: 800;">TIPS DE AHORRO ✨</small>
+        <p id="tip-text">Cargando consejos financieros...</p>
+    </div>
+
     <div id="registro" class="tab-content">
         <div class="card">
-            <h3 id="form-title">Registrar Movimiento</h3><br>
+            <h3 id="form-title">Nueva Operación</h3><br>
             <input type="hidden" id="edit-id">
             
             <div class="form-grid">
                 <div><label>Fecha</label><input type="date" id="f_fecha"></div>
                 <div><label>Tipo</label><select id="f_tipo"><option>Egreso</option><option>Ingreso</option></select></div>
-                <div><label>Monto</label><input type="number" id="f_monto" oninput="calcDiff()"></div>
-                <div><label>Presupuesto</label><input type="number" id="f_presupuesto" oninput="calcDiff()"></div>
+                <div><label>Monto ($)</label><input type="number" id="f_monto" oninput="calcDiff()"></div>
+                <div><label>Presupuesto ($)</label><input type="number" id="f_presupuesto" oninput="calcDiff()"></div>
             </div>
 
             <div class="form-grid">
-                <div><label>Concepto</label><input type="text" id="f_concepto"></div>
+                <div><label>Concepto</label><input type="text" id="f_concepto" placeholder="Ej: Cuenta de agua"></div>
                 <div><label>Categoría</label><select id="f_cat" onchange="updateSubSelect()"></select></div>
                 <div><label>Subcategoría</label><select id="f_subcat"></select></div>
                 <div><label>Proveedor</label><select id="f_proveedor"></select></div>
             </div>
 
-            <div class="btn-group" style="display:flex; gap:10px;">
-                <button class="btn btn-p" id="btn-save" onclick="saveData()">💾 GUARDAR EN NUBE</button>
-                <button class="btn" style="background:#64748b; color:white;" onclick="clearForm()">LIMPIAR</button>
-                <div style="margin-left:auto; align-self:center;"><b>Diff: </b><span id="val_diff">$0</span></div>
+            <div class="form-grid">
+                <div><label>Forma de Pago</label><select id="f_pago"></select></div>
+                <div><label>Estado</label>
+                    <select id="f_estado">
+                        <option>Pagado</option>
+                        <option>Pendiente</option>
+                        <option>Vencido</option>
+                    </select>
+                </div>
+                <div><label>Gasto</label>
+                    <select id="f_gasto_tipo">
+                        <option>Fijo</option>
+                        <option>Variable</option>
+                    </select>
+                </div>
+                <div><label>Recurrente</label>
+                    <select id="f_recurrente"><option>No</option><option>Sí</option></select>
+                </div>
+            </div>
+
+            <div style="margin-bottom:15px;"><label>Observaciones</label><textarea id="f_obs" rows="2"></textarea></div>
+
+            <div style="display:flex; justify-content: space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                <div style="display:flex; gap:10px;">
+                    <button class="btn btn-p" onclick="saveData()">💾 GUARDAR EN NUBE</button>
+                    <button class="btn btn-s" onclick="clearForm()">🧹 LIMPIAR</button>
+                </div>
+                <div style="font-size: 18px;"><b>Diferencia: </b><span id="val_diff">$0</span></div>
             </div>
         </div>
 
         <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                 <h3>Listado Mensual</h3>
                 <select id="filter_mes" onchange="renderList()" style="width:auto;"></select>
             </div>
-            <table>
-                <thead><tr><th>Fecha</th><th>Concepto</th><th>Monto</th><th>Acciones</th></tr></thead>
-                <tbody id="list_body"></tbody>
-            </table>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr><th>Fecha</th><th>Concepto</th><th>Categoría</th><th>Monto</th><th>Estado</th><th>Acciones</th></tr>
+                    </thead>
+                    <tbody id="list_body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="analisis" class="tab-content" style="display:none;">
+        <div class="form-grid">
+            <div class="card"><h3>Gastos por Categoría</h3><canvas id="chartPie"></canvas></div>
+            <div class="card"><h3>Top 5 Gastos Fuertes</h3><div id="topList"></div></div>
         </div>
     </div>
 
@@ -92,28 +149,34 @@
         <div class="form-grid">
             <div class="card">
                 <label>Categorías</label>
-                <div style="display:flex; gap:5px; margin-bottom:10px;">
-                    <input type="text" id="new_cat"><button onclick="addItem('cats', 'new_cat')" class="btn btn-p" style="width:40px">+</button>
-                </div>
+                <div style="display:flex; gap:5px; margin-bottom:10px;"><input type="text" id="new_cat"><button onclick="addSet('cats','new_cat')" class="btn btn-p">+</button></div>
                 <div id="list_cats"></div>
             </div>
             <div class="card">
+                <label>Subcategorías de:</label>
+                <select id="sel_cat_sub" onchange="renderSettings()"></select>
+                <div style="display:flex; gap:5px; margin-top:10px;"><input type="text" id="new_sub"><button onclick="addSub()" class="btn btn-p">+</button></div>
+                <div id="list_subs" style="margin-top:10px;"></div>
+            </div>
+            <div class="card">
                 <label>Proveedores</label>
-                <div style="display:flex; gap:5px; margin-bottom:10px;">
-                    <input type="text" id="new_prov"><button onclick="addItem('proveedores', 'new_prov')" class="btn btn-p" style="width:40px">+</button>
-                </div>
+                <div style="display:flex; gap:5px; margin-bottom:10px;"><input type="text" id="new_prov"><button onclick="addSet('proveedores','new_prov')" class="btn btn-p">+</button></div>
                 <div id="list_provs"></div>
+            </div>
+            <div class="card">
+                <label>Formas de Pago</label>
+                <div style="display:flex; gap:5px; margin-bottom:10px;"><input type="text" id="new_pago"><button onclick="addSet('pagos','new_pago')" class="btn btn-p">+</button></div>
+                <div id="list_pagos"></div>
             </div>
         </div>
     </div>
 </main>
 
 <script>
-    // CONFIGURACIÓN CORREGIDA
+    // CONFIGURACIÓN FIREBASE
     const firebaseConfig = {
       apiKey: "AIzaSyCO6WXu9iZsyEUmNNxrE4oWToLYY8wl-y4",
       authDomain: "misfinanzaspro-d2f3f.firebaseapp.com",
-      // Esta URL es CLAVE, si no es esta, cópiala de tu consola de Firebase (Realtime Database)
       databaseURL: "https://misfinanzaspro-d2f3f-default-rtdb.firebaseio.com", 
       projectId: "misfinanzaspro-d2f3f",
       storageBucket: "misfinanzaspro-d2f3f.firebasestorage.app",
@@ -124,59 +187,69 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    let settings = JSON.parse(localStorage.getItem('fpro_settings_v3')) || {
-        cats: ['Servicios', 'Comida', 'Transporte'],
-        subs: { 'Servicios': ['Agua', 'Luz', 'Gas'] },
-        proveedores: ['Aguas Andinas', 'Enel', 'General'],
-        pagos: ['Efectivo', 'Débito']
+    // ESTADO LOCAL
+    let settings = JSON.parse(localStorage.getItem('fpro_v4_settings')) || {
+        cats: ['Servicios básicos', 'Alimentación', 'Transporte', 'Vivienda', 'Ocio'],
+        subs: {'Servicios básicos': ['Agua potable', 'Luz', 'Gas', 'Internet']},
+        proveedores: ['Aguas Andinas', 'Enel', 'Gasco', 'Walmart'],
+        pagos: ['Débito', 'Crédito', 'Efectivo', 'Transferencia']
     };
 
     let rawData = {};
+    const tips = [
+        "¿Sabías que ahorrando $1.000 diarios al año sumas $365.000 para tus vacaciones?",
+        "Regla 50/30/20: 50% Necesidades, 30% Gustos, 20% Ahorro.",
+        "Los gastos fijos no deben superar el 60% de tus ingresos totales.",
+        "Revisa tus suscripciones mensuales, ¡muchas veces pagamos lo que no usamos!",
+        "Siempre compara el precio por unidad en el supermercado para ahorrar de verdad."
+    ];
 
     function init() {
         document.getElementById('f_fecha').valueAsDate = new Date();
         populateMonths();
         updateAllSelects();
+        startCoach();
         
-        // Listener REALTIME
         db.ref('movimientos').on('value', (snap) => {
-            console.log("Datos recibidos de Firebase:", snap.val()); // Para depuración
             rawData = snap.val() || {};
             renderList();
-        }, (error) => {
-            console.error("Error de Firebase:", error);
-            alert("Error de conexión: Verifica las Reglas en Firebase");
+            if(document.getElementById('analisis').style.display === 'block') runAnalysis();
         });
     }
 
+    // COACH
+    function startCoach() {
+        let i = 0;
+        setInterval(() => {
+            document.getElementById('tip-text').innerText = tips[i];
+            i = (i + 1) % tips.length;
+        }, 8000);
+        document.getElementById('tip-text').innerText = tips[0];
+    }
+
+    // REGISTRO
     function saveData() {
         const id = document.getElementById('edit-id').value;
         const fecha = document.getElementById('f_fecha').value;
-        const monto = parseFloat(document.getElementById('f_monto').value);
-
-        if(!monto) return alert("Ingresa un monto válido");
-
         const data = {
             fecha,
             tipo: document.getElementById('f_tipo').value,
-            monto: monto,
+            monto: parseFloat(document.getElementById('f_monto').value) || 0,
             presupuesto: parseFloat(document.getElementById('f_presupuesto').value) || 0,
-            concepto: document.getElementById('f_concepto').value || "Sin concepto",
+            concepto: document.getElementById('f_concepto').value,
             cat: document.getElementById('f_cat').value,
             subcat: document.getElementById('f_subcat').value,
             proveedor: document.getElementById('f_proveedor').value,
+            pago: document.getElementById('f_pago').value,
+            estado: document.getElementById('f_estado').value,
+            gasto_tipo: document.getElementById('f_gasto_tipo').value,
+            recurrente: document.getElementById('f_recurrente').value,
+            obs: document.getElementById('f_obs').value,
             mes_anio: fecha.substring(0, 7)
         };
 
-        if(id) {
-            db.ref('movimientos/' + id).set(data)
-                .then(() => alert("Actualizado en la nube"))
-                .catch(e => alert("Error: " + e.message));
-        } else {
-            db.ref('movimientos').push(data)
-                .then(() => alert("Guardado en la nube"))
-                .catch(e => alert("Error: " + e.message));
-        }
+        if(id) db.ref('movimientos/' + id).set(data).then(() => alert("Actualizado"));
+        else db.ref('movimientos').push(data).then(() => alert("Guardado"));
         clearForm();
     }
 
@@ -184,32 +257,96 @@
         const mes = document.getElementById('filter_mes').value;
         const body = document.getElementById('list_body');
         body.innerHTML = '';
-        
         Object.keys(rawData).forEach(key => {
             const d = rawData[key];
             if(d.mes_anio === mes) {
-                body.innerHTML += `
-                <tr>
+                body.innerHTML += `<tr>
                     <td>${d.fecha}</td>
-                    <td>${d.concepto}</td>
-                    <td style="color:${d.tipo==='Ingreso'?'green':'red'}">$${d.monto.toLocaleString()}</td>
+                    <td><b>${d.concepto}</b></td>
+                    <td><small>${d.cat}</small></td>
+                    <td style="color:${d.tipo==='Ingreso'?'green':'red'}"><b>$${d.monto.toLocaleString()}</b></td>
+                    <td><small>${d.estado}</small></td>
                     <td>
-                        <button onclick="editItem('${key}')">✏️</button>
-                        <button onclick="deleteItem('${key}')">🗑️</button>
+                        <button onclick="editItem('${key}')" style="border:none; cursor:pointer;">✏️</button>
+                        <button onclick="deleteItem('${key}')" style="border:none; cursor:pointer;">🗑️</button>
                     </td>
                 </tr>`;
             }
         });
     }
 
-    // Funciones de Apoyo
-    function updateAllSelects() {
-        const fill = (id, arr) => {
-            const el = document.getElementById(id);
-            if(el) el.innerHTML = arr.map(i => `<option>${i}</option>`).join('');
+    function editItem(key) {
+        const d = rawData[key];
+        document.getElementById('edit-id').value = key;
+        document.getElementById('f_fecha').value = d.fecha;
+        document.getElementById('f_tipo').value = d.tipo;
+        document.getElementById('f_monto').value = d.monto;
+        document.getElementById('f_presupuesto').value = d.presupuesto;
+        document.getElementById('f_concepto').value = d.concepto;
+        document.getElementById('f_cat').value = d.cat;
+        updateSubSelect();
+        document.getElementById('f_subcat').value = d.subcat;
+        document.getElementById('f_proveedor').value = d.proveedor;
+        document.getElementById('f_pago').value = d.pago;
+        document.getElementById('f_estado').value = d.estado;
+        document.getElementById('f_obs').value = d.obs || '';
+        document.getElementById('form-title').innerText = "✏️ Editando Operación";
+        calcDiff();
+        window.scrollTo(0,0);
+    }
+
+    // AJUSTES
+    function addSet(key, inputId) {
+        const v = document.getElementById(inputId).value;
+        if(v) { settings[key].push(v); saveSettings(); document.getElementById(inputId).value=''; }
+    }
+
+    function addSub() {
+        const cat = document.getElementById('sel_cat_sub').value;
+        const v = document.getElementById('new_sub').value;
+        if(cat && v) {
+            if(!settings.subs[cat]) settings.subs[cat] = [];
+            settings.subs[cat].push(v);
+            saveSettings();
+            document.getElementById('new_sub').value = '';
+        }
+    }
+
+    function saveSettings() {
+        localStorage.setItem('fpro_v4_settings', JSON.stringify(settings));
+        updateAllSelects();
+        renderSettings();
+    }
+
+    function renderSettings() {
+        const draw = (arr, key, target) => {
+            document.getElementById(target).innerHTML = arr.map((item, i) => `
+                <div style="display:flex; justify-content:space-between; background:#f8fafc; padding:8px; border-radius:6px; margin-bottom:4px;">
+                    <span>${item}</span><button class="btn-danger" onclick="removeSet('${key}', ${i})">✕</button>
+                </div>`).join('');
         };
-        fill('f_cat', settings.cats);
-        fill('f_proveedor', settings.proveedores);
+        draw(settings.cats, 'cats', 'list_cats');
+        draw(settings.proveedores, 'proveedores', 'list_provs');
+        draw(settings.pagos, 'pagos', 'list_pagos');
+        document.getElementById('sel_cat_sub').innerHTML = settings.cats.map(c => `<option>${c}</option>`).join('');
+        
+        const c = document.getElementById('sel_cat_sub').value;
+        const subs = settings.subs[c] || [];
+        document.getElementById('list_subs').innerHTML = subs.map((s, i) => `
+            <div style="display:flex; justify-content:space-between; background:#f8fafc; padding:8px; border-radius:6px; margin-bottom:4px;">
+                <span>${s}</span><button class="btn-danger" onclick="removeSub('${c}', ${i})">✕</button>
+            </div>`).join('');
+    }
+
+    function removeSet(key, i) { settings[key].splice(i, 1); saveSettings(); }
+    function removeSub(cat, i) { settings.subs[cat].splice(i, 1); saveSettings(); }
+
+    // APOYO
+    function updateAllSelects() {
+        const f = (id, arr) => document.getElementById(id).innerHTML = arr.map(i => `<option>${i}</option>`).join('');
+        f('f_cat', settings.cats);
+        f('f_proveedor', settings.proveedores);
+        f('f_pago', settings.pagos);
         updateSubSelect();
     }
 
@@ -223,19 +360,18 @@
         const m = parseFloat(document.getElementById('f_monto').value) || 0;
         const p = parseFloat(document.getElementById('f_presupuesto').value) || 0;
         const d = p - m;
-        document.getElementById('val_diff').innerText = `$${d.toLocaleString()}`;
-        document.getElementById('val_diff').style.color = d < 0 ? 'red' : 'green';
-    }
-
-    function deleteItem(key) {
-        if(confirm("¿Eliminar?")) db.ref('movimientos/' + key).remove();
+        const el = document.getElementById('val_diff');
+        el.innerText = `$${d.toLocaleString()}`;
+        el.className = d < 0 ? 'diff-neg' : 'diff-pos';
     }
 
     function clearForm() {
         document.getElementById('edit-id').value = '';
         document.getElementById('f_monto').value = '';
         document.getElementById('f_concepto').value = '';
-        document.getElementById('form-title').innerText = "Registrar Movimiento";
+        document.getElementById('f_obs').value = '';
+        document.getElementById('form-title').innerText = "Nueva Operación";
+        calcDiff();
     }
 
     function populateMonths() {
@@ -254,30 +390,31 @@
         document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
         event.currentTarget.classList.add('active');
         if(id === 'ajustes') renderSettings();
+        if(id === 'analisis') runAnalysis();
     }
 
-    function renderSettings() {
-        const draw = (arr, key, target) => {
-            document.getElementById(target).innerHTML = arr.map((item, i) => `
-                <div class="config-item"><span>${item}</span>
-                <button class="btn-danger" onclick="removeItem('${key}', ${i})">✕</button></div>`).join('');
-        };
-        draw(settings.cats, 'cats', 'list_cats');
-        draw(settings.proveedores, 'proveedores', 'list_provs');
-    }
+    // ANÁLISIS
+    let myChart;
+    function runAnalysis() {
+        const gastos = Object.values(rawData).filter(d => d.tipo === 'Egreso');
+        const catMap = {};
+        gastos.forEach(g => catMap[g.cat] = (catMap[g.cat] || 0) + g.monto);
 
-    function addItem(key, inputId) {
-        const v = document.getElementById(inputId).value;
-        if(v) { settings[key].push(v); saveSettings(); document.getElementById(inputId).value=''; }
-    }
+        if(myChart) myChart.destroy();
+        const ctx = document.getElementById('chartPie').getContext('2d');
+        myChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(catMap),
+                datasets: [{ data: Object.values(catMap), backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'] }]
+            }
+        });
 
-    function removeItem(key, i) {
-        settings[key].splice(i, 1); saveSettings();
-    }
-
-    function saveSettings() {
-        localStorage.setItem('fpro_settings_v3', JSON.stringify(settings));
-        updateAllSelects(); renderSettings();
+        const top = gastos.sort((a,b) => b.monto - a.monto).slice(0, 5);
+        document.getElementById('topList').innerHTML = top.map(t => `
+            <div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #eee;">
+                <span>${t.concepto}</span><b>$${t.monto.toLocaleString()}</b>
+            </div>`).join('');
     }
 
     window.onload = init;
