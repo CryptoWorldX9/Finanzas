@@ -1,51 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finanzas PRO | Independencia Total</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    
+    <style>
+        :root { --p: #0f172a; --acc: #2563eb; --bg: #f8fafc; --danger: #ef4444; --success: #10b981; }
+        * { margin:0; padding:0; box-sizing:border-box; font-family: 'Inter', sans-serif; }
+        body { background: var(--bg); display: flex; min-height: 100vh; color: #1e293b; }
+
+        .sidebar { width: 260px; background: var(--p); color: white; padding: 25px; position: fixed; height: 100vh; z-index: 1000; transition: 0.4s; }
+        .main-content { margin-left: 260px; padding: 20px; width: calc(100% - 260px); margin-top: 75px; }
+
+        .top-bar { 
+            position: fixed; top: 0; left: 260px; right: 0; height: 75px; 
+            background: white; display: flex; align-items: center; padding: 0 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); z-index: 900; gap: 20px;
+        }
+        .balance-card { display: flex; gap: 15px; flex-grow: 1; justify-content: flex-end; }
+        .bal-item { text-align: right; }
+        .bal-item small { font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; }
+        .bal-item p { font-size: 16px; font-weight: 900; }
+
+        .card { background: white; border-radius: 16px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); margin-bottom: 25px; border: 1px solid #e2e8f0; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        
+        label { font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 5px; display: block; }
+        input, select, textarea { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px; }
+        
+        .btn-p { background: var(--acc); color: white; border: none; padding: 12px 20px; border-radius: 10px; cursor: pointer; font-weight: 700; width: 100%; transition: 0.2s; }
+        .nav-link { display: flex; align-items: center; gap: 12px; padding: 14px; color: #cbd5e1; cursor: pointer; border-radius: 12px; margin-bottom: 8px; }
+        .nav-link.active { background: var(--acc); color: white; }
+
+        .table-wrap { overflow-x: auto; margin-top: 15px; }
+        table { width: 100%; border-collapse: collapse; min-width: 800px; }
+        th { text-align: left; padding: 15px; background: #f8fafc; color: #64748b; font-size: 11px; border-bottom: 2px solid #edf2f7; }
+        td { padding: 15px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+
+        .btn-action { background: none; border: 1px solid #e2e8f0; padding: 6px; border-radius: 6px; cursor: pointer; margin-right: 5px; }
+        .filter-header { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 15px; background: #f1f5f9; padding: 15px; border-radius: 12px; }
+
+        @media (max-width: 900px) {
+            .sidebar { left: -100%; }
+            .sidebar.open { left: 0; }
+            .top-bar { left: 0; height: 110px; flex-direction: column; justify-content: center; }
+            .main-content { margin-left: 0; margin-top: 120px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="top-bar">
+    <button onclick="toggleMenu()" style="background:var(--p); color:white; border:none; padding:8px; border-radius:5px;">☰</button>
+    <div class="balance-card">
+        <div class="bal-item"><small>Ingresos</small><p style="color:var(--success)" id="total-ingresos">$0</p></div>
+        <div class="bal-item"><small>Egresos</small><p style="color:var(--danger)" id="total-egresos">$0</p></div>
+        <div class="bal-item"><small>Saldo</small><p id="total-saldo">$0</p></div>
+    </div>
+</div>
+
+<nav class="sidebar" id="sidebar">
+    <h1 style="margin-bottom: 30px; font-weight: 900;">Finanzas PRO</h1>
+    <div class="nav-link active" onclick="showTab('registro')">📝 <span>Registro</span></div>
+    <div class="nav-link" onclick="showTab('historial')">📜 <span>Historial</span></div>
+    <div class="nav-link" onclick="showTab('analisis')">📊 <span>Análisis</span></div>
+    <div class="nav-link" onclick="showTab('ajustes')">⚙️ <span>Ajustes</span></div>
+</nav>
+
 <main class="main-content">
-    <div id="analisis" class="tab-content" style="display:none;">
+    <div id="registro" class="tab-content">
         <div class="card">
-            <h3>Estadísticas Generales</h3><br>
+            <h3 id="form-title">Nueva Operación</h3><br>
+            <input type="hidden" id="edit-id">
             <div class="form-grid">
-                <div style="background:#eff6ff; padding:20px; border-radius:12px; border-left:5px solid var(--acc);">
-                    <small>PROMEDIO GASTO DIARIO</small>
-                    <p id="stat-avg-gasto" style="font-size:24px; font-weight:900;">$0</p>
-                </div>
-                <div style="background:#f0fdf4; padding:20px; border-radius:12px; border-left:5px solid var(--success);">
-                    <small>MAYOR INGRESO MES</small>
-                    <p id="stat-max-ingreso" style="font-size:24px; font-weight:900;">$0</p>
-                </div>
-                <div style="background:#fef2f2; padding:20px; border-radius:12px; border-left:5px solid var(--danger);">
-                    <small>CATEGORÍA MÁS COSTOSA</small>
-                    <p id="stat-top-cat" style="font-size:18px; font-weight:900;">---</p>
-                </div>
+                <div><label>Fecha</label><input type="date" id="f_fecha"></div>
+                <div><label>Tipo</label><select id="f_tipo"><option value="Egreso">🔻 Egreso</option><option value="Ingreso">🔹 Ingreso</option></select></div>
+                <div><label>Monto ($)</label><input type="number" id="f_monto" oninput="calcLogic()"></div>
+                <div><label>Presupuesto ($)</label><input type="number" id="f_presupuesto" oninput="calcLogic()"></div>
             </div>
-        </div>
-
-        <div class="form-grid">
-            <div class="card">
-                <h3>Gastos por Categoría</h3><br>
-                <div style="max-height: 300px; display: flex; justify-content: center;">
-                    <canvas id="chartCats"></canvas>
-                </div>
+            <div class="form-grid">
+                <div><label>Concepto</label><input type="text" id="f_concepto" placeholder="Ej: Pago agua"></div>
+                <div><label>Categoría</label><select id="f_cat" onchange="loadSubs()"></select></div>
+                <div><label>Subcategoría</label><select id="f_subcat"></select></div>
+                <div><label>Proveedor</label><select id="f_proveedor"></select></div>
             </div>
-            <div class="card">
-                <h3>Flujo de Caja Mensual</h3><br>
-                <div style="max-height: 300px;">
-                    <canvas id="chartFlow"></canvas>
-                </div>
+            <div class="form-grid">
+                <div><label>Pago</label><select id="f_pago"></select></div>
+                <div><label>Estado</label><select id="f_estado"><option>Pagado</option><option>Pendiente</option></select></div>
+                <div><label>Recurrente</label><select id="f_recurrente"><option>No</option><option>Sí</option></select></div>
+                <div><label>Diferencia</label><p id="f_diff" style="font-weight:900; font-size:18px;">$0</p></div>
+            </div>
+            <div class="form-grid" style="margin-top:20px;">
+                <button class="btn-p" onclick="saveData()">💾 GUARDAR</button>
+                <button class="btn-p" style="background:#64748b;" onclick="clearForm()">🧹 LIMPIAR</button>
             </div>
         </div>
 
         <div class="card">
-            <h3>Distribución por Proveedor</h3><br>
-            <div style="max-height: 300px;">
-                <canvas id="chartProvs"></canvas>
+            <h3>Movimientos Recientes & Filtros</h3><br>
+            <div class="filter-header">
+                <div style="flex:2;"><label>Buscador</label><input type="text" id="reg_q" placeholder="Buscar..." oninput="refreshUI()"></div>
+                <div style="flex:1;"><label>Día</label><input type="date" id="reg_d" onchange="refreshUI()"></div>
+                <div style="flex:1;"><label>Mes</label><input type="month" id="reg_m" onchange="refreshUI()"></div>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Fecha</th><th>Concepto</th><th>Monto</th><th>Categoría</th><th>Proveedor</th><th>Estado</th><th>Acciones</th></tr></thead>
+                    <tbody id="list_reg_table"></tbody>
+                </table>
             </div>
         </div>
     </div>
 
-    </main>
+    <div id="historial" class="tab-content" style="display:none;">
+        <div class="card">
+            <h3>Historial General</h3><br>
+            <div class="filter-header">
+                <div style="flex:2;"><label>Buscador</label><input type="text" id="his_q" placeholder="Buscar..." oninput="refreshUI()"></div>
+                <div style="flex:1;"><label>Día</label><input type="date" id="his_d" onchange="refreshUI()"></div>
+                <div style="flex:1;"><label>Mes</label><input type="month" id="his_m" onchange="refreshUI()"></div>
+                <div style="display:flex; gap:5px;">
+                    <button class="btn-p" style="background:#10b981; width:auto;" onclick="exportExcel()">📊 Excel</button>
+                    <button class="btn-p" style="background:#ef4444; width:auto;" onclick="exportPDF()">📄 PDF</button>
+                </div>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Fecha</th><th>Concepto</th><th>Monto</th><th>Categoría</th><th>Proveedor</th><th>Estado</th><th>Acciones</th></tr></thead>
+                    <tbody id="list_his_table"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="analisis" class="tab-content" style="display:none;">
+        <div class="card">
+            <h3>Resumen de Gastos</h3><br>
+            <div class="form-grid">
+                <div style="text-align:center; padding:15px; background:#f1f5f9; border-radius:10px;">
+                    <label>Más Gastado en:</label>
+                    <p id="top-cat-name" style="font-weight:900; font-size:18px;">---</p>
+                </div>
+                <div style="text-align:center; padding:15px; background:#f1f5f9; border-radius:10px;">
+                    <label>Promedio Diario:</label>
+                    <p id="avg-daily" style="font-weight:900; font-size:18px;">$0</p>
+                </div>
+            </div>
+            <div style="margin-top:20px; height: 350px;">
+                <canvas id="mainChart"></canvas>
+            </div>
+        </div>
+    </div>
+</main>
 
 <script>
-    // [Configuración Firebase y Variables globales igual]
-    let chart1, chart2, chart3;
+    const firebaseConfig = {
+      apiKey: "AIzaSyCO6WXu9iZsyEUmNNxrE4oWToLYY8wl-y4",
+      authDomain: "misfinanzaspro-d2f3f.firebaseapp.com",
+      databaseURL: "https://misfinanzaspro-d2f3f-default-rtdb.firebaseio.com",
+      projectId: "misfinanzaspro-d2f3f",
+      storageBucket: "misfinanzaspro-d2f3f.firebasestorage.app",
+      messagingSenderId: "613366165036",
+      appId: "1:613366165036:web:bebc72b38d39ab64932b89"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let rawData = {};
+    let mainChart = null;
+    let settings = JSON.parse(localStorage.getItem('fpro_v6_settings')) || {
+        cats: ['Servicios básicos', 'Alimentación', 'Transporte', 'Salud', 'Ocio'],
+        subs: {'Servicios básicos': ['Agua potable', 'Luz', 'Gas', 'Internet']},
+        provs: ['Aguas Andinas', 'Enel', 'Metrogas', 'Lider'],
+        pagos: ['Débito', 'Crédito', 'Efectivo']
+    };
 
     function init() {
         document.getElementById('f_fecha').valueAsDate = new Date();
@@ -53,89 +188,156 @@
         db.ref('movimientos').on('value', snap => {
             rawData = snap.val() || {};
             refreshUI();
-            updateCharts(); // Llamada para actualizar gráficos
+            updateCharts();
         });
     }
 
-    // [Funciones refreshUI, saveData, editItem, etc. se mantienen igual]
+    function refreshUI() {
+        let ing = 0, eg = 0;
+        const rq = document.getElementById('reg_q').value.toLowerCase();
+        const rd = document.getElementById('reg_d').value;
+        const rm = document.getElementById('reg_m').value;
+        const hq = document.getElementById('his_q').value.toLowerCase();
+        const hd = document.getElementById('his_d').value;
+        const hm = document.getElementById('his_m').value;
+        const tableReg = document.getElementById('list_reg_table');
+        const tableHis = document.getElementById('list_his_table');
+        tableReg.innerHTML = '';
+        tableHis.innerHTML = '';
 
-    // NUEVA FUNCIÓN DE GRÁFICOS Y ESTADÍSTICAS
+        Object.keys(rawData).reverse().forEach(key => {
+            const d = rawData[key];
+            if(d.tipo === 'Ingreso') ing += d.monto; else eg += d.monto;
+            const searchBody = `${d.concepto} ${d.cat} ${d.subcat} ${d.proveedor}`.toLowerCase();
+            const regMatch = searchBody.includes(rq) && (rd ? d.fecha === rd : true) && (rm ? d.fecha.substring(0,7) === rm : true);
+            if(regMatch) tableReg.innerHTML += renderRow(key, d);
+            const hisMatch = searchBody.includes(hq) && (hd ? d.fecha === hd : true) && (hm ? d.fecha.substring(0,7) === hm : true);
+            if(hisMatch) tableHis.innerHTML += renderRow(key, d);
+        });
+
+        document.getElementById('total-ingresos').innerText = `$${ing.toLocaleString()}`;
+        document.getElementById('total-egresos').innerText = `$${eg.toLocaleString()}`;
+        document.getElementById('total-saldo').innerText = `$${(ing - eg).toLocaleString()}`;
+    }
+
     function updateCharts() {
-        const data = Object.values(rawData);
-        if (data.length === 0) return;
-
-        // 1. LÓGICA DE ESTADÍSTICAS
-        let catTotals = {};
-        let provTotals = {};
-        let flowData = {}; // Meses
-        let totalEgresos = 0;
-        let maxIngreso = 0;
-
-        data.forEach(d => {
-            if (d.tipo === 'Egreso') {
-                totalEgresos += d.monto;
-                catTotals[d.cat] = (catTotals[d.cat] || 0) + d.monto;
-                provTotals[d.proveedor] = (provTotals[d.proveedor] || 0) + d.monto;
-            } else {
-                if (d.monto > maxIngreso) maxIngreso = d.monto;
+        const ctx = document.getElementById('mainChart');
+        if(!ctx) return;
+        
+        let catStats = {};
+        let totalEg = 0;
+        Object.values(rawData).forEach(d => {
+            if(d.tipo === 'Egreso') {
+                catStats[d.cat] = (catStats[d.cat] || 0) + d.monto;
+                totalEg += d.monto;
             }
-            
-            let mes = d.fecha.substring(0, 7);
-            if (!flowData[mes]) flowData[mes] = { ing: 0, eg: 0 };
-            if (d.tipo === 'Ingreso') flowData[mes].ing += d.monto;
-            else flowData[mes].eg += d.monto;
         });
 
-        // Actualizar Tarjetas
-        document.getElementById('stat-avg-gasto').innerText = `$${Math.round(totalEgresos / 30).toLocaleString()}`;
-        document.getElementById('stat-max-ingreso').innerText = `$${maxIngreso.toLocaleString()}`;
-        const topCat = Object.keys(catTotals).reduce((a, b) => catTotals[a] > catTotals[b] ? a : b, "---");
-        document.getElementById('stat-top-cat').innerText = topCat;
+        const sortedCats = Object.keys(catStats).sort((a,b) => catStats[b] - catStats[a]);
+        document.getElementById('top-cat-name').innerText = sortedCats[0] || '---';
+        document.getElementById('avg-daily').innerText = `$${Math.round(totalEg / 30).toLocaleString()}`;
 
-        // 2. GRÁFICO CATEGORÍAS (Doughnut)
-        if (chart1) chart1.destroy();
-        chart1 = new Chart(document.getElementById('chartCats'), {
-            type: 'doughnut',
-            data: {
-                labels: Object.keys(catTotals),
-                datasets: [{
-                    data: Object.values(catTotals),
-                    backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
-                }]
-            },
-            options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
-        });
-
-        // 3. GRÁFICO FLUJO (Barra)
-        const mesesLabels = Object.keys(flowData).sort();
-        if (chart2) chart2.destroy();
-        chart2 = new Chart(document.getElementById('chartFlow'), {
+        if(mainChart) mainChart.destroy();
+        mainChart = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: mesesLabels,
-                datasets: [
-                    { label: 'Ingresos', data: mesesLabels.map(m => flowData[m].ing), backgroundColor: '#10b981' },
-                    { label: 'Egresos', data: mesesLabels.map(m => flowData[m].eg), backgroundColor: '#ef4444' }
-                ]
+                labels: Object.keys(catStats),
+                datasets: [{ label: 'Gastos por Categoría', data: Object.values(catStats), backgroundColor: '#2563eb' }]
             },
-            options: { responsive: true, scales: { y: { beginAtZero: true } } }
-        });
-
-        // 4. GRÁFICO PROVEEDORES (Horizontal Bar)
-        if (chart3) chart3.destroy();
-        chart3 = new Chart(document.getElementById('chartProvs'), {
-            type: 'bar',
-            data: {
-                labels: Object.keys(provTotals),
-                datasets: [{
-                    label: 'Gasto por Proveedor',
-                    data: Object.values(provTotals),
-                    backgroundColor: '#64748b'
-                }]
-            },
-            options: { indexAxis: 'y', responsive: true }
+            options: { responsive: true, maintainAspectRatio: false }
         });
     }
 
-    // [Resto de funciones: showTab, toggleMenu, etc. igual]
+    function renderRow(key, d) {
+        return `<tr>
+            <td>${d.fecha}</td>
+            <td><b>${d.concepto}</b></td>
+            <td style="color:${d.tipo==='Ingreso'?'green':'red'}"><b>$${d.monto.toLocaleString()}</b></td>
+            <td><small>${d.cat}</small></td>
+            <td>${d.proveedor}</td>
+            <td><span style="font-size:11px; padding:3px 8px; border-radius:10px; background:${d.estado==='Pagado'?'#dcfce7':'#fee2e2'}; color:${d.estado==='Pagado'?'#166534':'#991b1b'}">${d.estado}</span></td>
+            <td>
+                <button class="btn-action" onclick="editItem('${key}')">✏️</button>
+                <button class="btn-action" onclick="deleteItem('${key}')" style="color:red;">🗑️</button>
+            </td>
+        </tr>`;
+    }
+
+    function saveData() {
+        const id = document.getElementById('edit-id').value;
+        const data = {
+            fecha: document.getElementById('f_fecha').value,
+            tipo: document.getElementById('f_tipo').value,
+            monto: parseFloat(document.getElementById('f_monto').value) || 0,
+            presupuesto: parseFloat(document.getElementById('f_presupuesto').value) || 0,
+            concepto: document.getElementById('f_concepto').value,
+            cat: document.getElementById('f_cat').value,
+            subcat: document.getElementById('f_subcat').value,
+            pago: document.getElementById('f_pago').value,
+            estado: document.getElementById('f_estado').value,
+            proveedor: document.getElementById('f_proveedor').value,
+            recurrente: document.getElementById('f_recurrente').value
+        };
+        if(id) db.ref('movimientos/' + id).set(data); else db.ref('movimientos').push(data);
+        clearForm();
+    }
+
+    function editItem(key) {
+        const d = rawData[key];
+        document.getElementById('edit-id').value = key;
+        document.getElementById('f_fecha').value = d.fecha;
+        document.getElementById('f_monto').value = d.monto;
+        document.getElementById('f_presupuesto').value = d.presupuesto;
+        document.getElementById('f_concepto').value = d.concepto;
+        document.getElementById('f_cat').value = d.cat;
+        loadSubs();
+        document.getElementById('f_subcat').value = d.subcat;
+        document.getElementById('f_proveedor').value = d.proveedor;
+        document.getElementById('f_tipo').value = d.tipo;
+        document.getElementById('form-title').innerText = "✏️ Modificando...";
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        showTab('registro');
+    }
+
+    function deleteItem(key) { if(confirm("¿Eliminar?")) db.ref('movimientos/' + key).remove(); }
+    function clearForm() { document.getElementById('edit-id').value = ''; document.getElementById('f_monto').value = ''; document.getElementById('f_concepto').value = ''; document.getElementById('form-title').innerText = "Nueva Operación"; }
+    function calcLogic() {
+        const monto = parseFloat(document.getElementById('f_monto').value) || 0;
+        const presu = parseFloat(document.getElementById('f_presupuesto').value) || 0;
+        const diff = presu - monto;
+        document.getElementById('f_diff').innerText = `$${diff.toLocaleString()}`;
+        document.getElementById('f_diff').style.color = diff < 0 ? 'red' : 'green';
+    }
+
+    function loadDropdowns() {
+        const fill = (id, arr) => {
+            const el = document.getElementById(id);
+            if(el) el.innerHTML = arr.map(i => `<option>${i}</option>`).join('');
+        };
+        fill('f_cat', settings.cats);
+        fill('f_proveedor', settings.provs);
+        fill('f_pago', settings.pagos);
+        loadSubs();
+    }
+
+    function loadSubs() {
+        const c = document.getElementById('f_cat').value;
+        const s = settings.subs[c] || ['General'];
+        document.getElementById('f_subcat').innerHTML = s.map(v => `<option>${v}</option>`).join('');
+    }
+
+    function toggleMenu() { document.getElementById('sidebar').classList.toggle('open'); }
+    function showTab(id) {
+        document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+        document.getElementById(id).style.display = 'block';
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        if(window.innerWidth < 900) toggleMenu();
+    }
+
+    function exportPDF() { alert("Exportando PDF..."); }
+    function exportExcel() { alert("Exportando Excel..."); }
+
+    window.onload = init;
 </script>
+</body>
+</html>
