@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finanzas PRO | Independencia Total</title>
+    <title>Finanzas PRO | Master Edition</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -47,6 +47,11 @@
         .btn-action { background: none; border: 1px solid #e2e8f0; padding: 6px; border-radius: 6px; cursor: pointer; margin-right: 5px; }
         .filter-header { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 15px; background: #f1f5f9; padding: 15px; border-radius: 12px; }
 
+        /* Estilo para los Tips */
+        .tips-banner { background: var(--p); color: #60a5fa; padding: 10px; border-radius: 10px; margin-bottom: 20px; overflow: hidden; white-space: nowrap; font-size: 13px; font-weight: 600; }
+        .tips-content { display: inline-block; animation: scroll-left 40s linear infinite; }
+        @keyframes scroll-left { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+
         @media (max-width: 900px) {
             .sidebar { left: -100%; }
             .sidebar.open { left: 0; }
@@ -75,6 +80,10 @@
 </nav>
 
 <main class="main-content">
+    <div class="tips-banner">
+        <div class="tips-content" id="tips-text">Cargando consejos financieros...</div>
+    </div>
+
     <div id="registro" class="tab-content">
         <div class="card">
             <h3 id="form-title">Nueva Operación</h3><br>
@@ -108,7 +117,18 @@
             <div class="filter-header">
                 <div style="flex:2;"><label>Buscador</label><input type="text" id="reg_q" placeholder="Buscar..." oninput="refreshUI()"></div>
                 <div style="flex:1;"><label>Día</label><input type="date" id="reg_d" onchange="refreshUI()"></div>
-                <div style="flex:1;"><label>Mes</label><input type="month" id="reg_m" onchange="refreshUI()"></div>
+                <div style="flex:1;">
+                    <label>Mes</label>
+                    <select id="reg_m" onchange="refreshUI()">
+                        <option value="">Todos los meses</option>
+                        <option value="-01">Enero</option><option value="-02">Febrero</option>
+                        <option value="-03">Marzo</option><option value="-04">Abril</option>
+                        <option value="-05">Mayo</option><option value="-06">Junio</option>
+                        <option value="-07">Julio</option><option value="-08">Agosto</option>
+                        <option value="-09">Septiembre</option><option value="-10">Octubre</option>
+                        <option value="-11">Noviembre</option><option value="-12">Diciembre</option>
+                    </select>
+                </div>
             </div>
             <div class="table-wrap">
                 <table>
@@ -125,7 +145,18 @@
             <div class="filter-header">
                 <div style="flex:2;"><label>Buscador</label><input type="text" id="his_q" placeholder="Buscar..." oninput="refreshUI()"></div>
                 <div style="flex:1;"><label>Día</label><input type="date" id="his_d" onchange="refreshUI()"></div>
-                <div style="flex:1;"><label>Mes</label><input type="month" id="his_m" onchange="refreshUI()"></div>
+                <div style="flex:1;">
+                    <label>Mes</label>
+                    <select id="his_m" onchange="refreshUI()">
+                        <option value="">Todos los meses</option>
+                        <option value="-01">Enero</option><option value="-02">Febrero</option>
+                        <option value="-03">Marzo</option><option value="-04">Abril</option>
+                        <option value="-05">Mayo</option><option value="-06">Junio</option>
+                        <option value="-07">Julio</option><option value="-08">Agosto</option>
+                        <option value="-09">Septiembre</option><option value="-10">Octubre</option>
+                        <option value="-11">Noviembre</option><option value="-12">Diciembre</option>
+                    </select>
+                </div>
                 <div style="display:flex; gap:5px;">
                     <button class="btn-p" style="background:#10b981; width:auto;" onclick="exportExcel()">📊 Excel</button>
                     <button class="btn-p" style="background:#ef4444; width:auto;" onclick="exportPDF()">📄 PDF</button>
@@ -141,20 +172,21 @@
     </div>
 
     <div id="analisis" class="tab-content" style="display:none;">
-        <div class="card">
-            <h3>Resumen de Gastos</h3><br>
-            <div class="form-grid">
-                <div style="text-align:center; padding:15px; background:#f1f5f9; border-radius:10px;">
-                    <label>Más Gastado en:</label>
-                    <p id="top-cat-name" style="font-weight:900; font-size:18px;">---</p>
-                </div>
-                <div style="text-align:center; padding:15px; background:#f1f5f9; border-radius:10px;">
-                    <label>Promedio Diario:</label>
-                    <p id="avg-daily" style="font-weight:900; font-size:18px;">$0</p>
-                </div>
+        <div class="form-grid">
+            <div class="card">
+                <h3>Distribución de Gastos</h3><br>
+                <div style="height: 300px;"><canvas id="chartDona"></canvas></div>
             </div>
-            <div style="margin-top:20px; height: 350px;">
-                <canvas id="mainChart"></canvas>
+            <div class="card">
+                <h3>Resumen Mensual</h3><br>
+                <div style="text-align:center; padding:10px; background:#f8fafc; border-radius:10px; margin-bottom:10px;">
+                    <label>Categoría Top</label>
+                    <p id="ana-top-cat" style="font-size:18px; font-weight:900;">---</p>
+                </div>
+                <table style="min-width: 100%;">
+                    <thead><tr><th>Top Categorías</th><th>Total</th></tr></thead>
+                    <tbody id="ana-table-body"></tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -174,7 +206,7 @@
     const db = firebase.database();
 
     let rawData = {};
-    let mainChart = null;
+    let donaChart = null;
     let settings = JSON.parse(localStorage.getItem('fpro_v6_settings')) || {
         cats: ['Servicios básicos', 'Alimentación', 'Transporte', 'Salud', 'Ocio'],
         subs: {'Servicios básicos': ['Agua potable', 'Luz', 'Gas', 'Internet']},
@@ -182,8 +214,38 @@
         pagos: ['Débito', 'Crédito', 'Efectivo']
     };
 
+    const tips = [
+        "Ahorra al menos el 10% de tus ingresos.", "Evita las compras impulsivas, espera 24 horas.",
+        "Revisa tus suscripciones mensuales.", "Usa la regla 50/30/20: 50% necesidades, 30% deseos, 20% ahorro.",
+        "Compara precios antes de comprar.", "Prepara tu comida en casa.", "Elimina los gastos hormiga.",
+        "Usa transporte público si es posible.", "Apaga las luces al salir de una habitación.",
+        "Compra marcas blancas en el supermercado.", "Establece un presupuesto semanal.",
+        "No uses la tarjeta de crédito para gastos diarios.", "Ahorra el cambio en una hucha.",
+        "Planifica tus compras con antelación.", "Busca descuentos y cupones.",
+        "Mantén tus deudas bajo control.", "Invierte en tu educación financiera.",
+        "Ten un fondo de emergencia para 3-6 meses.", "Revisa tu factura de luz y gas.",
+        "Vende lo que ya no uses.", "Aprovecha las rebajas de temporada.", "Camina más, usa menos el coche.",
+        "Automatiza tus ahorros.", "No gastes dinero que aún no has ganado.", "Crea una lista de compras.",
+        "Establece metas de ahorro claras.", "Evita comer fuera frecuentemente.", "Lleva un registro de cada gasto.",
+        "Ahorra los bonos o ingresos extra.", "Paga tus facturas a tiempo para evitar recargos.",
+        "Usa aplicaciones de control de gastos.", "No te compares con el gasto de los demás.",
+        "Repara las cosas en lugar de tirarlas.", "Usa bombillas LED de bajo consumo.",
+        "Compra productos de calidad que duren más.", "Viaja en temporada baja.", "Cena en casa antes de salir.",
+        "Haz un inventario de lo que tienes.", "No vayas al súper con hambre.", "Usa bibliotecas públicas.",
+        "Ahorra en regalos haciéndolos tú mismo.", "Ten un día a la semana de 'cero gasto'.",
+        "Limpia tus filtros de aire acondicionado.", "Reutiliza bolsas de compra.", "Compra a granel.",
+        "Mantén tus neumáticos con la presión correcta.", "Comprueba tus extractos bancarios.",
+        "Aprende habilidades básicas de bricolaje.", "No compres por aburrimiento.", "Invierte a largo plazo.",
+        "Diferencia entre necesidad y deseo.", "Haz ejercicio en casa o al aire libre.",
+        "Cancela tarjetas que no uses.", "Usa el modo ahorro en tus dispositivos.", "No gastes en vicios.",
+        "Ahorra para tu jubilación desde joven.", "Paga el total de tu tarjeta cada mes.",
+        "Comparte gastos con amigos o familia.", "Planifica tus vacaciones con meses de antelación.",
+        "Ten paciencia, la riqueza se construye poco a poco."
+    ];
+
     function init() {
         document.getElementById('f_fecha').valueAsDate = new Date();
+        document.getElementById('tips-text').innerText = tips.join(" • ");
         loadDropdowns();
         db.ref('movimientos').on('value', snap => {
             rawData = snap.val() || {};
@@ -196,22 +258,27 @@
         let ing = 0, eg = 0;
         const rq = document.getElementById('reg_q').value.toLowerCase();
         const rd = document.getElementById('reg_d').value;
-        const rm = document.getElementById('reg_m').value;
+        const rm = document.getElementById('reg_m').value; // Ahora es un select "-MM"
+
         const hq = document.getElementById('his_q').value.toLowerCase();
         const hd = document.getElementById('his_d').value;
         const hm = document.getElementById('his_m').value;
+
         const tableReg = document.getElementById('list_reg_table');
         const tableHis = document.getElementById('list_his_table');
-        tableReg.innerHTML = '';
-        tableHis.innerHTML = '';
+        tableReg.innerHTML = ''; tableHis.innerHTML = '';
 
         Object.keys(rawData).reverse().forEach(key => {
             const d = rawData[key];
             if(d.tipo === 'Ingreso') ing += d.monto; else eg += d.monto;
             const searchBody = `${d.concepto} ${d.cat} ${d.subcat} ${d.proveedor}`.toLowerCase();
-            const regMatch = searchBody.includes(rq) && (rd ? d.fecha === rd : true) && (rm ? d.fecha.substring(0,7) === rm : true);
+            
+            // Filtro Registro (Día exacto O Mes)
+            const regMatch = searchBody.includes(rq) && (rd ? d.fecha === rd : true) && (rm ? d.fecha.includes(rm) : true);
             if(regMatch) tableReg.innerHTML += renderRow(key, d);
-            const hisMatch = searchBody.includes(hq) && (hd ? d.fecha === hd : true) && (hm ? d.fecha.substring(0,7) === hm : true);
+
+            // Filtro Historial
+            const hisMatch = searchBody.includes(hq) && (hd ? d.fecha === hd : true) && (hm ? d.fecha.includes(hm) : true);
             if(hisMatch) tableHis.innerHTML += renderRow(key, d);
         });
 
@@ -221,31 +288,33 @@
     }
 
     function updateCharts() {
-        const ctx = document.getElementById('mainChart');
+        const ctx = document.getElementById('chartDona');
         if(!ctx) return;
         
-        let catStats = {};
-        let totalEg = 0;
+        let catTotals = {};
         Object.values(rawData).forEach(d => {
-            if(d.tipo === 'Egreso') {
-                catStats[d.cat] = (catStats[d.cat] || 0) + d.monto;
-                totalEg += d.monto;
-            }
+            if(d.tipo === 'Egreso') catTotals[d.cat] = (catTotals[d.cat] || 0) + d.monto;
         });
 
-        const sortedCats = Object.keys(catStats).sort((a,b) => catStats[b] - catStats[a]);
-        document.getElementById('top-cat-name').innerText = sortedCats[0] || '---';
-        document.getElementById('avg-daily').innerText = `$${Math.round(totalEg / 30).toLocaleString()}`;
-
-        if(mainChart) mainChart.destroy();
-        mainChart = new Chart(ctx, {
-            type: 'bar',
+        // Gráfico Dona
+        if(donaChart) donaChart.destroy();
+        donaChart = new Chart(ctx, {
+            type: 'doughnut',
             data: {
-                labels: Object.keys(catStats),
-                datasets: [{ label: 'Gastos por Categoría', data: Object.values(catStats), backgroundColor: '#2563eb' }]
+                labels: Object.keys(catTotals),
+                datasets: [{
+                    data: Object.values(catTotals),
+                    backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']
+                }]
             },
-            options: { responsive: true, maintainAspectRatio: false }
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
         });
+
+        // Tabla Análisis
+        const sorted = Object.entries(catTotals).sort((a,b) => b[1] - a[1]);
+        document.getElementById('ana-top-cat').innerText = sorted[0] ? sorted[0][0] : '---';
+        const tbody = document.getElementById('ana-table-body');
+        tbody.innerHTML = sorted.slice(0, 5).map(item => `<tr><td>${item[0]}</td><td style="font-weight:700">$${item[1].toLocaleString()}</td></tr>`).join('');
     }
 
     function renderRow(key, d) {
@@ -263,6 +332,7 @@
         </tr>`;
     }
 
+    // Funciones Base (Sin Cambios en Lógica)
     function saveData() {
         const id = document.getElementById('edit-id').value;
         const data = {
@@ -281,7 +351,6 @@
         if(id) db.ref('movimientos/' + id).set(data); else db.ref('movimientos').push(data);
         clearForm();
     }
-
     function editItem(key) {
         const d = rawData[key];
         document.getElementById('edit-id').value = key;
@@ -298,34 +367,24 @@
         window.scrollTo({ top: 0, behavior: 'smooth' });
         showTab('registro');
     }
-
     function deleteItem(key) { if(confirm("¿Eliminar?")) db.ref('movimientos/' + key).remove(); }
     function clearForm() { document.getElementById('edit-id').value = ''; document.getElementById('f_monto').value = ''; document.getElementById('f_concepto').value = ''; document.getElementById('form-title').innerText = "Nueva Operación"; }
     function calcLogic() {
         const monto = parseFloat(document.getElementById('f_monto').value) || 0;
         const presu = parseFloat(document.getElementById('f_presupuesto').value) || 0;
-        const diff = presu - monto;
-        document.getElementById('f_diff').innerText = `$${diff.toLocaleString()}`;
-        document.getElementById('f_diff').style.color = diff < 0 ? 'red' : 'green';
+        document.getElementById('f_diff').innerText = `$${(presu - monto).toLocaleString()}`;
+        document.getElementById('f_diff').style.color = (presu - monto) < 0 ? 'red' : 'green';
     }
-
     function loadDropdowns() {
-        const fill = (id, arr) => {
-            const el = document.getElementById(id);
-            if(el) el.innerHTML = arr.map(i => `<option>${i}</option>`).join('');
-        };
-        fill('f_cat', settings.cats);
-        fill('f_proveedor', settings.provs);
-        fill('f_pago', settings.pagos);
+        const fill = (id, arr) => document.getElementById(id).innerHTML = arr.map(i => `<option>${i}</option>`).join('');
+        fill('f_cat', settings.cats); fill('f_proveedor', settings.provs); fill('f_pago', settings.pagos);
         loadSubs();
     }
-
     function loadSubs() {
         const c = document.getElementById('f_cat').value;
         const s = settings.subs[c] || ['General'];
         document.getElementById('f_subcat').innerHTML = s.map(v => `<option>${v}</option>`).join('');
     }
-
     function toggleMenu() { document.getElementById('sidebar').classList.toggle('open'); }
     function showTab(id) {
         document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
@@ -333,9 +392,8 @@
         document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
         if(window.innerWidth < 900) toggleMenu();
     }
-
-    function exportPDF() { alert("Exportando PDF..."); }
-    function exportExcel() { alert("Exportando Excel..."); }
+    function exportPDF() { alert("Generando PDF..."); }
+    function exportExcel() { alert("Generando Excel..."); }
 
     window.onload = init;
 </script>
