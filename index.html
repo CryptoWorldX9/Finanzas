@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finanzas PRO | Independencia Total</title>
+    <title>Finanzas PRO | Smart Search Edition</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -35,18 +35,17 @@
         label { font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 5px; display: block; }
         input, select, textarea { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px; }
         
-        .btn-p { background: var(--acc); color: white; border: none; padding: 12px 20px; border-radius: 10px; cursor: pointer; font-weight: 700; width: 100%; transition: 0.2s; }
+        .btn-p { background: var(--acc); color: white; border: none; padding: 12px 20px; border-radius: 10px; cursor: pointer; font-weight: 700; width: 100%; }
         .nav-link { display: flex; align-items: center; gap: 12px; padding: 14px; color: #cbd5e1; cursor: pointer; border-radius: 12px; margin-bottom: 8px; }
         .nav-link.active { background: var(--acc); color: white; }
 
-        .table-wrap { overflow-x: auto; margin-top: 15px; }
+        .table-wrap { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; min-width: 800px; }
         th { text-align: left; padding: 15px; background: #f8fafc; color: #64748b; font-size: 11px; border-bottom: 2px solid #edf2f7; }
         td { padding: 15px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
 
         .btn-action { background: none; border: 1px solid #e2e8f0; padding: 6px; border-radius: 6px; cursor: pointer; margin-right: 5px; }
-        .filter-header { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 15px; background: #f1f5f9; padding: 15px; border-radius: 12px; }
-
+        
         @media (max-width: 900px) {
             .sidebar { left: -100%; }
             .sidebar.open { left: 0; }
@@ -80,13 +79,13 @@
             <h3 id="form-title">Nueva Operación</h3><br>
             <input type="hidden" id="edit-id">
             <div class="form-grid">
-                <div><label>Fecha</label><input type="date" id="f_fecha"></div>
+                <div><label>Fecha</label><input type="date" id="f_fecha" onchange="autoFillDate()"></div>
                 <div><label>Tipo</label><select id="f_tipo"><option value="Egreso">🔻 Egreso</option><option value="Ingreso">🔹 Ingreso</option></select></div>
                 <div><label>Monto ($)</label><input type="number" id="f_monto" oninput="calcLogic()"></div>
                 <div><label>Presupuesto ($)</label><input type="number" id="f_presupuesto" oninput="calcLogic()"></div>
             </div>
             <div class="form-grid">
-                <div><label>Concepto</label><input type="text" id="f_concepto" placeholder="Ej: Pago agua"></div>
+                <div><label>Concepto</label><input type="text" id="f_concepto" placeholder="Ej: Pago luz"></div>
                 <div><label>Categoría</label><select id="f_cat" onchange="loadSubs()"></select></div>
                 <div><label>Subcategoría</label><select id="f_subcat"></select></div>
                 <div><label>Proveedor</label><select id="f_proveedor"></select></div>
@@ -97,44 +96,41 @@
                 <div><label>Recurrente</label><select id="f_recurrente"><option>No</option><option>Sí</option></select></div>
                 <div><label>Diferencia</label><p id="f_diff" style="font-weight:900; font-size:18px;">$0</p></div>
             </div>
+            <div style="margin-top:15px;"><label>Observaciones</label><textarea id="f_obs" rows="2"></textarea></div>
             <div class="form-grid" style="margin-top:20px;">
                 <button class="btn-p" onclick="saveData()">💾 GUARDAR</button>
                 <button class="btn-p" style="background:#64748b;" onclick="clearForm()">🧹 LIMPIAR</button>
-            </div>
-        </div>
-
-        <div class="card">
-            <h3>Listado de Registro (Filtros Independientes)</h3><br>
-            <div class="filter-header">
-                <div style="flex:2;"><label>Buscador</label><input type="text" id="reg_q" placeholder="Buscar..." oninput="refreshUI()"></div>
-                <div style="flex:1;"><label>Día</label><input type="date" id="reg_d" onchange="refreshUI()"></div>
-                <div style="flex:1;"><label>Mes</label><input type="month" id="reg_m" onchange="refreshUI()"></div>
-            </div>
-            <div class="table-wrap">
-                <table>
-                    <thead><tr><th>Fecha</th><th>Concepto</th><th>Monto</th><th>Categoría</th><th>Proveedor</th><th>Estado</th><th>Acciones</th></tr></thead>
-                    <tbody id="list_reg_table"></tbody>
-                </table>
             </div>
         </div>
     </div>
 
     <div id="historial" class="tab-content" style="display:none;">
         <div class="card">
-            <h3>Historial General (Filtros Independientes)</h3><br>
-            <div class="filter-header">
-                <div style="flex:2;"><label>Buscador</label><input type="text" id="his_q" placeholder="Buscar..." oninput="refreshUI()"></div>
-                <div style="flex:1;"><label>Día</label><input type="date" id="his_d" onchange="refreshUI()"></div>
-                <div style="flex:1;"><label>Mes</label><input type="month" id="his_m" onchange="refreshUI()"></div>
-                <div style="display:flex; gap:5px;">
-                    <button class="btn-p" style="background:#10b981; width:auto;" onclick="exportExcel()">📊 Excel</button>
-                    <button class="btn-p" style="background:#ef4444; width:auto;" onclick="exportPDF()">📄 PDF</button>
+            <h3>Historial de Movimientos</h3><br>
+            <div class="form-grid">
+                <div style="position:relative;">
+                    <label>Buscador Inteligente</label>
+                    <input type="text" id="h_search" placeholder="Escribe concepto, categoría, proveedor..." oninput="refreshUI()">
+                </div>
+                <div style="display:flex; align-items:flex-end; gap:10px;">
+                    <button class="btn-p" style="background:#10b981; height:45px;" onclick="exportExcel()">📊 Excel</button>
+                    <button class="btn-p" style="background:#ef4444; height:45px;" onclick="exportPDF()">📄 PDF</button>
                 </div>
             </div>
             <div class="table-wrap">
-                <table>
-                    <thead><tr><th>Fecha</th><th>Concepto</th><th>Monto</th><th>Categoría</th><th>Proveedor</th><th>Estado</th><th>Acciones</th></tr></thead>
-                    <tbody id="list_his_table"></tbody>
+                <table id="table-hist">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Concepto</th>
+                            <th>Monto</th>
+                            <th>Categoría / Sub</th>
+                            <th>Proveedor</th>
+                            <th>Estado</th>
+                            <th style="text-align:center;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="list_hist"></tbody>
                 </table>
             </div>
         </div>
@@ -158,8 +154,8 @@
     let rawData = {};
     let settings = JSON.parse(localStorage.getItem('fpro_v6_settings')) || {
         cats: ['Servicios básicos', 'Alimentación', 'Transporte', 'Salud', 'Ocio'],
-        subs: {'Servicios básicos': ['Agua potable', 'Luz', 'Gas', 'Internet']},
-        provs: ['Aguas Andinas', 'Enel', 'Metrogas', 'Lider'],
+        subs: {'Servicios básicos': ['Agua potable', 'Luz', 'Gas', 'Internet'], 'Alimentación': ['Supermercado', 'Restaurante']},
+        provs: ['Aguas Andinas', 'Enel', 'Metrogas', 'Lider', 'Walmart'],
         pagos: ['Débito', 'Crédito', 'Efectivo']
     };
 
@@ -172,39 +168,36 @@
         });
     }
 
-    // REFRESH UI CON LOGICA DE FILTROS INDEPENDIENTES
+    // BUSCADOR MEJORADO
     function refreshUI() {
+        const query = document.getElementById('h_search').value.toLowerCase().trim();
         let ing = 0, eg = 0;
-        
-        // Captura de valores de REGISTRO
-        const rq = document.getElementById('reg_q').value.toLowerCase();
-        const rd = document.getElementById('reg_d').value;
-        const rm = document.getElementById('reg_m').value;
-
-        // Captura de valores de HISTORIAL
-        const hq = document.getElementById('his_q').value.toLowerCase();
-        const hd = document.getElementById('his_d').value;
-        const hm = document.getElementById('his_m').value;
-
-        const tableReg = document.getElementById('list_reg_table');
-        const tableHis = document.getElementById('list_his_table');
-        
-        tableReg.innerHTML = '';
-        tableHis.innerHTML = '';
+        const listHist = document.getElementById('list_hist');
+        listHist.innerHTML = '';
 
         Object.keys(rawData).reverse().forEach(key => {
             const d = rawData[key];
             if(d.tipo === 'Ingreso') ing += d.monto; else eg += d.monto;
 
-            const searchBody = `${d.concepto} ${d.cat} ${d.subcat} ${d.proveedor}`.toLowerCase();
+            // Concatenamos todos los campos para una búsqueda global
+            const searchBody = `${d.concepto} ${d.cat} ${d.subcat} ${d.proveedor} ${d.estado} ${d.fecha}`.toLowerCase();
             
-            // Lógica Independiente para REGISTRO
-            const regMatch = searchBody.includes(rq) && (rd ? d.fecha === rd : true) && (rm ? d.fecha.substring(0,7) === rm : true);
-            if(regMatch) tableReg.innerHTML += renderRow(key, d);
-
-            // Lógica Independiente para HISTORIAL
-            const hisMatch = searchBody.includes(hq) && (hd ? d.fecha === hd : true) && (hm ? d.fecha.substring(0,7) === hm : true);
-            if(hisMatch) tableHis.innerHTML += renderRow(key, d);
+            // Si el query está incluido en cualquier parte del cuerpo de búsqueda
+            if(searchBody.includes(query)) {
+                listHist.innerHTML += `
+                <tr>
+                    <td>${d.fecha}</td>
+                    <td><b>${d.concepto}</b></td>
+                    <td style="color:${d.tipo==='Ingreso'?'green':'red'}"><b>$${d.monto.toLocaleString()}</b></td>
+                    <td><small>${d.cat}<br><span style="color:#64748b">${d.subcat}</span></small></td>
+                    <td>${d.proveedor}</td>
+                    <td><span style="font-size:11px; padding:3px 8px; border-radius:10px; background:${d.estado==='Pagado'?'#dcfce7':'#fee2e2'}; color:${d.estado==='Pagado'?'#166534':'#991b1b'}">${d.estado}</span></td>
+                    <td style="text-align:center;">
+                        <button class="btn-action" onclick="editItem('${key}')">✏️</button>
+                        <button class="btn-action" onclick="deleteItem('${key}')" style="color:red;">🗑️</button>
+                    </td>
+                </tr>`;
+            }
         });
 
         document.getElementById('total-ingresos').innerText = `$${ing.toLocaleString()}`;
@@ -212,19 +205,15 @@
         document.getElementById('total-saldo').innerText = `$${(ing - eg).toLocaleString()}`;
     }
 
-    function renderRow(key, d) {
-        return `<tr>
-            <td>${d.fecha}</td>
-            <td><b>${d.concepto}</b></td>
-            <td style="color:${d.tipo==='Ingreso'?'green':'red'}"><b>$${d.monto.toLocaleString()}</b></td>
-            <td><small>${d.cat}</small></td>
-            <td>${d.proveedor}</td>
-            <td><span style="font-size:11px; padding:3px 8px; border-radius:10px; background:${d.estado==='Pagado'?'#dcfce7':'#fee2e2'}; color:${d.estado==='Pagado'?'#166534':'#991b1b'}">${d.estado}</span></td>
-            <td>
-                <button class="btn-action" onclick="editItem('${key}')">✏️</button>
-                <button class="btn-action" onclick="deleteItem('${key}')" style="color:red;">🗑️</button>
-            </td>
-        </tr>`;
+    // LOGICA DE FORMULARIO
+    function autoFillDate() { }
+    function calcLogic() {
+        const monto = parseFloat(document.getElementById('f_monto').value) || 0;
+        const presu = parseFloat(document.getElementById('f_presupuesto').value) || 0;
+        const diff = presu - monto;
+        const el = document.getElementById('f_diff');
+        el.innerText = `$${diff.toLocaleString()}`;
+        el.style.color = diff < 0 ? 'red' : 'green';
     }
 
     function saveData() {
@@ -240,10 +229,12 @@
             pago: document.getElementById('f_pago').value,
             estado: document.getElementById('f_estado').value,
             proveedor: document.getElementById('f_proveedor').value,
-            recurrente: document.getElementById('f_recurrente').value
+            recurrente: document.getElementById('f_recurrente').value,
+            obs: document.getElementById('f_obs').value
         };
         if(id) db.ref('movimientos/' + id).set(data);
         else db.ref('movimientos').push(data);
+        alert("Sincronizado");
         clearForm();
     }
 
@@ -251,6 +242,7 @@
         const d = rawData[key];
         document.getElementById('edit-id').value = key;
         document.getElementById('f_fecha').value = d.fecha;
+        document.getElementById('f_tipo').value = d.tipo;
         document.getElementById('f_monto').value = d.monto;
         document.getElementById('f_presupuesto').value = d.presupuesto;
         document.getElementById('f_concepto').value = d.concepto;
@@ -258,27 +250,26 @@
         loadSubs();
         document.getElementById('f_subcat').value = d.subcat;
         document.getElementById('f_proveedor').value = d.proveedor;
-        document.getElementById('f_tipo').value = d.tipo;
-        document.getElementById('form-title').innerText = "✏️ Modificando...";
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        document.getElementById('f_pago').value = d.pago;
+        document.getElementById('f_estado').value = d.estado;
+        document.getElementById('f_recurrente').value = d.recurrente;
+        document.getElementById('f_obs').value = d.obs || '';
+        document.getElementById('form-title').innerText = "✏️ Editando...";
+        calcLogic();
         showTab('registro');
     }
 
     function deleteItem(key) { if(confirm("¿Eliminar?")) db.ref('movimientos/' + key).remove(); }
-    function clearForm() { document.getElementById('edit-id').value = ''; document.getElementById('f_monto').value = ''; document.getElementById('f_concepto').value = ''; document.getElementById('form-title').innerText = "Nueva Operación"; }
-    function calcLogic() {
-        const monto = parseFloat(document.getElementById('f_monto').value) || 0;
-        const presu = parseFloat(document.getElementById('f_presupuesto').value) || 0;
-        const diff = presu - monto;
-        document.getElementById('f_diff').innerText = `$${diff.toLocaleString()}`;
-        document.getElementById('f_diff').style.color = diff < 0 ? 'red' : 'green';
+
+    function clearForm() {
+        document.getElementById('edit-id').value = '';
+        document.getElementById('f_monto').value = '';
+        document.getElementById('f_concepto').value = '';
+        document.getElementById('form-title').innerText = "Nueva Operación";
     }
 
     function loadDropdowns() {
-        const fill = (id, arr) => {
-            const el = document.getElementById(id);
-            if(el) el.innerHTML = arr.map(i => `<option>${i}</option>`).join('');
-        };
+        const fill = (id, arr) => document.getElementById(id).innerHTML = arr.map(i => `<option>${i}</option>`).join('');
         fill('f_cat', settings.cats);
         fill('f_proveedor', settings.provs);
         fill('f_pago', settings.pagos);
@@ -297,6 +288,21 @@
         document.getElementById(id).style.display = 'block';
         document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
         if(window.innerWidth < 900) toggleMenu();
+    }
+
+    function exportPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('l', 'mm', 'a4');
+        doc.text("Historial Finanzas PRO", 14, 15);
+        doc.autoTable({ html: '#table-hist', startY: 20 });
+        doc.save("Historial.pdf");
+    }
+
+    function exportExcel() {
+        let csv = "Fecha,Concepto,Monto,Categoria\n";
+        Object.values(rawData).forEach(d => { csv += `${d.fecha},${d.concepto},${d.monto},${d.cat}\n`; });
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'Finanzas.csv'; a.click();
     }
 
     window.onload = init;
