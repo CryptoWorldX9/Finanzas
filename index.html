@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finance Cloud Pro - Firebase</title>
+    <title>Finance Master AI - 2026</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -12,130 +12,145 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     
     <style>
-        :root { --p: #0f172a; --s: #64748b; --acc: #2563eb; --bg: #f8fafc; --success: #10b981; --danger: #ef4444; }
-        * { margin:0; padding:0; box-sizing:border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background: var(--bg); display: flex; color: #334155; }
+        :root { 
+            --p: #0f172a; --s: #64748b; --acc: #3b82f6; --bg: #f8fafc; 
+            --glass: rgba(255, 255, 255, 0.8); --success: #10b981; --danger: #ef4444;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; font-family: 'Inter', system-ui, sans-serif; }
+        body { background: var(--bg); display: flex; color: #1e293b; overflow-x: hidden; }
         
-        /* Navegación Lateral */
-        .sidebar { width: 260px; height: 100vh; background: var(--p); color: white; padding: 25px; position: fixed; }
-        .main { margin-left: 260px; padding: 40px; width: 100%; }
-        .nav-btn { padding: 14px; cursor: pointer; border-radius: 10px; margin-bottom: 8px; transition: 0.3s; display: flex; align-items: center; gap: 10px; }
-        .nav-btn:hover, .active { background: var(--acc); color: white; }
-        
-        /* Componentes */
-        .card { background: white; padding: 25px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 25px; border: 1px solid #e2e8f0; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-        input, select, button { padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1; outline: none; }
-        .btn-primary { background: var(--acc); color: white; border: none; cursor: pointer; font-weight: bold; width: 100%; }
-        
-        /* Tablas y Badges */
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th { background: #f1f5f9; padding: 12px; text-align: left; font-size: 13px; text-transform: uppercase; color: var(--s); }
-        td { padding: 12px; border-bottom: 1px solid #f1f5f9; }
-        .badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
-        .badge-ingreso { background: #dcfce7; color: #166534; }
-        .badge-egreso { background: #fee2e2; color: #991b1b; }
+        /* Sidebar Pro */
+        .sidebar { width: 280px; height: 100vh; background: var(--p); color: white; padding: 30px; position: fixed; z-index: 100; transition: 0.3s; }
+        .main { margin-left: 280px; padding: 40px; width: calc(100% - 280px); }
+        .nav-btn { padding: 15px; cursor: pointer; border-radius: 12px; margin-bottom: 10px; transition: 0.3s; display: flex; align-items: center; gap: 12px; font-weight: 500; }
+        .nav-btn:hover, .active { background: var(--acc); transform: translateX(5px); }
 
-        .filter-bar { display: flex; gap: 10px; align-items: center; margin-bottom: 20px; background: white; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; }
+        /* Floating Coach */
+        .coach-bubble { 
+            background: white; border-radius: 20px; padding: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            position: relative; margin-bottom: 30px; border-left: 5px solid var(--acc);
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+
+        /* Cards Pro */
+        .card { background: var(--glass); backdrop-filter: blur(10px); padding: 25px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border: 1px solid white; margin-bottom: 25px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 25px; }
         
+        /* Inputs con Efecto Floating */
+        .input-group { position: relative; margin-bottom: 20px; }
+        input, select { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0; font-size: 14px; background: white; }
+        .btn-main { background: var(--acc); color: white; border: none; padding: 15px; border-radius: 12px; cursor: pointer; width: 100%; font-weight: 700; font-size: 16px; transition: 0.3s; }
+        .btn-main:hover { box-shadow: 0 8px 15px rgba(59, 130, 246, 0.4); }
+
+        /* Análisis Labels */
+        .stat-label { font-size: 12px; color: var(--s); text-transform: uppercase; letter-spacing: 1px; }
+        .stat-value { font-size: 28px; font-weight: 800; display: block; }
+        
+        .badge { padding: 4px 12px; border-radius: 8px; font-size: 11px; font-weight: bold; }
+        .badge-egreso { background: #fee2e2; color: #b91c1c; }
+        .badge-ingreso { background: #dcfce7; color: #15803d; }
+
+        table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
+        tr { transition: 0.2s; }
+        td { background: white; padding: 15px; }
+        td:first-child { border-radius: 12px 0 0 12px; }
+        td:last-child { border-radius: 0 12px 12px 0; }
+
+        .edit-btn { background: #f1f5f9; border: none; padding: 8px; border-radius: 8px; cursor: pointer; margin-right: 5px; }
+        .edit-btn:hover { background: #e2e8f0; }
+
         @media (max-width: 768px) {
-            .sidebar { width: 70px; padding: 10px; }
-            .sidebar span, .sidebar h2 { display: none; }
-            .main { margin-left: 70px; }
+            .sidebar { width: 0; padding: 0; overflow: hidden; }
+            .main { margin-left: 0; width: 100%; padding: 20px; }
         }
     </style>
 </head>
 <body>
 
 <div class="sidebar">
-    <h2 style="font-size: 20px;">Finanzas Pro</h2><br>
-    <div class="nav-btn active" onclick="showTab('registro')">📝 <span>Registro</span></div>
+    <h2 style="color: white; margin-bottom: 40px;">FINANCE AI</h2>
+    <div class="nav-btn active" onclick="showTab('registro')">🏠 <span>Registro</span></div>
     <div class="nav-btn" onclick="showTab('historico')">📅 <span>Historial</span></div>
-    <div class="nav-btn" onclick="showTab('dashboard')">📊 <span>Análisis</span></div>
-    <div class="nav-btn" onclick="showTab('config')">⚙️ <span>Configurar</span></div>
+    <div class="nav-btn" onclick="showTab('analisis')">📉 <span>Inteligencia</span></div>
+    <div class="nav-btn" onclick="showTab('config')">⚙️ <span>Ajustes</span></div>
 </div>
 
 <div class="main">
+    <div class="coach-bubble">
+        <small style="color: var(--acc); font-weight: 800;">FINANCE COACH ✨</small>
+        <p id="tip-text">Analizando tus finanzas para darte el mejor consejo...</p>
+    </div>
+
     <div id="registro" class="tab-content">
-        <h2>Nuevo Movimiento Mensual</h2>
+        <h2 id="form-title">Registro de Operaciones</h2><br>
         <div class="card">
-            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
-                <div style="display:flex; flex-direction:column;">
-                    <label><small>Fecha</small></label>
-                    <input type="date" id="f_fecha">
-                </div>
-                <div style="display:flex; flex-direction:column;">
-                    <label><small>Tipo de Flujo</small></label>
+            <input type="hidden" id="edit-id"> <div class="grid" style="grid-template-columns: repeat(3, 1fr);">
+                <div class="input-group"><label>Fecha</label><input type="date" id="f_fecha"></div>
+                <div class="input-group"><label>Tipo</label>
                     <select id="f_tipo">
-                        <option value="Egreso">🔻 Egreso (Gasto)</option>
-                        <option value="Ingreso">▲ Ingreso (Entrada)</option>
+                        <option value="Egreso">🔻 Egreso</option>
+                        <option value="Ingreso">▲ Ingreso</option>
                     </select>
                 </div>
-                <div style="display:flex; flex-direction:column;">
-                    <label><small>Monto</small></label>
-                    <input type="number" id="f_monto" placeholder="0.00">
-                </div>
+                <div class="input-group"><label>Monto</label><input type="number" id="f_monto" placeholder="0.00"></div>
             </div>
-            <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 15px; margin-top: 15px;">
-                <input type="text" id="f_concepto" placeholder="Descripción detallada...">
-                <select id="f_cat"></select>
-                <select id="f_metodo"></select>
+            <div class="grid" style="grid-template-columns: 2fr 1fr 1fr;">
+                <div class="input-group"><label>Concepto</label><input type="text" id="f_concepto" placeholder="Ej: Compra supermercado"></div>
+                <div class="input-group"><label>Categoría</label><select id="f_cat"></select></div>
+                <div class="input-group"><label>Pago</label><select id="f_metodo"></select></div>
             </div>
-            <button class="btn-primary" style="margin-top: 20px; padding: 15px;" onclick="saveToFirebase()">📤 Guardar en Nube (Sincronizar)</button>
+            <button class="btn-main" id="btn-save" onclick="saveToFirebase()">📤 GUARDAR REGISTRO</button>
+            <button class="btn-main" id="btn-cancel" style="display:none; background:#94a3b8; margin-top:10px;" onclick="cancelEdit()">CANCELAR EDICIÓN</button>
         </div>
     </div>
 
     <div id="historico" class="tab-content" style="display:none;">
-        <div class="filter-bar">
-            <strong>Buscador Histórico:</strong>
-            <select id="h_mes">
-                <option value="01">Enero</option><option value="02">Febrero</option><option value="03">Marzo</option>
-                <option value="04">Abril</option><option value="05">Mayo</option><option value="06">Junio</option>
-                <option value="07">Julio</option><option value="08">Agosto</option><option value="09">Septiembre</option>
-                <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
-            </select>
-            <select id="h_anio"><option value="2026">2026</option><option value="2025">2025</option></select>
-            <button onclick="renderHistorico()" class="btn-primary" style="width:auto; padding: 10px 20px;">Filtrar Mes</button>
-            <button onclick="generatePDF()" style="background:var(--success); color:white; border:none; cursor:pointer; padding: 10px 20px; border-radius: 8px;">📄 Exportar PDF Pro</button>
+        <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2>Historial de Movimientos</h2>
+            <button onclick="generatePDF()" style="background:var(--p); color:white; border:none; padding:10px 20px; border-radius:10px; cursor:pointer;">📥 Descargar Reporte PDF</button>
         </div>
-        <div class="card">
-            <table id="table_historico">
-                <thead><tr><th>Fecha</th><th>Concepto</th><th>Categoría</th><th>Tipo</th><th>Monto</th></tr></thead>
+        <div class="card" style="padding: 10px;">
+            <table>
+                <thead>
+                    <tr style="text-align: left; color: var(--s); font-size: 12px;">
+                        <th>FECHA</th><th>CONCEPTO</th><th>CATEGORÍA</th><th>MONTO</th><th>ACCIONES</th>
+                    </tr>
+                </thead>
                 <tbody id="body_historico"></tbody>
             </table>
         </div>
     </div>
 
-    <div id="dashboard" class="tab-content" style="display:none;">
-        <h2>Panel de Estadísticas Pro</h2>
+    <div id="analisis" class="tab-content" style="display:none;">
+        <h2>Inteligencia y Estadísticas Avanzadas</h2><br>
         <div class="grid">
-            <div class="card" style="border-left: 5px solid var(--acc);"><h4>Balance del Mes</h4><h2 id="st_balance">$0</h2></div>
-            <div class="card" style="border-left: 5px solid var(--danger);"><h4>Gastos Críticos</h4><h2 id="st_gastos">$0</h2></div>
-            <div class="card" style="border-left: 5px solid var(--success);"><h4>Ingresos Totales</h4><h2 id="st_ingresos">$0</h2></div>
+            <div class="card">
+                <span class="stat-label">Análisis de los últimos 10 días</span>
+                <canvas id="chart10Days"></canvas>
+            </div>
+            <div class="card">
+                <span class="stat-label">Gasto por Categoría (%)</span>
+                <canvas id="chartCats"></canvas>
+            </div>
         </div>
-        <div class="grid">
-            <div class="card"><h3>Gastos por Categoría</h3><canvas id="chartPie"></canvas></div>
-            <div class="card"><h3>Proyección Próximo Mes</h3><div id="proyeccionInfo" style="margin-top:20px;"></div></div>
+        <div class="card">
+            <h3>Top 5 Gastos más Fuertes</h3>
+            <div id="topGastosList" style="margin-top:15px;"></div>
         </div>
     </div>
 
     <div id="config" class="tab-content" style="display:none;">
-        <h2>Personalizar Categorías y Métodos</h2>
-        <div class="grid">
-            <div class="card">
-                <h3>Añadir Categoría</h3>
-                <div style="display:flex; gap:10px; margin-top:10px;">
-                    <input type="text" id="new_cat_input" placeholder="Ej: Luz, Agua, Netflix...">
-                    <button onclick="addConfigItem('cats', 'new_cat_input')" class="btn-primary" style="width:50px;">+</button>
-                </div>
-                <ul id="list_cats" style="margin-top:15px; list-style:none;"></ul>
-            </div>
+        <h2>Configuración</h2>
+        <div class="card">
+            <h3>Categorías Activas</h3>
+            <div id="list_cats" style="display:flex; flex-wrap:wrap; gap:10px; margin-top:15px;"></div>
         </div>
     </div>
 </div>
 
 <script>
-    // CONFIGURACIÓN FIREBASE PROPORCIONADA POR EL USUARIO
+    // FIREBASE CONFIG
     const firebaseConfig = {
       apiKey: "AIzaSyCO6WXu9iZsyEUmNNxrE4oWToLYY8wl-y4",
       authDomain: "misfinanzaspro-d2f3f.firebaseapp.com",
@@ -146,145 +161,192 @@
       measurementId: "G-P699PW831X"
     };
 
-    // Inicializar Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
     let localData = [];
-    let config = JSON.parse(localStorage.getItem('fin_pro_config')) || {
-        cats: ['Luz', 'Agua', 'Internet', 'Alquiler', 'Supermercado', 'Sueldo', 'Varios'],
-        mets: ['Efectivo', 'Tarjeta Débito', 'Transferencia']
+    let keys = [];
+    let config = {
+        cats: ['Vivienda', 'Luz', 'Agua', 'Internet', 'Alimentación', 'Transporte', 'Salud', 'Ocio', 'Sueldo'],
+        mets: ['Efectivo', 'Tarjeta Débito', 'Transferencia', 'Crédito']
     };
+
+    const tips = [
+        "¿Sabías que ahorrando $1.000 diarios al año puedes tener $365.000 para vacaciones?",
+        "Regla 50/30/20: 50% Necesidades, 30% Gustos, 20% Ahorro.",
+        "Evita los 'gastos hormiga' (café, snacks); pueden sumar hasta un 15% de tu sueldo.",
+        "Revisa tus suscripciones: ¿Realmente usas todas las plataformas que pagas?",
+        "Antes de una compra grande, espera 24 horas. Si aún lo quieres, cómpralo.",
+        "Pagar a tiempo tus tarjetas te ahorra miles en intereses anuales."
+    ];
 
     function init() {
         document.getElementById('f_fecha').valueAsDate = new Date();
         updateUI();
+        startCoach();
         
-        // Listener en tiempo real de Firebase
         db.ref('movimientos').on('value', (snapshot) => {
             const data = snapshot.val();
             localData = data ? Object.values(data) : [];
+            keys = data ? Object.keys(data) : [];
             renderHistorico();
+            if(document.getElementById('analisis').style.display !== 'none') runAnalysis();
         });
+    }
+
+    function startCoach() {
+        let i = 0;
+        setInterval(() => {
+            document.getElementById('tip-text').innerText = tips[i];
+            i = (i + 1) % tips.length;
+        }, 8000);
     }
 
     function updateUI() {
         document.getElementById('f_cat').innerHTML = config.cats.map(c => `<option>${c}</option>`).join('');
         document.getElementById('f_metodo').innerHTML = config.mets.map(m => `<option>${m}</option>`).join('');
-        document.getElementById('list_cats').innerHTML = config.cats.map(c => `<li style="padding:5px 0; border-bottom:1px solid #eee;">${c}</li>`).join('');
+        document.getElementById('list_cats').innerHTML = config.cats.map(c => `<span class="badge badge-ingreso">${c}</span>`).join('');
     }
 
-    function saveToFirebase() {
-        const monto = parseFloat(document.getElementById('f_monto').value);
-        if(!monto) return alert("Por favor, ingresa un monto válido");
+    // --- FUNCIONES CORE ---
 
-        const movimiento = {
+    function saveToFirebase() {
+        const id = document.getElementById('edit-id').value;
+        const mov = {
             fecha: document.getElementById('f_fecha').value,
             tipo: document.getElementById('f_tipo').value,
-            monto: monto,
-            concepto: document.getElementById('f_concepto').value || 'Sin descripción',
+            monto: parseFloat(document.getElementById('f_monto').value),
+            concepto: document.getElementById('f_concepto').value,
             cat: document.getElementById('f_cat').value,
-            metodo: document.getElementById('f_metodo').value,
-            created_at: Date.now()
+            metodo: document.getElementById('f_metodo').value
         };
 
-        db.ref('movimientos').push(movimiento);
-        alert("✅ Sincronizado correctamente");
+        if(!mov.monto) return alert("Ingresa un monto");
+
+        if(id) {
+            // EDITAR
+            db.ref('movimientos/' + id).set(mov);
+            cancelEdit();
+            alert("✅ Registro actualizado");
+        } else {
+            // NUEVO
+            db.ref('movimientos').push(mov);
+            alert("✅ Registro guardado");
+        }
+        
         document.getElementById('f_monto').value = "";
         document.getElementById('f_concepto').value = "";
     }
 
+    function callRecord(index) {
+        const item = localData[index];
+        const key = keys[index];
+        
+        document.getElementById('edit-id').value = key;
+        document.getElementById('f_fecha').value = item.fecha;
+        document.getElementById('f_tipo').value = item.tipo;
+        document.getElementById('f_monto').value = item.monto;
+        document.getElementById('f_concepto').value = item.concepto;
+        document.getElementById('f_cat').value = item.cat;
+        document.getElementById('f_metodo').value = item.metodo;
+
+        document.getElementById('form-title').innerText = "✏️ Editando Registro";
+        document.getElementById('btn-save').innerText = "ACTUALIZAR CAMBIOS";
+        document.getElementById('btn-cancel').style.display = "block";
+        showTab('registro');
+    }
+
+    function cancelEdit() {
+        document.getElementById('edit-id').value = "";
+        document.getElementById('form-title').innerText = "Registro de Operaciones";
+        document.getElementById('btn-save').innerText = "📤 GUARDAR REGISTRO";
+        document.getElementById('btn-cancel').style.display = "none";
+    }
+
     function renderHistorico() {
-        const mes = document.getElementById('h_mes').value;
-        const anio = document.getElementById('h_anio').value;
-        const filtro = `${anio}-${mes}`;
-
-        const filtrados = localData.filter(d => d.fecha.startsWith(filtro));
         const body = document.getElementById('body_historico');
-        
-        body.innerHTML = filtrados.reverse().map(d => `
+        body.innerHTML = localData.map((d, i) => `
             <tr>
-                <td>${d.fecha}</td>
-                <td>${d.concepto}</td>
-                <td><small>${d.cat}</small></td>
-                <td><span class="badge badge-${d.tipo.toLowerCase()}">${d.tipo}</span></td>
-                <td style="font-weight:bold; color:${d.tipo==='Ingreso'?'#10b981':'#ef4444'}">$${d.monto.toLocaleString()}</td>
+                <td><small>${d.fecha}</small></td>
+                <td><b>${d.concepto}</b></td>
+                <td><span class="badge badge-ingreso" style="background:#f1f5f9; color:#475569">${d.cat}</span></td>
+                <td style="color:${d.tipo==='Ingreso'?'#10b981':'#ef4444'}"><b>$${d.monto.toLocaleString()}</b></td>
+                <td>
+                    <button class="edit-btn" onclick="callRecord(${i})">✏️</button>
+                    <button class="edit-btn" onclick="deleteRecord('${keys[i]}')">🗑️</button>
+                </td>
             </tr>
+        `).reverse().join('');
+    }
+
+    function deleteRecord(key) {
+        if(confirm("¿Seguro que quieres eliminar este registro?")) {
+            db.ref('movimientos/' + key).remove();
+        }
+    }
+
+    // --- ANALISIS AVANZADO ---
+
+    function runAnalysis() {
+        const gastos = localData.filter(d => d.tipo === 'Egreso');
+        
+        // 1. Chart 10 Días
+        const last10Days = {};
+        for(let i=9; i>=0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const s = d.toISOString().split('T')[0];
+            last10Days[s] = 0;
+        }
+        gastos.forEach(g => { if(last10Days[g.fecha] !== undefined) last10Days[g.fecha] += g.monto; });
+
+        renderLineChart(last10Days);
+
+        // 2. Gastos por Categoría
+        const catMap = {};
+        gastos.forEach(g => catMap[g.cat] = (catMap[g.cat] || 0) + g.monto);
+        renderPieChart(catMap);
+
+        // 3. Top Gastos
+        const top5 = gastos.sort((a,b) => b.monto - a.monto).slice(0, 5);
+        document.getElementById('topGastosList').innerHTML = top5.map(g => `
+            <div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #eee;">
+                <span>${g.concepto} (${g.cat})</span>
+                <b style="color:var(--danger)">$${g.monto.toLocaleString()}</b>
+            </div>
         `).join('');
-
-        updateStats(filtrados);
     }
 
-    function updateStats(dataMes) {
-        const ingresos = dataMes.filter(d => d.tipo === 'Ingreso').reduce((a,b) => a + b.monto, 0);
-        const egresos = dataMes.filter(d => d.tipo === 'Egreso').reduce((a,b) => a + b.monto, 0);
-        
-        document.getElementById('st_balance').innerText = `$${(ingresos - egresos).toLocaleString()}`;
-        document.getElementById('st_ingresos').innerText = `$${ingresos.toLocaleString()}`;
-        document.getElementById('st_gastos').innerText = `$${egresos.toLocaleString()}`;
-
-        renderChart(dataMes);
-    }
-
-    let myChart;
-    function renderChart(dataMes) {
-        const ctx = document.getElementById('chartPie').getContext('2d');
-        const gastos = dataMes.filter(d => d.tipo === 'Egreso');
-        
-        const agrupado = {};
-        gastos.forEach(g => agrupado[g.cat] = (agrupado[g.cat] || 0) + g.monto);
-
-        if(myChart) myChart.destroy();
-        myChart = new Chart(ctx, {
-            type: 'doughnut',
+    let chartL, chartP;
+    function renderLineChart(dataObj) {
+        const ctx = document.getElementById('chart10Days').getContext('2d');
+        if(chartL) chartL.destroy();
+        chartL = new Chart(ctx, {
+            type: 'line',
             data: {
-                labels: Object.keys(agrupado),
-                datasets: [{
-                    data: Object.values(agrupado),
-                    backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
-                }]
+                labels: Object.keys(dataObj).map(f => f.split('-')[2]),
+                datasets: [{ label: 'Gasto Diario', data: Object.values(dataObj), borderColor: '#3b82f6', tension: 0.4, fill: true, backgroundColor: 'rgba(59, 130, 246, 0.1)' }]
             }
         });
     }
 
-    async function generatePDF() {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        const mesText = document.getElementById('h_mes').options[document.getElementById('h_mes').selectedIndex].text;
-        
-        doc.setFontSize(22);
-        doc.setTextColor(15, 23, 42);
-        doc.text(`Reporte Financiero: ${mesText}`, 20, 20);
-        
-        const rows = localData.filter(d => d.fecha.includes(document.getElementById('h_mes').value))
-                              .map(d => [d.fecha, d.concepto, d.cat, d.tipo, `$${d.monto}`]);
-
-        doc.autoTable({
-            startY: 30,
-            head: [['Fecha', 'Concepto', 'Categoría', 'Tipo', 'Monto']],
-            body: rows,
-            theme: 'grid',
-            headStyles: { fillColor: [37, 99, 235] }
+    function renderPieChart(dataObj) {
+        const ctx = document.getElementById('chartCats').getContext('2d');
+        if(chartP) chartP.destroy();
+        chartP = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(dataObj),
+                datasets: [{ data: Object.values(dataObj), backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'] }]
+            }
         });
-
-        doc.save(`Finanzas_${mesText}.pdf`);
-    }
-
-    function addConfigItem(key, inputId) {
-        const val = document.getElementById(inputId).value;
-        if(val) {
-            config[key].push(val);
-            localStorage.setItem('fin_pro_config', JSON.stringify(config));
-            document.getElementById(inputId).value = '';
-            updateUI();
-        }
     }
 
     function showTab(id) {
         document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
         document.getElementById(id).style.display = 'block';
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-        event.currentTarget.classList.add('active');
+        if(id === 'analisis') runAnalysis();
     }
 
     init();
