@@ -14,7 +14,6 @@
             --p: #0f172a; --acc: #2563eb; --bg: #f8fafc; 
             --danger: #ef4444; --success: #10b981; --warning: #f59e0b;
             --sidebar-w: 260px;
-            --grad: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
         }
         * { margin:0; padding:0; box-sizing:border-box; font-family: 'Inter', sans-serif; }
         body { background: var(--bg); display: flex; min-height: 100vh; color: #1e293b; overflow-x: hidden; }
@@ -32,22 +31,13 @@
         /* Mobile Menu */
         .menu-toggle { display: none; position: fixed; top: 15px; left: 15px; z-index: 1100; background: var(--p); color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; }
 
-        /* DISEÑO PRO: SABIDURÍA FINANCIERA */
-        .wisdom-box {
-            background: white; border-radius: 20px; padding: 20px; margin-bottom: 30px;
-            display: flex; align-items: center; gap: 20px; border: 1px solid #e2e8f0;
-            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); position: relative;
-            overflow: hidden;
+        /* Coach & Header */
+        .header-meta { margin-bottom: 5px; color: var(--acc); font-weight: 700; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; }
+        .coach-bubble { 
+            background: white; border-radius: 18px; padding: 20px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05); border-left: 6px solid var(--acc); 
+            margin-bottom: 30px; position: relative;
         }
-        .wisdom-box::before { content: ''; position: absolute; left: 0; top: 0; height: 100%; width: 5px; background: var(--acc); }
-        .wisdom-avatar { 
-            width: 55px; height: 55px; background: var(--grad); border-radius: 16px; 
-            display: flex; align-items: center; justify-content: center; font-size: 26px; 
-            flex-shrink: 0; color: white; box-shadow: 0 8px 15px rgba(37,99,235,0.2);
-        }
-        .wisdom-content { flex-grow: 1; }
-        .wisdom-label { font-size: 10px; font-weight: 800; color: var(--acc); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; display: block; }
-        #tip-text { font-size: 15px; font-weight: 500; color: #334155; line-height: 1.5; transition: all 0.5s ease; opacity: 1; }
 
         /* Cards & Inputs */
         .card { background: white; border-radius: 16px; padding: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 25px; border: 1px solid #eef2f6; }
@@ -74,9 +64,6 @@
             .main-content { margin-left: 0; width: 100%; padding: 70px 15px 20px 15px; }
             .menu-toggle { display: block; }
             .form-grid { grid-template-columns: 1fr; }
-            .wisdom-box { padding: 15px; gap: 15px; }
-            .wisdom-avatar { width: 45px; height: 45px; font-size: 20px; }
-            #tip-text { font-size: 13px; }
         }
     </style>
 </head>
@@ -93,14 +80,10 @@
 </nav>
 
 <main class="main-content">
-    <div style="margin-bottom: 5px; color: var(--acc); font-weight: 700; font-size: 12px; letter-spacing: 2px; text-transform: uppercase;">Sistema Inteligente de Gestión Patrimonial</div>
-    
-    <div class="wisdom-box">
-        <div class="wisdom-avatar">💎</div>
-        <div class="wisdom-content">
-            <span class="wisdom-label">Sabiduría Financiera ✨</span>
-            <div id="tip-text">Preparando tu siguiente consejo maestro...</div>
-        </div>
+    <div class="header-meta">Sistema Inteligente de Gestión Patrimonial</div>
+    <div class="coach-bubble">
+        <small style="color: var(--acc); font-weight: 800; display: block; margin-bottom: 5px;">SABIDURÍA FINANCIERA ✨</small>
+        <p id="tip-text">Cargando inteligencia...</p>
     </div>
 
     <div id="registro" class="tab-content">
@@ -171,6 +154,7 @@
 </main>
 
 <script>
+    // FIREBASE
     const firebaseConfig = {
       apiKey: "AIzaSyCO6WXu9iZsyEUmNNxrE4oWToLYY8wl-y4",
       authDomain: "misfinanzaspro-d2f3f.firebaseapp.com",
@@ -183,44 +167,43 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // LAS 70 FRASES ACTUALIZADAS
+    // TIPS (70 FRASES)
     const tips = [
-        "El camino a la riqueza depende de dos palabras: trabajo y ahorro.", "No ahorres lo que queda después de gastar, gasta lo que queda después de ahorrar.",
-        "Cuida de los pequeños gastos; un pequeño agujero hunde un gran barco.", "La libertad financiera es la capacidad de vivir del flujo de caja de tus activos.",
-        "El precio es lo que pagas, el valor es lo que obtienes.", "Invierte en ti mismo, es el activo que más intereses te pagará.",
-        "Nunca dependas de una sola fuente de ingresos.", "Si compras cosas que no necesitas, pronto tendrás que vender cosas que necesitas.",
-        "La riqueza no consiste en tener grandes posesiones, sino en tener pocas necesidades.", "El interés compuesto es la octava maravilla del mundo. Quien lo entiende, lo gana; quien no, lo paga.",
-        "Ahorrar es el proceso de retener capital; invertir es el proceso de ponerlo a trabajar.", "Tu nivel de éxito financiero rara vez superará tu nivel de desarrollo personal.",
-        "No busques el momento perfecto para invertir, haz que el momento sea perfecto empezando hoy.", "El dinero es un excelente esclavo, pero un pésimo amo.",
-        "La mejor inversión que puedes hacer es en tu propia educación.", "El riesgo viene de no saber lo que estás haciendo.",
-        "La disciplina financiera es el puente entre tus metas y tus logros.", "Un presupuesto le dice a tu dinero a dónde ir, en lugar de preguntarte a dónde se fue.",
-        "Ser rico es tener dinero; ser próspero es tener tiempo.", "La deuda de consumo es el impuesto que pagas por la impaciencia.",
-        "El ahorro sin propósito es estancamiento; el ahorro con meta es poder.", "La educación financiera es más importante que el dinero mismo.",
-        "No trabajes por el dinero, haz que el dinero trabaje para ti.", "La simplicidad es la clave de la gestión financiera exitosa.",
-        "El éxito financiero no es un sprint, es un maratón de consistencia.", "Tu cuenta bancaria es un reflejo de tus hábitos, no de tu suerte.",
-        "El costo de algo es la cantidad de vida que intercambias por ello.", "Quien controla su mente, controla su bolsillo.",
-        "La verdadera riqueza es discreta; la pobreza suele ser ruidosa.", "Planifica hoy para que tu 'yo' del futuro te lo agradezca.",
-        "Diversificar es la única protección contra la ignorancia.", "El mercado financiero es un mecanismo para transferir dinero de los impacientes a los pacientes.",
-        "Gasta siempre un centavo menos de lo que ganas.", "Las deudas son como el fuego: útiles si se controlan, destructivas si te superan.",
-        "La mejor forma de predecir tu futuro financiero es creándolo.", "La frugalidad es disfrutar de la abundancia sin caer en el desperdicio.",
-        "Tu patrimonio neto es tu red de seguridad ante la incertidumbre.", "El dinero no te hace feliz, pero la falta de dinero te quita opciones.",
-        "No te compares con los demás, compárate con tu balance del mes pasado.", "La gratificación instantánea es el enemigo número uno de tu riqueza.",
-        "Aprende a decir 'no' hoy para poder decir 'sí' a tus sueños mañana.", "La inversión más segura es liquidar tus deudas con intereses altos.",
-        "Tener un fondo de emergencia no es opcional, es vital.", "La inflación es el impuesto invisible; invierte para vencerla.",
-        "La mentalidad de escasez gasta; la mentalidad de abundancia invierte.", "Cada peso que ahorras es una semilla para tu árbol de libertad.",
-        "Simplifica tu vida y verás cómo se multiplica tu ahorro.", "El conocimiento paga el mejor interés.",
-        "No pongas todos los huevos en la misma cesta.", "El éxito es 10% lo que ganas y 90% cómo lo administras.",
-        "La libertad financiera empieza con una decisión, no con un aumento de sueldo.", "El hombre más rico es aquel cuyos placeres son los más baratos.",
-        "Los ricos invierten su dinero y gastan lo que queda; los pobres gastan su dinero e invierten lo que queda.", "La paciencia es una virtud, especialmente en las inversiones.",
-        "Tu capacidad de ahorro determina tu velocidad de jubilación.", "Automatizar tus finanzas es eliminar la tentación de fallar.",
-        "El dinero solo amplifica quien ya eres.", "No permitas que tus deseos crezcan más rápido que tus activos.",
-        "La estabilidad financiera es la paz mental convertida en números.", "Invierte en activos, no en pasivos que parecen activos.",
-        "El lujo debe ser una recompensa, no una fachada.", "La riqueza se mide en el tiempo que puedes vivir sin trabajar.",
-        "El primer paso para salir del hoyo es dejar de cavar.", "Tu futuro financiero se construye en los detalles de hoy.",
-        "No confundas un buen estilo de vida con una buena vida.", "El valor de una persona no se mide por su saldo, pero su libertad sí.",
-        "La curiosidad financiera te salvará de errores costosos.", "Protege tu capital como si fuera tu vida, porque es tu tiempo.",
-        "Aprende las reglas del juego antes de poner tu dinero en la mesa.", "La sabiduría financiera es saber distinguir un activo de un capricho.",
-        "La meta no es ser rico, la meta es ser libre."
+        "Ahorra primero, gasta lo que quede después.", "El interés compuesto es la octava maravilla del mundo.",
+        "Un pequeño agujero hunde un gran barco. Cuida los gastos hormiga.", "No pongas todos tus huevos en la misma canasta.",
+        "El mejor momento para invertir fue ayer, el segundo mejor es hoy.", "Si compras cosas que no necesitas, pronto venderás lo que necesitas.",
+        "El dinero es un buen siervo pero un mal amo.", "La riqueza no consiste en tener grandes posesiones, sino en tener pocas necesidades.",
+        "Invertir en conocimientos produce siempre los mejores beneficios.", "No ahorres lo que te queda después de gastar, gasta lo que te queda después de ahorrar.",
+        "Tu nivel de gastos no debe crecer al mismo ritmo que tus ingresos.", "Págate a ti mismo primero: reserva el 10% de tu sueldo apenas lo recibas.",
+        "El crédito es un sistema de esclavitud moderna si no se usa para activos.", "Tener un fondo de emergencia te da libertad de decisión.",
+        "Las ofertas no son ahorro si no tenías planeado comprar ese artículo.", "La inflación es el impuesto silencioso, invierte para superarla.",
+        "Revisa tus suscripciones: el dinero se fuga en los goteos mensuales.", "Compra calidad, lo barato sale caro a largo plazo.",
+        "La mejor inversión es tu propia salud y educación.", "Establece metas claras: ahorrar sin propósito es difícil.",
+        "Anota cada gasto por 30 días, te sorprenderá dónde se va tu dinero.", "Evita las deudas de consumo como la peste.",
+        "Las tarjetas de crédito son herramientas, no dinero extra.", "Si no puedes pagarlo dos veces, no puedes permitírtelo.",
+        "Planifica tus comidas: el delivery es el mayor enemigo del presupuesto mensual.", "Invierte en activos que pongan dinero en tu bolsillo, no pasivos.",
+        "El lujo es para cuando ya eres rico, no para parecerlo.", "Aprende a decir NO a compromisos sociales que no puedes costear.",
+        "Ahorra para el retiro desde tu primer sueldo, el tiempo es tu aliado.", "Diversifica: diferentes monedas, diferentes mercados.",
+        "No sigas consejos financieros de personas que no están donde tú quieres estar.", "La paciencia es la clave de las inversiones exitosas.",
+        "Crea múltiples fuentes de ingresos, no dependas solo de una.", "Usa la regla de las 24 horas antes de compras impulsivas.",
+        "La libertad financiera no es trabajar menos, es elegir en qué trabajar.", "Un presupuesto te dice a dónde ir, en lugar de preguntarte a dónde se fue.",
+        "Automatiza tus ahorros, así no tienes que pensar en ello.", "Vivir por debajo de tus posibilidades es la verdadera riqueza.",
+        "Compara precios siempre, el internet es tu mejor herramienta de ahorro.", "No ignores las facturas, el interés por mora es tirar dinero a la basura.",
+        "Usa efectivo para gastos diarios si pierdes el control con la tarjeta.", "Mantén tu coche un par de años más de lo planeado.",
+        "Educa a tus hijos sobre finanzas, es el mejor legado.", "La envidia financiera es el camino más rápido a la quiebra.",
+        "Aprende a cocinar: es una de las habilidades más rentables.", "Revisa tus seguros anualmente para buscar mejores primas.",
+        "Vende lo que no usas, limpia tu casa y llena tu cartera.", "El tiempo vale más que el dinero, gástalo con sabiduría.",
+        "No te compares con el vecino, sus deudas pueden ser mayores que las tuyas.", "La disciplina financiera es libertad.",
+        "Entiende qué estás comprando antes de invertir un solo dólar.", "Las crisis son oportunidades disfrazadas para los que tienen efectivo.",
+        "Ahorrar es un hábito, no una cantidad.", "Aprende la diferencia entre precio y valor.",
+        "Nunca inviertas dinero que necesites para el alquiler del mes.", "Mide tu riqueza por cuántos días podrías vivir sin trabajar.",
+        "La simplicidad es la máxima sofisticación financiera.", "Protege tu capacidad de generar ingresos.",
+        "Haz un inventario de lo que tienes antes de ir de compras.", "La gratificación instantánea es el enemigo del éxito futuro.",
+        "Sé generoso cuando puedas, el dinero fluye hacia quienes lo comparten.", "El optimismo es una estrategia de inversión.",
+        "No asumas riesgos que no puedas explicar a un niño de 5 años.", "Mantén tus gastos fijos lo más bajos posible.",
+        "El éxito financiero es 20% conocimiento y 80% comportamiento.", "Tu casa es un activo solo si te genera ingresos.",
+        "No dejes que tus emociones manejen tu billetera.", "La mejor deuda es la que no existe.",
+        "Ahorrar es comprar tu libertad futura.", "Finanzas PRO es tu mejor aliado, úsalo a diario."
     ];
 
     let settings = JSON.parse(localStorage.getItem('fpro_final_settings')) || {
@@ -246,28 +229,20 @@
     function toggleMenu() { document.getElementById('sidebar').classList.toggle('open'); }
 
     function startCoach() {
-        const textEl = document.getElementById('tip-text');
-        let i = Math.floor(Math.random() * tips.length);
-        
-        const update = () => {
-            textEl.style.opacity = 0;
-            setTimeout(() => {
-                textEl.innerText = tips[i];
-                textEl.style.opacity = 1;
-                i = (i + 1) % tips.length;
-            }, 500);
-        };
-        
-        update();
-        setInterval(update, 10000);
+        let i = 0;
+        setInterval(() => {
+            document.getElementById('tip-text').innerText = tips[i];
+            i = (i + 1) % tips.length;
+        }, 10000);
+        document.getElementById('tip-text').innerText = tips[0];
     }
 
     function showTab(id) {
         document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
         document.getElementById(id).style.display = 'block';
         document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-        if(event) event.currentTarget.classList.add('active');
-        if(window.innerWidth < 900) document.getElementById('sidebar').classList.remove('open');
+        event.currentTarget.classList.add('active');
+        if(window.innerWidth < 900) toggleMenu();
         if(id === 'analisis') runAnalysis();
     }
 
@@ -319,6 +294,7 @@
         });
     }
 
+    // Funciones de utilidad iguales a las anteriores...
     function editItem(key) {
         const d = rawData[key];
         document.getElementById('edit-id').value = key;
@@ -333,10 +309,7 @@
     function deleteItem(key) { if(confirm("¿Eliminar?")) db.ref('movimientos/' + key).remove(); }
 
     function updateAllSelects() {
-        const f = (id, arr) => {
-            const el = document.getElementById(id);
-            if(el) el.innerHTML = arr.map(i => `<option>${i}</option>`).join('');
-        };
+        const f = (id, arr) => document.getElementById(id).innerHTML = arr.map(i => `<option>${i}</option>`).join('');
         f('f_cat', settings.cats);
         f('f_proveedor', settings.proveedores);
         f('f_pago', settings.pagos);
@@ -361,7 +334,6 @@
         document.getElementById('edit-id').value = '';
         document.getElementById('f_monto').value = '';
         document.getElementById('f_concepto').value = '';
-        document.getElementById('form-title').innerText = "Registrar Transacción";
     }
 
     function populateMonths() {
@@ -377,12 +349,7 @@
 
     function addSet(key, inputId) {
         const v = document.getElementById(inputId).value;
-        if(v) { 
-            settings[key].push(v); 
-            localStorage.setItem('fpro_final_settings', JSON.stringify(settings)); 
-            updateAllSelects(); 
-            document.getElementById(inputId).value = '';
-        }
+        if(v) { settings[key].push(v); localStorage.setItem('fpro_final_settings', JSON.stringify(settings)); updateAllSelects(); renderSettings(); }
     }
 
     function runAnalysis() {
@@ -390,18 +357,12 @@
         const catMap = {};
         gastos.forEach(g => catMap[g.cat] = (catMap[g.cat] || 0) + g.monto);
         const ctx = document.getElementById('chartPie').getContext('2d');
-        if(window.myChart) window.myChart.destroy();
-        window.myChart = new Chart(ctx, { 
-            type: 'doughnut', 
-            data: { 
-                labels: Object.keys(catMap), 
-                datasets: [{ data: Object.values(catMap), backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'] }] 
-            },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
+        new Chart(ctx, { type: 'doughnut', data: { labels: Object.keys(catMap), datasets: [{ data: Object.values(catMap), backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'] }] } });
     }
 
     window.onload = init;
 </script>
 </body>
 </html>
+
+
