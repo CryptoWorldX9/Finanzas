@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finanzas PRO | Smart Search Edition</title>
+    <title>Finanzas PRO | Registro Maestro</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -35,17 +35,20 @@
         label { font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 5px; display: block; }
         input, select, textarea { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px; }
         
-        .btn-p { background: var(--acc); color: white; border: none; padding: 12px 20px; border-radius: 10px; cursor: pointer; font-weight: 700; width: 100%; }
+        .btn-p { background: var(--acc); color: white; border: none; padding: 12px 20px; border-radius: 10px; cursor: pointer; font-weight: 700; width: 100%; transition: 0.2s; }
+        .btn-p:hover { filter: brightness(1.1); }
         .nav-link { display: flex; align-items: center; gap: 12px; padding: 14px; color: #cbd5e1; cursor: pointer; border-radius: 12px; margin-bottom: 8px; }
         .nav-link.active { background: var(--acc); color: white; }
 
-        .table-wrap { overflow-x: auto; }
+        .table-wrap { overflow-x: auto; margin-top: 15px; }
         table { width: 100%; border-collapse: collapse; min-width: 800px; }
         th { text-align: left; padding: 15px; background: #f8fafc; color: #64748b; font-size: 11px; border-bottom: 2px solid #edf2f7; }
         td { padding: 15px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
 
         .btn-action { background: none; border: 1px solid #e2e8f0; padding: 6px; border-radius: 6px; cursor: pointer; margin-right: 5px; }
         
+        .filter-header { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 15px; background: #f1f5f9; padding: 15px; border-radius: 12px; }
+
         @media (max-width: 900px) {
             .sidebar { left: -100%; }
             .sidebar.open { left: 0; }
@@ -79,13 +82,13 @@
             <h3 id="form-title">Nueva Operación</h3><br>
             <input type="hidden" id="edit-id">
             <div class="form-grid">
-                <div><label>Fecha</label><input type="date" id="f_fecha" onchange="autoFillDate()"></div>
+                <div><label>Fecha</label><input type="date" id="f_fecha"></div>
                 <div><label>Tipo</label><select id="f_tipo"><option value="Egreso">🔻 Egreso</option><option value="Ingreso">🔹 Ingreso</option></select></div>
                 <div><label>Monto ($)</label><input type="number" id="f_monto" oninput="calcLogic()"></div>
                 <div><label>Presupuesto ($)</label><input type="number" id="f_presupuesto" oninput="calcLogic()"></div>
             </div>
             <div class="form-grid">
-                <div><label>Concepto</label><input type="text" id="f_concepto" placeholder="Ej: Pago luz"></div>
+                <div><label>Concepto</label><input type="text" id="f_concepto" placeholder="Ej: Pago de agua"></div>
                 <div><label>Categoría</label><select id="f_cat" onchange="loadSubs()"></select></div>
                 <div><label>Subcategoría</label><select id="f_subcat"></select></div>
                 <div><label>Proveedor</label><select id="f_proveedor"></select></div>
@@ -96,29 +99,33 @@
                 <div><label>Recurrente</label><select id="f_recurrente"><option>No</option><option>Sí</option></select></div>
                 <div><label>Diferencia</label><p id="f_diff" style="font-weight:900; font-size:18px;">$0</p></div>
             </div>
-            <div style="margin-top:15px;"><label>Observaciones</label><textarea id="f_obs" rows="2"></textarea></div>
             <div class="form-grid" style="margin-top:20px;">
                 <button class="btn-p" onclick="saveData()">💾 GUARDAR</button>
                 <button class="btn-p" style="background:#64748b;" onclick="clearForm()">🧹 LIMPIAR</button>
             </div>
         </div>
-    </div>
 
-    <div id="historial" class="tab-content" style="display:none;">
         <div class="card">
-            <h3>Historial de Movimientos</h3><br>
-            <div class="form-grid">
-                <div style="position:relative;">
-                    <label>Buscador Inteligente</label>
-                    <input type="text" id="h_search" placeholder="Escribe concepto, categoría, proveedor..." oninput="refreshUI()">
+            <h3>Movimientos Recientes & Filtros</h3><br>
+            
+            <div class="filter-header">
+                <div style="flex:2; min-width:200px;">
+                    <label>Buscador (Concepto, Cat, Prov)</label>
+                    <input type="text" id="r_search" placeholder="Buscar..." oninput="refreshUI()">
                 </div>
-                <div style="display:flex; align-items:flex-end; gap:10px;">
-                    <button class="btn-p" style="background:#10b981; height:45px;" onclick="exportExcel()">📊 Excel</button>
-                    <button class="btn-p" style="background:#ef4444; height:45px;" onclick="exportPDF()">📄 PDF</button>
+                <div style="flex:1;">
+                    <label>Filtrar por Día</label>
+                    <input type="date" id="r_filter_day" onchange="refreshUI()">
                 </div>
+                <div style="flex:1;">
+                    <label>Filtrar por Mes</label>
+                    <input type="month" id="r_filter_month" onchange="refreshUI()">
+                </div>
+                <button class="btn-p" style="width:auto; height:45px; background:#64748b;" onclick="clearFilters()">🔄 Reset</button>
             </div>
+
             <div class="table-wrap">
-                <table id="table-hist">
+                <table>
                     <thead>
                         <tr>
                             <th>Fecha</th>
@@ -130,7 +137,21 @@
                             <th style="text-align:center;">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody id="list_hist"></tbody>
+                    <tbody id="list_reg_hist"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="historial" class="tab-content" style="display:none;">
+        <div class="card">
+            <h3>Historial Completo</h3><br>
+            <div class="table-wrap">
+                <table id="table-hist-main">
+                    <thead>
+                        <tr><th>Fecha</th><th>Concepto</th><th>Monto</th><th>Categoría</th><th>Acciones</th></tr>
+                    </thead>
+                    <tbody id="list_hist_main"></tbody>
                 </table>
             </div>
         </div>
@@ -155,7 +176,7 @@
     let settings = JSON.parse(localStorage.getItem('fpro_v6_settings')) || {
         cats: ['Servicios básicos', 'Alimentación', 'Transporte', 'Salud', 'Ocio'],
         subs: {'Servicios básicos': ['Agua potable', 'Luz', 'Gas', 'Internet'], 'Alimentación': ['Supermercado', 'Restaurante']},
-        provs: ['Aguas Andinas', 'Enel', 'Metrogas', 'Lider', 'Walmart'],
+        provs: ['Aguas Andinas', 'Enel', 'Metrogas', 'Lider'],
         pagos: ['Débito', 'Crédito', 'Efectivo']
     };
 
@@ -168,23 +189,29 @@
         });
     }
 
-    // BUSCADOR MEJORADO
     function refreshUI() {
-        const query = document.getElementById('h_search').value.toLowerCase().trim();
+        const query = document.getElementById('r_search').value.toLowerCase();
+        const filterDay = document.getElementById('r_filter_day').value;
+        const filterMonth = document.getElementById('r_filter_month').value;
+        
         let ing = 0, eg = 0;
-        const listHist = document.getElementById('list_hist');
-        listHist.innerHTML = '';
+        const listReg = document.getElementById('list_reg_hist');
+        const listHistMain = document.getElementById('list_hist_main');
+        
+        listReg.innerHTML = '';
+        if(listHistMain) listHistMain.innerHTML = '';
 
         Object.keys(rawData).reverse().forEach(key => {
             const d = rawData[key];
             if(d.tipo === 'Ingreso') ing += d.monto; else eg += d.monto;
 
-            // Concatenamos todos los campos para una búsqueda global
-            const searchBody = `${d.concepto} ${d.cat} ${d.subcat} ${d.proveedor} ${d.estado} ${d.fecha}`.toLowerCase();
-            
-            // Si el query está incluido en cualquier parte del cuerpo de búsqueda
-            if(searchBody.includes(query)) {
-                listHist.innerHTML += `
+            const searchBody = `${d.concepto} ${d.cat} ${d.subcat} ${d.proveedor}`.toLowerCase();
+            const matchQuery = searchBody.includes(query);
+            const matchDay = filterDay ? d.fecha === filterDay : true;
+            const matchMonth = filterMonth ? d.fecha.substring(0,7) === filterMonth : true;
+
+            if(matchQuery && matchDay && matchMonth) {
+                const row = `
                 <tr>
                     <td>${d.fecha}</td>
                     <td><b>${d.concepto}</b></td>
@@ -197,6 +224,8 @@
                         <button class="btn-action" onclick="deleteItem('${key}')" style="color:red;">🗑️</button>
                     </td>
                 </tr>`;
+                listReg.innerHTML += row;
+                if(listHistMain) listHistMain.innerHTML += row;
             }
         });
 
@@ -205,15 +234,18 @@
         document.getElementById('total-saldo').innerText = `$${(ing - eg).toLocaleString()}`;
     }
 
-    // LOGICA DE FORMULARIO
-    function autoFillDate() { }
+    function clearFilters() {
+        document.getElementById('r_search').value = '';
+        document.getElementById('r_filter_day').value = '';
+        document.getElementById('r_filter_month').value = '';
+        refreshUI();
+    }
+
     function calcLogic() {
         const monto = parseFloat(document.getElementById('f_monto').value) || 0;
         const presu = parseFloat(document.getElementById('f_presupuesto').value) || 0;
-        const diff = presu - monto;
-        const el = document.getElementById('f_diff');
-        el.innerText = `$${diff.toLocaleString()}`;
-        el.style.color = diff < 0 ? 'red' : 'green';
+        document.getElementById('f_diff').innerText = `$${(presu - monto).toLocaleString()}`;
+        document.getElementById('f_diff').style.color = (presu - monto) < 0 ? 'red' : 'green';
     }
 
     function saveData() {
@@ -229,12 +261,10 @@
             pago: document.getElementById('f_pago').value,
             estado: document.getElementById('f_estado').value,
             proveedor: document.getElementById('f_proveedor').value,
-            recurrente: document.getElementById('f_recurrente').value,
-            obs: document.getElementById('f_obs').value
+            recurrente: document.getElementById('f_recurrente').value
         };
         if(id) db.ref('movimientos/' + id).set(data);
         else db.ref('movimientos').push(data);
-        alert("Sincronizado");
         clearForm();
     }
 
@@ -242,7 +272,6 @@
         const d = rawData[key];
         document.getElementById('edit-id').value = key;
         document.getElementById('f_fecha').value = d.fecha;
-        document.getElementById('f_tipo').value = d.tipo;
         document.getElementById('f_monto').value = d.monto;
         document.getElementById('f_presupuesto').value = d.presupuesto;
         document.getElementById('f_concepto').value = d.concepto;
@@ -250,17 +279,15 @@
         loadSubs();
         document.getElementById('f_subcat').value = d.subcat;
         document.getElementById('f_proveedor').value = d.proveedor;
-        document.getElementById('f_pago').value = d.pago;
-        document.getElementById('f_estado').value = d.estado;
-        document.getElementById('f_recurrente').value = d.recurrente;
-        document.getElementById('f_obs').value = d.obs || '';
+        document.getElementById('f_tipo').value = d.tipo;
         document.getElementById('form-title').innerText = "✏️ Editando...";
+        window.scrollTo({ top: 0, behavior: 'smooth' });
         calcLogic();
         showTab('registro');
     }
 
     function deleteItem(key) { if(confirm("¿Eliminar?")) db.ref('movimientos/' + key).remove(); }
-
+    
     function clearForm() {
         document.getElementById('edit-id').value = '';
         document.getElementById('f_monto').value = '';
@@ -288,21 +315,6 @@
         document.getElementById(id).style.display = 'block';
         document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
         if(window.innerWidth < 900) toggleMenu();
-    }
-
-    function exportPDF() {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF('l', 'mm', 'a4');
-        doc.text("Historial Finanzas PRO", 14, 15);
-        doc.autoTable({ html: '#table-hist', startY: 20 });
-        doc.save("Historial.pdf");
-    }
-
-    function exportExcel() {
-        let csv = "Fecha,Concepto,Monto,Categoria\n";
-        Object.values(rawData).forEach(d => { csv += `${d.fecha},${d.concepto},${d.monto},${d.cat}\n`; });
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'Finanzas.csv'; a.click();
     }
 
     window.onload = init;
