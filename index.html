@@ -46,9 +46,9 @@
         .bal-item small { font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; }
         .bal-item p { font-size: 16px; font-weight: 900; }
 
+        .goal-card { background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 12px; }
         .goal-progress { background: #e2e8f0; height: 10px; border-radius: 5px; margin: 10px 0; overflow: hidden; }
         .goal-bar { background: var(--success); height: 100%; transition: 0.5s; }
-        .btn-goal-add { background: var(--success); color: white; border: none; padding: 8px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
 
         .tips-container { display: flex; align-items: flex-end; gap: 12px; margin-bottom: 25px; max-width: 900px; animation: fadeIn 0.5s ease; }
         .assistant-avatar { width: 45px; height: 45px; background: var(--p); color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
@@ -225,7 +225,7 @@
                 <div><label>Monto Objetivo ($)</label><input type="text" id="m_objetivo" oninput="formatInput(this)"></div>
                 <div><label>Monto Actual ($)</label><input type="text" id="m_actual" oninput="formatInput(this)"></div>
                 <div style="display:flex; align-items:flex-end; gap:5px;">
-                    <button class="btn-p" onclick="saveMeta()" id="btn-save-meta">➕ CREAR META</button>
+                    <button class="btn-p" onclick="saveMeta()" id="btn-save-meta">➕ GUARDAR META</button>
                     <button class="btn-p" style="background:#64748b; display:none;" id="btn-cancel-meta" onclick="cancelEditMeta()">✕</button>
                 </div>
             </div>
@@ -236,14 +236,14 @@
     <div id="analisis" class="tab-content" style="display:none;">
         <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
             <div class="card">
-                <h3>Distribución de Gastos</h3><br>
+                <h3>Distribución de Gastos (Mes Actual)</h3><br>
                 <div style="height: 300px; position: relative;"><canvas id="chartDona"></canvas></div>
             </div>
             <div class="card">
                 <h3>Resumen de Impacto</h3><br>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
                     <div style="text-align:center; padding:15px; background:#f0f9ff; border-radius:12px; border:1px solid #bae6fd;">
-                        <label>Gastos Mes</label><p id="ana-mes-total" style="font-size:20px; font-weight:900; color:var(--danger);">$0</p>
+                        <label>Egresos Mes</label><p id="ana-mes-total" style="font-size:20px; font-weight:900; color:var(--danger);">$0</p>
                     </div>
                     <div style="text-align:center; padding:15px; background:#f0fdf4; border-radius:12px; border:1px solid #bbf7d0;">
                         <label>Ingresos Mes</label><p id="ana-semana-total" style="font-size:20px; font-weight:900; color:var(--success);">$0</p>
@@ -270,7 +270,6 @@
 </main>
 
 <script>
-    // Configuración Firebase (Se mantiene igual)
     const firebaseConfig = {
       apiKey: "AIzaSyCO6WXu9iZsyEUmNNxrE4oWToLYY8wl-y4",
       authDomain: "misfinanzaspro-d2f3f.firebaseapp.com",
@@ -306,7 +305,6 @@
         "Págate a ti primero: Separa tu ahorro apenas recibas tu sueldo."
     ];
 
-    // Funciones de utilidad y formato
     function formatInput(input) {
         let value = input.value.replace(/\D/g, "");
         if (value === "") { input.value = ""; return; }
@@ -324,11 +322,10 @@
         document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
         document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
         document.getElementById(tabId).style.display = 'block';
-        event.currentTarget.classList.add('active');
+        if(event) event.currentTarget.classList.add('active');
         if(tabId === 'analisis') updateCharts();
     }
 
-    // AUTH LOGIC
     function setAuthMode(mode) {
         currentAuthMode = mode;
         document.getElementById('tab-login').classList.toggle('active', mode === 'login');
@@ -363,7 +360,6 @@
     function initData() {
         document.getElementById('f_fecha').valueAsDate = new Date();
         startTipsSystem();
-        loadDropdowns();
 
         db.collection('users').doc(currentUser.uid).collection('config').doc('listas').onSnapshot(doc => {
             if(doc.exists) { settings = doc.data(); loadDropdowns(); renderConfigList(); }
@@ -432,7 +428,6 @@
         return `<tr><td>${d.fecha}</td><td><b>${d.concepto}</b></td><td style="color:${d.tipo==='Ingreso'?'green':'red'}">$${d.monto.toLocaleString('es-CL')}</td><td>${d.cat}</td><td>${d.proveedor}</td><td><span style="font-size:11px; padding:3px 8px; border-radius:10px; background:${d.estado==='Pagado'?'#dcfce7':'#fee2e2'}; color:${d.estado==='Pagado'?'#166534':'#991b1b'}">${d.estado}</span></td><td><button class="btn-action" onclick="editItem('${key}')">✏️</button><button class="btn-action" onclick="deleteItem('${key}')" style="color:red;">🗑️</button></td></tr>`;
     }
 
-    // --- CORRECCIÓN: RESUMEN DE IMPACTO Y GRÁFICOS ---
     function updateCharts() {
         const ctx = document.getElementById('chartDona').getContext('2d');
         const now = new Date();
@@ -454,7 +449,6 @@
         document.getElementById('ana-mes-total').innerText = `$${mesEg.toLocaleString('es-CL')}`;
         document.getElementById('ana-semana-total').innerText = `$${mesIng.toLocaleString('es-CL')}`;
 
-        // Encontrar categoría mayor
         let maxCat = "---";
         let maxVal = 0;
         for(let c in catTotals) {
@@ -476,17 +470,13 @@
         });
     }
 
-    // --- PDF CON TABLAS AL FINAL ---
     function exportPDF() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-        
         doc.setFontSize(22);
-        doc.setTextColor(15, 23, 42);
         doc.text("Reporte QuantyA", 14, 20);
         doc.setFontSize(10);
-        doc.text("Más Control. Menos preocupación", 14, 26);
-        doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 160, 20);
+        doc.text(`Generado el: ${new Date().toLocaleDateString()}`, 14, 26);
 
         const body = Object.values(rawData).map(d => [d.fecha, d.concepto, d.tipo, `$${d.monto.toLocaleString('es-CL')}`, d.cat, d.estado]);
         doc.autoTable({
@@ -498,46 +488,25 @@
         });
 
         let finalY = doc.lastAutoTable.finalY + 15;
-        doc.setFontSize(14);
         doc.text("RESUMEN DE METAS", 14, finalY);
-
-        const metasBody = Object.values(metasData).map(m => [
-            m.nombre, 
-            `$${m.objetivo.toLocaleString()}`, 
-            `$${m.actual.toLocaleString()}`, 
-            `${((m.actual/m.objetivo)*100).toFixed(1)}%`
-        ]);
-
+        const metasBody = Object.values(metasData).map(m => [m.nombre, `$${m.objetivo.toLocaleString()}`, `$${m.actual.toLocaleString()}`, `${((m.actual/m.objetivo)*100).toFixed(1)}%`]);
         doc.autoTable({
             startY: finalY + 5,
             head: [['Meta', 'Objetivo', 'Actual', 'Progreso']],
             body: metasBody,
-            theme: 'striped',
             headStyles: { fillColor: [16, 185, 129] }
-        });
-
-        finalY = doc.lastAutoTable.finalY + 15;
-        doc.setFontSize(14);
-        doc.text("MAYORES GASTOS", 14, finalY);
-
-        const topGastos = Object.values(rawData)
-            .filter(d => d.tipo === 'Egreso')
-            .sort((a,b) => b.monto - a.monto)
-            .slice(0, 5)
-            .map(g => [g.fecha, g.concepto, g.cat, `$${g.monto.toLocaleString()}`]);
-
-        doc.autoTable({
-            startY: finalY + 5,
-            head: [['Fecha', 'Concepto', 'Categoría', 'Monto']],
-            body: topGastos,
-            theme: 'grid',
-            headStyles: { fillColor: [239, 68, 68] }
         });
 
         doc.save("Reporte_QuantyA.pdf");
     }
 
-    // Funciones de guardado y lógica de formulario (Sin cambios para no romper funcionalidad)
+    function exportExcel() {
+        const ws = XLSX.utils.json_to_sheet(Object.values(rawData));
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Movimientos");
+        XLSX.writeFile(wb, "QuantyA_Export.xlsx");
+    }
+
     function calcLogic() {
         const m = parseFormatted(document.getElementById('f_monto').value);
         const p = parseFormatted(document.getElementById('f_presupuesto').value);
@@ -551,13 +520,11 @@
         const map = { f_tipo: 'tipos', f_cat: 'cats', f_subcat: 'subs_list', f_proveedor: 'provs', f_pago: 'pagos', f_estado: 'estados', f_recurrente: 'recurrentes' };
         for(let id in map) {
             const el = document.getElementById(id);
-            if(el) {
-                el.innerHTML = settings[map[id]].map(v => `<option value="${v}">${v}</option>`).join('');
-            }
+            if(el) el.innerHTML = settings[map[id]].map(v => `<option value="${v}">${v}</option>`).join('');
         }
     }
 
-    function saveData() {
+    async function saveData() {
         const id = document.getElementById('edit-id').value;
         const data = {
             fecha: document.getElementById('f_fecha').value,
@@ -572,25 +539,15 @@
             proveedor: document.getElementById('f_proveedor').value,
             recurrente: document.getElementById('f_recurrente').value
         };
-        const ref = db.collection('users').doc(currentUser.uid).collection('movimientos');
-        if(id) ref.doc(id).set(data).then(() => clearForm());
-        else ref.add(data).then(() => clearForm());
+
+        if(id) await db.collection('users').doc(currentUser.uid).collection('movimientos').doc(id).update(data);
+        else await db.collection('users').doc(currentUser.uid).collection('movimientos').add(data);
+        clearForm();
     }
 
-    function clearForm() {
-        document.getElementById('edit-id').value = '';
-        document.getElementById('f_monto').value = '';
-        document.getElementById('f_presupuesto').value = '';
-        document.getElementById('f_concepto').value = '';
-        document.getElementById('f_diff').innerText = '$0';
-        document.getElementById('form-title').innerText = "Nueva Operación";
-    }
-
-    function deleteItem(id) { if(confirm('¿Eliminar registro?')) db.collection('users').doc(currentUser.uid).collection('movimientos').doc(id).delete(); }
-
-    function editItem(key) {
-        const d = rawData[key];
-        document.getElementById('edit-id').value = key;
+    function editItem(id) {
+        const d = rawData[id];
+        document.getElementById('edit-id').value = id;
         document.getElementById('f_fecha').value = d.fecha;
         document.getElementById('f_tipo').value = d.tipo;
         document.getElementById('f_monto').value = d.monto.toLocaleString('es-CL');
@@ -607,42 +564,55 @@
         showTab('registro');
     }
 
-    // Metas Logic
-    function renderMetas() {
-        const cont = document.getElementById('metas-container');
-        cont.innerHTML = '';
-        Object.keys(metasData).forEach(key => {
-            const m = metasData[key];
-            const porc = Math.min((m.actual / m.objetivo) * 100, 100);
-            cont.innerHTML += `
-                <div class="card" style="margin-bottom:0;">
-                    <div style="display:flex; justify-content:space-between;">
-                        <h4 style="color:var(--p)">${m.nombre}</h4>
-                        <div>
-                            <button class="btn-goal-edit" onclick="editMeta('${key}')">✏️</button>
-                            <button class="btn-goal-edit" onclick="deleteMeta('${key}')">🗑️</button>
-                        </div>
-                    </div>
-                    <p style="font-size:18px; font-weight:900; margin:10px 0;">$${m.actual.toLocaleString()} <span style="font-size:12px; color:#64748b; font-weight:normal;">de $${m.objetivo.toLocaleString()}</span></p>
-                    <div class="goal-progress"><div class="goal-bar" style="width:${porc}%"></div></div>
-                    <small style="font-weight:bold; color:var(--acc)">${porc.toFixed(1)}% completado</small>
-                </div>`;
-        });
+    async function deleteItem(id) {
+        if(confirm("¿Eliminar este registro?")) await db.collection('users').doc(currentUser.uid).collection('movimientos').doc(id).delete();
     }
 
-    function saveMeta() {
+    function clearForm() {
+        document.getElementById('edit-id').value = "";
+        document.getElementById('f_concepto').value = "";
+        document.getElementById('f_monto').value = "";
+        document.getElementById('f_presupuesto').value = "";
+        document.getElementById('form-title').innerText = "Nueva Operación";
+        document.getElementById('f_fecha').valueAsDate = new Date();
+        calcLogic();
+    }
+
+    async function saveMeta() {
         const id = document.getElementById('m_edit_id').value;
         const data = {
             nombre: document.getElementById('m_nombre').value,
             objetivo: parseFormatted(document.getElementById('m_objetivo').value),
             actual: parseFormatted(document.getElementById('m_actual').value)
         };
-        const ref = db.collection('users').doc(currentUser.uid).collection('metas');
-        if(id) ref.doc(id).set(data).then(() => cancelEditMeta());
-        else ref.add(data).then(() => cancelEditMeta());
+        if(id) await db.collection('users').doc(currentUser.uid).collection('metas').doc(id).update(data);
+        else await db.collection('users').doc(currentUser.uid).collection('metas').add(data);
+        cancelEditMeta();
     }
 
-    function deleteMeta(id) { if(confirm('¿Eliminar meta?')) db.collection('users').doc(currentUser.uid).collection('metas').doc(id).delete(); }
+    function renderMetas() {
+        const container = document.getElementById('metas-container');
+        container.innerHTML = '';
+        Object.keys(metasData).forEach(key => {
+            const m = metasData[key];
+            const porc = Math.min((m.actual / m.objetivo) * 100, 100).toFixed(1);
+            container.innerHTML += `
+                <div class="goal-card">
+                    <div style="display:flex; justify-content:space-between;">
+                        <span style="font-weight:800;">${m.nombre}</span>
+                        <div>
+                            <button class="btn-action" onclick="editMeta('${key}')">✏️</button>
+                            <button class="btn-action" onclick="deleteMeta('${key}')" style="color:red;">🗑️</button>
+                        </div>
+                    </div>
+                    <div class="goal-progress"><div class="goal-bar" style="width:${porc}%"></div></div>
+                    <div style="display:flex; justify-content:space-between; font-size:12px;">
+                        <span>$${m.actual.toLocaleString()} / $${m.objetivo.toLocaleString()}</span>
+                        <span style="font-weight:bold; color:var(--success);">${porc}%</span>
+                    </div>
+                </div>`;
+        });
+    }
 
     function editMeta(id) {
         const m = metasData[id];
@@ -655,48 +625,41 @@
     }
 
     function cancelEditMeta() {
-        document.getElementById('m_edit_id').value = '';
-        document.getElementById('m_nombre').value = '';
-        document.getElementById('m_objetivo').value = '';
-        document.getElementById('m_actual').value = '';
-        document.getElementById('btn-save-meta').innerText = "➕ CREAR META";
+        document.getElementById('m_edit_id').value = "";
+        document.getElementById('m_nombre').value = "";
+        document.getElementById('m_objetivo').value = "";
+        document.getElementById('m_actual').value = "";
+        document.getElementById('btn-save-meta').innerText = "➕ GUARDAR META";
         document.getElementById('btn-cancel-meta').style.display = 'none';
     }
 
-    // Excel
-    function exportExcel() {
-        const dataToExport = Object.values(rawData).map(d => ({ Fecha: d.fecha, Tipo: d.tipo, Concepto: d.concepto, Monto: d.monto, Categoría: d.cat, Proveedor: d.proveedor, Estado: d.estado }));
-        const ws = XLSX.utils.json_to_sheet(dataToExport);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Movimientos");
-        XLSX.writeFile(wb, "QuantyA_Reporte.xlsx");
+    async function deleteMeta(id) {
+        if(confirm("¿Eliminar meta?")) await db.collection('users').doc(currentUser.uid).collection('metas').doc(id).delete();
     }
 
-    // Config
     function renderConfigList() {
         const param = document.getElementById('adj_param').value;
-        const cont = document.getElementById('adj_list_container');
-        cont.innerHTML = settings[param].map((v, i) => `
-            <div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #eee; background:white;">
-                <span>${v}</span>
-                <button onclick="deleteParam('${param}', ${i})" style="border:none; background:none; color:red; cursor:pointer;">✕</button>
+        const container = document.getElementById('adj_list_container');
+        container.innerHTML = settings[param].map((v, i) => `
+            <div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #f1f5f9; align-items:center;">
+                <span style="font-size:13px;">${v}</span>
+                <button onclick="removeParam('${param}', ${i})" style="color:red; background:none; border:none; cursor:pointer;">🗑️</button>
             </div>`).join('');
     }
 
-    function addParam() {
-        const p = document.getElementById('adj_param').value;
-        const v = document.getElementById('adj_new_val').value;
-        if(!v) return;
-        settings[p].push(v);
-        db.collection('users').doc(currentUser.uid).collection('config').doc('listas').set(settings);
+    async function addParam() {
+        const param = document.getElementById('adj_param').value;
+        const val = document.getElementById('adj_new_val').value;
+        if(!val) return;
+        settings[param].push(val);
+        await db.collection('users').doc(currentUser.uid).collection('config').doc('listas').set(settings);
         document.getElementById('adj_new_val').value = '';
     }
 
-    function deleteParam(p, i) {
-        settings[p].splice(i, 1);
-        db.collection('users').doc(currentUser.uid).collection('config').doc('listas').set(settings);
+    async function removeParam(param, idx) {
+        settings[param].splice(idx, 1);
+        await db.collection('users').doc(currentUser.uid).collection('config').doc('listas').set(settings);
     }
 </script>
-
 </body>
 </html>
