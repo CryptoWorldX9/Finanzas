@@ -334,7 +334,6 @@
                 loadDropdowns();
                 if(document.getElementById('ajustes').style.display !== 'none') renderConfigList();
             } else {
-                // Si no existe el documento en Firebase, lo creamos con los valores iniciales
                 db.collection('configuracion').doc('listas').set(settings);
             }
         });
@@ -346,7 +345,8 @@
                 rawData[doc.id] = doc.data();
             });
             refreshUI();
-            updateCharts();
+            // Solo actualiza si estamos en la pestaña análisis para ahorrar rendimiento
+            if(document.getElementById('analisis').style.display !== 'none') updateCharts();
         }, error => {
             console.error("Error Firestore:", error);
         });
@@ -405,9 +405,12 @@
         const hoy = new Date();
         const mesActual = hoy.toISOString().substring(0, 7);
         
-        const tempDate = new Date();
-        const inicioSemana = new Date(tempDate.setDate(tempDate.getDate() - tempDate.getDay() + 1)).toISOString().split('T')[0];
-        const finSemana = new Date(tempDate.setDate(tempDate.getDate() - tempDate.getDay() + 7)).toISOString().split('T')[0];
+        // Cálculo de semana actual
+        const curr = new Date(); 
+        const first = curr.getDate() - curr.getDay() + 1;
+        const last = first + 6;
+        const startWeek = new Date(curr.setDate(first)).toISOString().split('T')[0];
+        const endWeek = new Date(curr.setDate(last)).toISOString().split('T')[0];
 
         let catTotalsMes = {};
         let totalMes = 0;
@@ -415,7 +418,7 @@
 
         Object.values(rawData).forEach(d => {
             if(d.tipo === 'Egreso') {
-                if(d.fecha >= inicioSemana && d.fecha <= finSemana) totalSemana += d.monto;
+                if(d.fecha >= startWeek && d.fecha <= endWeek) totalSemana += d.monto;
                 if(d.fecha.startsWith(mesActual)) {
                     catTotalsMes[d.cat] = (catTotalsMes[d.cat] || 0) + d.monto;
                     totalMes += d.monto;
@@ -432,7 +435,9 @@
         const tableBody = document.getElementById('ana-table-body');
         tableBody.innerHTML = sortedCats.map(c => `<tr><td>${c[0]}</td><td style="font-weight:700;">$${c[1].toLocaleString()}</td></tr>`).join('');
 
-        if(donaChart) donaChart.destroy();
+        // Destrucción segura para evitar duplicados
+        if(donaChart) { donaChart.destroy(); }
+        
         donaChart = new Chart(ctx, { 
             type: 'doughnut', 
             data: { 
@@ -476,12 +481,19 @@
         document.getElementById('f_monto').value = d.monto;
         document.getElementById('f_presupuesto').value = d.presupuesto;
         document.getElementById('f_concepto').value = d.concepto;
-        document.getElementById('f_cat').value = d.cat;
-        document.getElementById('f_subcat').value = d.subcat;
-        document.getElementById('f_proveedor').value = d.proveedor;
-        document.getElementById('f_tipo').value = d.tipo;
-        document.getElementById('f_estado').value = d.estado;
-        document.getElementById('f_pago').value = d.pago;
+        
+        // Sincronización de selectores con delay para asegurar carga de settings
+        setTimeout(() => {
+            document.getElementById('f_tipo').value = d.tipo;
+            document.getElementById('f_cat').value = d.cat;
+            document.getElementById('f_subcat').value = d.subcat;
+            document.getElementById('f_proveedor').value = d.proveedor;
+            document.getElementById('f_estado').value = d.estado;
+            document.getElementById('f_pago').value = d.pago;
+            document.getElementById('f_recurrente').value = d.recurrente || 'No';
+            calcLogic();
+        }, 100);
+
         document.getElementById('form-title').innerText = "✏️ Modificando...";
         showTab('registro');
     }
@@ -496,14 +508,18 @@
         document.getElementById('edit-id').value = ''; 
         document.getElementById('f_monto').value = ''; 
         document.getElementById('f_concepto').value = ''; 
+        document.getElementById('f_presupuesto').value = '';
+        document.getElementById('f_fecha').valueAsDate = new Date();
         document.getElementById('form-title').innerText = "Nueva Operación"; 
+        calcLogic();
     }
 
     function calcLogic() {
         const m = parseFloat(document.getElementById('f_monto').value) || 0;
         const p = parseFloat(document.getElementById('f_presupuesto').value) || 0;
-        document.getElementById('f_diff').innerText = `$${(p - m).toLocaleString()}`;
-        document.getElementById('f_diff').style.color = (p - m) < 0 ? 'red' : 'green';
+        const diff = p - m;
+        document.getElementById('f_diff').innerText = `$${diff.toLocaleString()}`;
+        document.getElementById('f_diff').style.color = diff < 0 ? 'red' : 'green';
     }
 
     function renderConfigList() {
@@ -535,11 +551,9 @@
         }
     }
 
-    // MODIFICADO: Ahora guarda directamente en el documento de configuración de Firebase
     function saveSettingsInFirebase() {
         db.collection('configuracion').doc('listas').set(settings)
           .then(() => {
-              console.log("Configuración actualizada en Firebase");
               renderConfigList();
           });
     }
@@ -547,7 +561,11 @@
     function loadDropdowns() {
         const fill = (id, arr) => {
             const el = document.getElementById(id);
-            if(el) el.innerHTML = arr.map(i => `<option value="${i}">${i}</option>`).join('');
+            if(el) {
+                const currentVal = el.value;
+                el.innerHTML = arr.map(i => `<option value="${i}">${i}</option>`).join('');
+                if(currentVal && arr.includes(currentVal)) el.value = currentVal;
+            }
         };
         fill('f_tipo', settings.tipos);
         fill('f_cat', settings.cats);
@@ -572,6 +590,7 @@
     }
 
     function toggleMenu() { document.getElementById('sidebar').classList.toggle('open'); }
+    
     function showTab(id) {
         document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
         document.getElementById(id).style.display = 'block';
