@@ -56,14 +56,13 @@
         .nav-link.active { background: var(--acc); color: white; }
 
         .table-wrap { overflow-x: auto; margin-top: 15px; border-radius: 12px; }
-        table { width: 100%; border-collapse: collapse; min-width: 800px; }
+        table { width: 100%; border-collapse: collapse; min-width: 100%; }
         th { text-align: left; padding: 15px; background: #f8fafc; color: #64748b; font-size: 11px; border-bottom: 2px solid #edf2f7; }
         td { padding: 15px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
 
         .btn-action { background: none; border: 1px solid #e2e8f0; padding: 6px; border-radius: 6px; cursor: pointer; margin-right: 5px; }
         .filter-header { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 15px; background: #f1f5f9; padding: 15px; border-radius: 12px; }
 
-        /* ESTILOS EXTRACCION AJUSTES */
         .config-item { display: flex; gap: 10px; margin-bottom: 10px; background: #f8fafc; padding: 10px; border-radius: 8px; align-items: center; justify-content: space-between; }
         .badge-del { background: #fee2e2; color: #ef4444; border: none; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-weight: 800; }
         .search-mini { margin-bottom: 15px; border-bottom: 1px dashed #cbd5e1; padding-bottom: 10px; }
@@ -117,7 +116,7 @@
             </div>
             <div class="form-grid">
                 <div><label>Concepto</label><input type="text" id="f_concepto" placeholder="Ej: Pago agua"></div>
-                <div><label>Categoría</label><select id="f_cat" onchange="loadSubs()"></select></div>
+                <div><label>Categoría</label><select id="f_cat"></select></div>
                 <div><label>Subcategoría</label><select id="f_subcat"></select></div>
                 <div><label>Proveedor</label><select id="f_proveedor"></select></div>
             </div>
@@ -178,10 +177,6 @@
                         <option value="-11">Noviembre</option><option value="-12">Diciembre</option>
                     </select>
                 </div>
-                <div style="display:flex; gap:5px;">
-                    <button class="btn-p" style="background:#10b981; width:auto;" onclick="exportExcel()">📊 Excel</button>
-                    <button class="btn-p" style="background:#ef4444; width:auto;" onclick="exportPDF()">📄 PDF</button>
-                </div>
             </div>
             <div class="table-wrap">
                 <table>
@@ -193,19 +188,29 @@
     </div>
 
     <div id="analisis" class="tab-content" style="display:none;">
-        <div class="form-grid">
+        <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
             <div class="card">
-                <h3>Distribución de Gastos</h3><br>
+                <h3>Distribución de Gastos (Egresos)</h3><br>
                 <div style="height: 300px;"><canvas id="chartDona"></canvas></div>
             </div>
             <div class="card">
-                <h3>Resumen Mensual</h3><br>
-                <div style="text-align:center; padding:10px; background:#f8fafc; border-radius:10px; margin-bottom:10px;">
-                    <label>Categoría Top</label>
+                <h3>Resumen Mensual y Semanal</h3><br>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+                    <div style="text-align:center; padding:15px; background:#f0f9ff; border-radius:12px; border:1px solid #bae6fd;">
+                        <label>Gastos Mes Actual</label>
+                        <p id="ana-mes-total" style="font-size:20px; font-weight:900; color:var(--danger);">$0</p>
+                    </div>
+                    <div style="text-align:center; padding:15px; background:#f0fdf4; border-radius:12px; border:1px solid #bbf7d0;">
+                        <label>Gastos Semanales</label>
+                        <p id="ana-semana-total" style="font-size:20px; font-weight:900; color:var(--acc);">$0</p>
+                    </div>
+                </div>
+                <div style="text-align:center; padding:10px; background:#f8fafc; border-radius:10px; margin-bottom:10px; border:1px solid #e2e8f0;">
+                    <label>Categoría Top del Mes</label>
                     <p id="ana-top-cat" style="font-size:18px; font-weight:900;">---</p>
                 </div>
                 <table style="min-width: 100%;">
-                    <thead><tr><th>Top Categorías</th><th>Total</th></tr></thead>
+                    <thead><tr><th>Top Categorías (Mes)</th><th>Total</th></tr></thead>
                     <tbody id="ana-table-body"></tbody>
                 </table>
             </div>
@@ -215,14 +220,13 @@
     <div id="ajustes" class="tab-content" style="display:none;">
         <div class="card">
             <h2>⚙️ Configuración de Listas</h2>
-            <p style="color:#64748b; margin-bottom:20px;">Personaliza las opciones que aparecen en tus formularios.</p>
             <div class="form-grid">
                 <div>
                     <label>1. Selecciona Parámetro</label>
                     <select id="adj_param" onchange="renderConfigList()">
                         <option value="tipos">Tipos</option>
                         <option value="cats">Categorías</option>
-                        <option value="subs_list">Subcategorías (Generales)</option>
+                        <option value="subs_list">Subcategorías</option>
                         <option value="provs">Proveedores</option>
                         <option value="pagos">Métodos de Pago</option>
                         <option value="estados">Estados</option>
@@ -261,8 +265,6 @@
 
     let rawData = {};
     let donaChart = null;
-    
-    // CONFIGURACIÓN INTEGRADA CON LOCALSTORAGE
     let settings = JSON.parse(localStorage.getItem('fpro_master_settings')) || {
         tipos: ['Egreso', 'Ingreso'],
         cats: ['Servicios básicos', 'Alimentación', 'Transporte', 'Salud', 'Ocio'],
@@ -273,7 +275,7 @@
         recurrentes: ['No', 'Sí']
     };
 
-    const tips = ["Ahorra al menos el 10% de tus ingresos mensualmente.", "Evita las compras impulsivas.", "Usa la regla 50/30/20.", "La paciencia es clave para la riqueza."];
+    const tips = ["Ahorra al menos el 10% de tus ingresos mensualmente.", "Usa la regla 50/30/20.", "La paciencia es clave para la riqueza."];
 
     function init() {
         document.getElementById('f_fecha').valueAsDate = new Date();
@@ -284,72 +286,6 @@
             refreshUI();
             updateCharts();
         });
-    }
-
-    // GESTIÓN DE AJUSTES (JS INTEGRADO)
-    function renderConfigList() {
-        const param = document.getElementById('adj_param').value;
-        const query = document.getElementById('adj_search').value.toLowerCase();
-        const container = document.getElementById('adj_list_container');
-        container.innerHTML = '';
-        settings[param].forEach((item, index) => {
-            if(item.toLowerCase().includes(query)) {
-                container.innerHTML += `<div class="config-item"><span>${item}</span><button class="badge-del" onclick="removeParam('${param}', ${index})">✕</button></div>`;
-            }
-        });
-    }
-
-    function addParam() {
-        const param = document.getElementById('adj_param').value;
-        const val = document.getElementById('adj_new_val').value.trim();
-        if(val) {
-            settings[param].push(val);
-            saveSettings();
-            document.getElementById('adj_new_val').value = '';
-            renderConfigList();
-        }
-    }
-
-    function removeParam(param, index) {
-        if(confirm("¿Eliminar esta opción?")) {
-            settings[param].splice(index, 1);
-            saveSettings();
-            renderConfigList();
-        }
-    }
-
-    function saveSettings() {
-        localStorage.setItem('fpro_master_settings', JSON.stringify(settings));
-        loadDropdowns();
-    }
-
-    function loadDropdowns() {
-        const fill = (id, arr) => {
-            const el = document.getElementById(id);
-            if(el) el.innerHTML = arr.map(i => `<option value="${i}">${i}</option>`).join('');
-        };
-        fill('f_tipo', settings.tipos);
-        fill('f_cat', settings.cats);
-        fill('f_subcat', settings.subs_list);
-        fill('f_proveedor', settings.provs);
-        fill('f_pago', settings.pagos);
-        fill('f_estado', settings.estados);
-        fill('f_recurrente', settings.recurrentes);
-    }
-
-    function startTipsSystem() {
-        const textEl = document.getElementById('tips-text');
-        let index = 0;
-        function updateTip() {
-            textEl.style.opacity = 0;
-            setTimeout(() => {
-                textEl.innerText = tips[index % tips.length];
-                textEl.style.opacity = 1;
-                index++;
-            }, 500);
-        }
-        updateTip();
-        setInterval(updateTip, 10000);
     }
 
     function refreshUI() {
@@ -366,7 +302,7 @@
             if(d.tipo === 'Ingreso') ing += d.monto; else eg += d.monto;
             const searchBody = `${d.concepto} ${d.cat} ${d.proveedor}`.toLowerCase();
             if(searchBody.includes(rq) && (rd ? d.fecha === rd : true) && (rm ? d.fecha.includes(rm) : true)) tableReg.innerHTML += renderRow(key, d);
-            if(searchBody.includes(document.getElementById('his_q').value.toLowerCase())) tableHis.innerHTML += renderRow(key, d);
+            if(searchBody.includes(document.getElementById('his_q').value.toLowerCase()) && (document.getElementById('his_m').value ? d.fecha.includes(document.getElementById('his_m').value) : true)) tableHis.innerHTML += renderRow(key, d);
         });
         document.getElementById('total-ingresos').innerText = `$${ing.toLocaleString()}`;
         document.getElementById('total-egresos').innerText = `$${eg.toLocaleString()}`;
@@ -380,10 +316,55 @@
     function updateCharts() {
         const ctx = document.getElementById('chartDona');
         if(!ctx) return;
-        let catTotals = {};
-        Object.values(rawData).forEach(d => { if(d.tipo === 'Egreso') catTotals[d.cat] = (catTotals[d.cat] || 0) + d.monto; });
+
+        const hoy = new Date();
+        const mesActual = hoy.toISOString().substring(0, 7); // YYYY-MM
+        
+        // Calcular inicio y fin de semana actual
+        const inicioSemana = new Date(hoy.setDate(hoy.getDate() - hoy.getDay() + 1)).toISOString().split('T')[0];
+        const finSemana = new Date(hoy.setDate(hoy.getDate() - hoy.getDay() + 7)).toISOString().split('T')[0];
+
+        let catTotalsMes = {};
+        let totalMes = 0;
+        let totalSemana = 0;
+
+        Object.values(rawData).forEach(d => {
+            if(d.tipo === 'Egreso') {
+                // Cálculo Semanal
+                if(d.fecha >= inicioSemana && d.fecha <= finSemana) {
+                    totalSemana += d.monto;
+                }
+                // Cálculo Mensual
+                if(d.fecha.startsWith(mesActual)) {
+                    catTotalsMes[d.cat] = (catTotalsMes[d.cat] || 0) + d.monto;
+                    totalMes += d.monto;
+                }
+            }
+        });
+
+        // Actualizar UI de Análisis
+        document.getElementById('ana-mes-total').innerText = `$${totalMes.toLocaleString()}`;
+        document.getElementById('ana-semana-total').innerText = `$${totalSemana.toLocaleString()}`;
+        
+        const sortedCats = Object.entries(catTotalsMes).sort((a,b) => b[1] - a[1]);
+        document.getElementById('ana-top-cat').innerText = sortedCats.length > 0 ? sortedCats[0][0] : "---";
+        
+        const tableBody = document.getElementById('ana-table-body');
+        tableBody.innerHTML = sortedCats.map(c => `<tr><td>${c[0]}</td><td style="font-weight:700;">$${c[1].toLocaleString()}</td></tr>`).join('');
+
+        // Gráfico
         if(donaChart) donaChart.destroy();
-        donaChart = new Chart(ctx, { type: 'doughnut', data: { labels: Object.keys(catTotals), datasets: [{ data: Object.values(catTotals), backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'] }] }, options: { responsive: true, maintainAspectRatio: false } });
+        donaChart = new Chart(ctx, { 
+            type: 'doughnut', 
+            data: { 
+                labels: Object.keys(catTotalsMes), 
+                datasets: [{ 
+                    data: Object.values(catTotalsMes), 
+                    backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899'] 
+                }] 
+            }, 
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } } 
+        });
     }
 
     function saveData() {
@@ -417,6 +398,7 @@
         document.getElementById('f_proveedor').value = d.proveedor;
         document.getElementById('f_tipo').value = d.tipo;
         document.getElementById('f_estado').value = d.estado;
+        document.getElementById('f_pago').value = d.pago;
         document.getElementById('form-title').innerText = "✏️ Modificando...";
         showTab('registro');
     }
@@ -430,6 +412,60 @@
         document.getElementById('f_diff').style.color = (p - m) < 0 ? 'red' : 'green';
     }
 
+    function renderConfigList() {
+        const param = document.getElementById('adj_param').value;
+        const query = document.getElementById('adj_search').value.toLowerCase();
+        const container = document.getElementById('adj_list_container');
+        container.innerHTML = '';
+        settings[param].forEach((item, index) => {
+            if(item.toLowerCase().includes(query)) {
+                container.innerHTML += `<div class="config-item"><span>${item}</span><button class="badge-del" onclick="removeParam('${param}', ${index})">✕</button></div>`;
+            }
+        });
+    }
+
+    function addParam() {
+        const param = document.getElementById('adj_param').value;
+        const val = document.getElementById('adj_new_val').value.trim();
+        if(val) { settings[param].push(val); saveSettings(); document.getElementById('adj_new_val').value = ''; renderConfigList(); }
+    }
+
+    function removeParam(param, index) {
+        if(confirm("¿Eliminar esta opción?")) { settings[param].splice(index, 1); saveSettings(); renderConfigList(); }
+    }
+
+    function saveSettings() {
+        localStorage.setItem('fpro_master_settings', JSON.stringify(settings));
+        loadDropdowns();
+    }
+
+    function loadDropdowns() {
+        const fill = (id, arr) => {
+            const el = document.getElementById(id);
+            if(el) el.innerHTML = arr.map(i => `<option value="${i}">${i}</option>`).join('');
+        };
+        fill('f_tipo', settings.tipos);
+        fill('f_cat', settings.cats);
+        fill('f_subcat', settings.subs_list);
+        fill('f_proveedor', settings.provs);
+        fill('f_pago', settings.pagos);
+        fill('f_estado', settings.estados);
+        fill('f_recurrente', settings.recurrentes);
+    }
+
+    function startTipsSystem() {
+        const textEl = document.getElementById('tips-text');
+        let index = 0;
+        setInterval(() => {
+            textEl.style.opacity = 0;
+            setTimeout(() => {
+                textEl.innerText = tips[index % tips.length];
+                textEl.style.opacity = 1;
+                index++;
+            }, 500);
+        }, 10000);
+    }
+
     function toggleMenu() { document.getElementById('sidebar').classList.toggle('open'); }
     function showTab(id) {
         document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
@@ -438,6 +474,7 @@
         const activeLink = document.querySelector(`[onclick="showTab('${id}')"]`);
         if(activeLink) activeLink.classList.add('active');
         if(id === 'ajustes') renderConfigList();
+        if(id === 'analisis') updateCharts();
         if(window.innerWidth < 900) document.getElementById('sidebar').classList.remove('open');
     }
 
