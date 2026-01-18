@@ -8,6 +8,8 @@
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     
     <style>
         :root { --p: #0f172a; --acc: #2563eb; --bg: #f8fafc; --danger: #ef4444; --success: #10b981; }
@@ -16,7 +18,7 @@
 
         /* SIDEBAR */
         .sidebar { width: 260px; background: var(--p); color: white; padding: 25px; position: fixed; height: 100vh; z-index: 1000; transition: 0.4s; }
-        .main-content { margin-left: 260px; padding: 20px; width: calc(100% - 260px); margin-top: 85px; transition: 0.4s; }
+        .main-content { margin-left: 260px; padding: 20px; width: calc(100% - 260px); margin-top: 75px; transition: 0.4s; }
 
         /* TOP BAR */
         .top-bar { 
@@ -32,51 +34,46 @@
         .bal-item small { font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; }
         .bal-item p { font-size: 16px; font-weight: 900; }
 
-        /* NUEVO DISEÑO DE TIPS ESTILO CHAT CORPORATIVO */
+        /* DIALOGO DE TIPS */
         .tips-container {
-            display: flex; align-items: flex-end; gap: 12px; margin-bottom: 30px;
-            max-width: 800px; animation: fadeIn 0.5s ease;
+            background: white; border-radius: 15px; padding: 15px 20px; margin-bottom: 25px;
+            display: flex; align-items: center; gap: 15px; border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: relative;
         }
-        .assistant-avatar { 
-            width: 40px; height: 40px; background: var(--p); color: white; 
-            border-radius: 12px; display: flex; align-items: center; justify-content: center; 
-            font-size: 20px; flex-shrink: 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        .chat-bubble { 
-            background: white; padding: 15px 20px; border-radius: 18px 18px 18px 4px;
-            border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-            position: relative; width: 100%;
-        }
-        .chat-bubble small { 
-            display: block; font-size: 10px; font-weight: 700; color: var(--acc); 
-            text-transform: uppercase; margin-bottom: 5px; letter-spacing: 0.5px;
-        }
-        #tips-text { font-size: 14px; color: #334155; line-height: 1.5; font-weight: 500; }
+        .assistant-avatar { width: 50px; height: 50px; background: var(--acc); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; box-shadow: 0 4px 10px rgba(37,99,235,0.3); }
+        .bubble-content { position: relative; background: #f1f5f9; padding: 12px 18px; border-radius: 12px; border-bottom-left-radius: 2px; width: 100%; }
+        .bubble-content::after { content: ''; position: absolute; left: -10px; bottom: 0; width: 0; height: 0; border: 10px solid transparent; border-right-color: #f1f5f9; border-bottom: 0; }
+        #tips-text { font-size: 14px; font-weight: 500; color: #334155; transition: opacity 0.5s ease; line-height: 1.4; }
 
-        /* ESTILOS DE TABLAS Y CARDS */
         .card { background: white; border-radius: 16px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); margin-bottom: 25px; border: 1px solid #e2e8f0; }
         .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        
         label { font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 5px; display: block; }
         input, select, textarea { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px; outline: none; }
+        
         .btn-p { background: var(--acc); color: white; border: none; padding: 12px 20px; border-radius: 10px; cursor: pointer; font-weight: 700; width: 100%; transition: 0.2s; }
         .nav-link { display: flex; align-items: center; gap: 12px; padding: 14px; color: #cbd5e1; cursor: pointer; border-radius: 12px; margin-bottom: 8px; }
         .nav-link.active { background: var(--acc); color: white; }
+
         .table-wrap { overflow-x: auto; margin-top: 15px; border-radius: 12px; }
-        table { width: 100%; border-collapse: collapse; }
+        table { width: 100%; border-collapse: collapse; min-width: 100%; }
         th { text-align: left; padding: 15px; background: #f8fafc; color: #64748b; font-size: 11px; border-bottom: 2px solid #edf2f7; }
         td { padding: 15px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .btn-action { background: none; border: 1px solid #e2e8f0; padding: 6px; border-radius: 6px; cursor: pointer; margin-right: 5px; }
+        .filter-header { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 15px; background: #f1f5f9; padding: 15px; border-radius: 12px; }
 
-        /* MOBILE ADJUSTMENTS */
+        .config-item { display: flex; gap: 10px; margin-bottom: 10px; background: #f8fafc; padding: 10px; border-radius: 8px; align-items: center; justify-content: space-between; }
+        .badge-del { background: #fee2e2; color: #ef4444; border: none; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-weight: 800; }
+        .search-mini { margin-bottom: 15px; border-bottom: 1px dashed #cbd5e1; padding-bottom: 10px; }
+
         @media (max-width: 900px) {
             .sidebar { left: -100%; width: 280px; }
             .sidebar.open { left: 0; }
             .top-bar { left: 0; height: auto; padding: 15px; flex-wrap: wrap; }
-            .main-content { margin-left: 0; margin-top: 140px; width: 100%; padding: 15px; }
+            .main-content { margin-left: 0; margin-top: 100px; width: 100%; padding: 15px; }
             .menu-btn { display: block; }
             .balance-card { width: 100%; justify-content: space-between; order: 2; margin-top: 10px; }
-            .tips-container { margin-top: 10px; }
         }
     </style>
 </head>
@@ -101,10 +98,9 @@
 
 <main class="main-content">
     <div class="tips-container">
-        <div class="assistant-avatar">💼</div>
-        <div class="chat-bubble">
-            <small>Analista Financiero Virtual</small>
-            <div id="tips-text">Analizando tus movimientos para darte el mejor consejo...</div>
+        <div class="assistant-avatar">🤖</div>
+        <div class="bubble-content">
+            <div id="tips-text">Hola, estoy analizando tus datos...</div>
         </div>
     </div>
 
@@ -135,10 +131,28 @@
                 <button class="btn-p" style="background:#64748b;" onclick="clearForm()">🧹 LIMPIAR</button>
             </div>
         </div>
+
         <div class="card">
+            <h3>Movimientos Recientes & Filtros</h3><br>
+            <div class="filter-header">
+                <div style="flex:2;"><label>Buscador</label><input type="text" id="reg_q" placeholder="Buscar..." oninput="refreshUI()"></div>
+                <div style="flex:1;"><label>Día</label><input type="date" id="reg_d" onchange="refreshUI()"></div>
+                <div style="flex:1;">
+                    <label>Mes</label>
+                    <select id="reg_m" onchange="refreshUI()">
+                        <option value="">Todos los meses</option>
+                        <option value="-01">Enero</option><option value="-02">Febrero</option>
+                        <option value="-03">Marzo</option><option value="-04">Abril</option>
+                        <option value="-05">Mayo</option><option value="-06">Junio</option>
+                        <option value="-07">Julio</option><option value="-08">Agosto</option>
+                        <option value="-09">Septiembre</option><option value="-10">Octubre</option>
+                        <option value="-11">Noviembre</option><option value="-12">Diciembre</option>
+                    </select>
+                </div>
+            </div>
             <div class="table-wrap">
                 <table>
-                    <thead><tr><th>Fecha</th><th>Concepto</th><th>Monto</th><th>Categoría</th><th>Estado</th><th>Acciones</th></tr></thead>
+                    <thead><tr><th>Fecha</th><th>Concepto</th><th>Monto</th><th>Categoría</th><th>Proveedor</th><th>Estado</th><th>Acciones</th></tr></thead>
                     <tbody id="list_reg_table"></tbody>
                 </table>
             </div>
@@ -146,32 +160,92 @@
     </div>
 
     <div id="historial" class="tab-content" style="display:none;">
-        <div class="card"><h3>Historial General</h3><div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Concepto</th><th>Monto</th><th>Categoría</th><th>Estado</th><th>Acciones</th></tr></thead><tbody id="list_his_table"></tbody></table></div></div>
+        <div class="card">
+            <h3>Historial General</h3><br>
+            <div class="filter-header">
+                <div style="flex:2;"><label>Buscador</label><input type="text" id="his_q" placeholder="Buscar..." oninput="refreshUI()"></div>
+                <div style="flex:1;"><label>Día</label><input type="date" id="his_d" onchange="refreshUI()"></div>
+                <div style="flex:1;">
+                    <label>Mes</label>
+                    <select id="his_m" onchange="refreshUI()">
+                        <option value="">Todos los meses</option>
+                        <option value="-01">Enero</option><option value="-02">Febrero</option>
+                        <option value="-03">Marzo</option><option value="-04">Abril</option>
+                        <option value="-05">Mayo</option><option value="-06">Junio</option>
+                        <option value="-07">Julio</option><option value="-08">Agosto</option>
+                        <option value="-09">Septiembre</option><option value="-10">Octubre</option>
+                        <option value="-11">Noviembre</option><option value="-12">Diciembre</option>
+                    </select>
+                </div>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Fecha</th><th>Concepto</th><th>Monto</th><th>Categoría</th><th>Proveedor</th><th>Estado</th><th>Acciones</th></tr></thead>
+                    <tbody id="list_his_table"></tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <div id="analisis" class="tab-content" style="display:none;">
         <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
-            <div class="card"><h3>Egresos por Categoría</h3><div style="height: 300px;"><canvas id="chartDona"></canvas></div></div>
             <div class="card">
-                <h3>Resumen Ejecutivo</h3><br>
+                <h3>Distribución de Gastos (Egresos)</h3><br>
+                <div style="height: 300px;"><canvas id="chartDona"></canvas></div>
+            </div>
+            <div class="card">
+                <h3>Resumen Mensual y Semanal</h3><br>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
-                    <div style="text-align:center; padding:15px; background:#f0f9ff; border-radius:12px; border:1px solid #bae6fd;"><label>Mes</label><p id="ana-mes-total" style="font-size:20px; font-weight:900; color:var(--danger);">$0</p></div>
-                    <div style="text-align:center; padding:15px; background:#f0fdf4; border-radius:12px; border:1px solid #bbf7d0;"><label>Semana</label><p id="ana-semana-total" style="font-size:20px; font-weight:900; color:var(--acc);">$0</p></div>
+                    <div style="text-align:center; padding:15px; background:#f0f9ff; border-radius:12px; border:1px solid #bae6fd;">
+                        <label>Gastos Mes Actual</label>
+                        <p id="ana-mes-total" style="font-size:20px; font-weight:900; color:var(--danger);">$0</p>
+                    </div>
+                    <div style="text-align:center; padding:15px; background:#f0fdf4; border-radius:12px; border:1px solid #bbf7d0;">
+                        <label>Gastos Semanales</label>
+                        <p id="ana-semana-total" style="font-size:20px; font-weight:900; color:var(--acc);">$0</p>
+                    </div>
                 </div>
-                <table style="width:100%;"><thead><tr><th>Categoría</th><th>Total</th></tr></thead><tbody id="ana-table-body"></tbody></table>
+                <div style="text-align:center; padding:10px; background:#f8fafc; border-radius:10px; margin-bottom:10px; border:1px solid #e2e8f0;">
+                    <label>Categoría Top del Mes</label>
+                    <p id="ana-top-cat" style="font-size:18px; font-weight:900;">---</p>
+                </div>
+                <table style="min-width: 100%;">
+                    <thead><tr><th>Top Categorías (Mes)</th><th>Total</th></tr></thead>
+                    <tbody id="ana-table-body"></tbody>
+                </table>
             </div>
         </div>
     </div>
 
     <div id="ajustes" class="tab-content" style="display:none;">
         <div class="card">
-            <h2>⚙️ Parámetros del Sistema</h2>
+            <h2>⚙️ Configuración de Listas</h2>
             <div class="form-grid">
-                <div><label>Lista</label><select id="adj_param" onchange="renderConfigList()"><option value="tipos">Tipos</option><option value="cats">Categorías</option><option value="subs_list">Subcategorías</option><option value="provs">Proveedores</option><option value="pagos">Métodos</option></select></div>
-                <div><label>Nuevo Item</label><input type="text" id="adj_new_val"></div>
-                <div style="display:flex; align-items:flex-end;"><button class="btn-p" onclick="addParam()">➕ AGREGAR</button></div>
+                <div>
+                    <label>1. Selecciona Parámetro</label>
+                    <select id="adj_param" onchange="renderConfigList()">
+                        <option value="tipos">Tipos</option>
+                        <option value="cats">Categorías</option>
+                        <option value="subs_list">Subcategorías</option>
+                        <option value="provs">Proveedores</option>
+                        <option value="pagos">Métodos de Pago</option>
+                        <option value="estados">Estados</option>
+                        <option value="recurrentes">Recurrencia</option>
+                    </select>
+                </div>
+                <div>
+                    <label>2. Nuevo Valor</label>
+                    <input type="text" id="adj_new_val" placeholder="Escribe aquí...">
+                </div>
+                <div style="display:flex; align-items:flex-end;">
+                    <button class="btn-p" onclick="addParam()">➕ AGREGAR</button>
+                </div>
             </div>
-            <div id="adj_list_container"></div>
+            <div class="search-mini">
+                <label>Buscar en la lista</label>
+                <input type="text" id="adj_search" placeholder="Filtrar opciones..." oninput="renderConfigList()">
+            </div>
+            <div id="adj_list_container" style="max-height: 400px; overflow-y: auto;"></div>
         </div>
     </div>
 </main>
@@ -179,8 +253,11 @@
 <script>
     const firebaseConfig = {
       apiKey: "AIzaSyCO6WXu9iZsyEUmNNxrE4oWToLYY8wl-y4",
+      authDomain: "misfinanzaspro-d2f3f.firebaseapp.com",
       databaseURL: "https://misfinanzaspro-d2f3f-default-rtdb.firebaseio.com",
       projectId: "misfinanzaspro-d2f3f",
+      storageBucket: "misfinanzaspro-d2f3f.firebasestorage.app",
+      messagingSenderId: "613366165036",
       appId: "1:613366165036:web:bebc72b38d39ab64932b89"
     };
     firebase.initializeApp(firebaseConfig);
@@ -190,47 +267,15 @@
     let donaChart = null;
     let settings = JSON.parse(localStorage.getItem('fpro_master_settings')) || {
         tipos: ['Egreso', 'Ingreso'],
-        cats: ['Servicios', 'Alimentación', 'Transporte', 'Ocio'],
-        subs_list: ['Luz', 'Supermercado', 'Bencina'],
-        provs: ['Enel', 'Lider', 'Copec'],
-        pagos: ['Débito', 'Efectivo'],
+        cats: ['Servicios básicos', 'Alimentación', 'Transporte', 'Salud', 'Ocio'],
+        subs_list: ['Agua potable', 'Luz', 'Gas', 'Internet', 'Supermercado'],
+        provs: ['Aguas Andinas', 'Enel', 'Metrogas', 'Lider'],
+        pagos: ['Débito', 'Crédito', 'Efectivo'],
         estados: ['Pagado', 'Pendiente'],
         recurrentes: ['No', 'Sí']
     };
 
-    // 30 TIPS PROFESIONALES DE FINANZAS
-    const tips = [
-        "Regla 50/30/20: 50% necesidades, 30% deseos, 20% ahorro e inversión.",
-        "Fondo de Emergencia: Ahorra de 3 a 6 meses de tus gastos básicos.",
-        "Págate a ti primero: Aparta tu ahorro apenas recibas tu sueldo, no al final.",
-        "Evita los gastos hormiga: Ese café diario puede sumar una fortuna al año.",
-        "Interés Compuesto: Empieza a invertir hoy; el tiempo es más valioso que el capital.",
-        "Inflación de Estilo de Vida: No aumentes tus gastos cada vez que suba tu sueldo.",
-        "Deudas Malas: Elimina primero las tarjetas de crédito con intereses altos.",
-        "Presupuesto Base Cero: Dale un propósito a cada centavo antes de que empiece el mes.",
-        "Diferencia Deseo de Necesidad: Espera 48 horas antes de una compra grande.",
-        "Diversifica: No pongas todos tus huevos en la misma canasta de inversión.",
-        "Seguros: No son un gasto, son la protección de tu patrimonio.",
-        "Revisa tus suscripciones: Cancela lo que no has usado en los últimos 30 días.",
-        "Compra calidad: Lo barato sale caro si tienes que reemplazarlo constantemente.",
-        "Automatiza: Programa tus ahorros y pagos de cuentas para evitar multas.",
-        "Educación Financiera: Tu mejor activo es tu capacidad de aprender a manejar dinero.",
-        "Planifica las compras: Ir al supermercado con lista reduce el gasto compulsivo.",
-        "Metas SMART: Define objetivos financieros específicos, medibles y alcanzables.",
-        "Comparte gastos: Si puedes, usa transporte compartido o divide suscripciones.",
-        "Días de No Gasto: Intenta tener 2 días a la semana sin gastar ni un peso.",
-        "Ahorra los excedentes: Bonos o devoluciones de impuestos van directo al ahorro.",
-        "Negocia tus servicios: Revisa anualmente tus planes de internet y telefonía.",
-        "Evita el pago mínimo: Solo beneficia al banco, paga siempre el total de la tarjeta.",
-        "Invierte en salud: Prevenir enfermedades es más barato que curarlas.",
-        "Usa efectivo para ocio: Ayuda a visualizar cuánto dinero te queda realmente.",
-        "Límite de crédito: No uses más del 30% de tu cupo disponible en tarjetas.",
-        "Compara precios: Usa apps de comparación antes de comprar tecnología o electrodomésticos.",
-        "Mantenimiento preventivo: Cuidar tu auto o casa evita reparaciones costosas.",
-        "Registra todo: El éxito financiero empieza con saber a dónde se va cada centavo.",
-        "Invierte en ti: Cursos y certificaciones aumentan tu valor en el mercado laboral.",
-        "Mentalidad a largo plazo: La libertad financiera es una maratón, no un sprint."
-    ];
+    const tips = ["Ahorra al menos el 10% de tus ingresos mensualmente.", "Usa la regla 50/30/20.", "La paciencia es clave para la riqueza."];
 
     function init() {
         document.getElementById('f_fecha').valueAsDate = new Date();
@@ -243,23 +288,11 @@
         });
     }
 
-    function startTipsSystem() {
-        const textEl = document.getElementById('tips-text');
-        let index = Math.floor(Math.random() * tips.length);
-        const updateTip = () => {
-            textEl.style.opacity = 0;
-            setTimeout(() => {
-                textEl.innerText = tips[index % tips.length];
-                textEl.style.opacity = 1;
-                index++;
-            }, 500);
-        };
-        updateTip();
-        setInterval(updateTip, 12000);
-    }
-
     function refreshUI() {
         let ing = 0, eg = 0;
+        const rq = document.getElementById('reg_q').value.toLowerCase();
+        const rd = document.getElementById('reg_d').value;
+        const rm = document.getElementById('reg_m').value;
         const tableReg = document.getElementById('list_reg_table');
         const tableHis = document.getElementById('list_his_table');
         tableReg.innerHTML = ''; tableHis.innerHTML = '';
@@ -267,33 +300,75 @@
         Object.keys(rawData).reverse().forEach(key => {
             const d = rawData[key];
             if(d.tipo === 'Ingreso') ing += d.monto; else eg += d.monto;
-            const row = `<tr><td>${d.fecha}</td><td><b>${d.concepto}</b></td><td style="color:${d.tipo==='Ingreso'?'green':'red'}">$${d.monto.toLocaleString()}</td><td><small>${d.cat}</small></td><td>${d.estado}</td><td><button class="btn-action" onclick="deleteItem('${key}')">🗑️</button></td></tr>`;
-            tableReg.innerHTML += row;
-            tableHis.innerHTML += row;
+            const searchBody = `${d.concepto} ${d.cat} ${d.proveedor}`.toLowerCase();
+            if(searchBody.includes(rq) && (rd ? d.fecha === rd : true) && (rm ? d.fecha.includes(rm) : true)) tableReg.innerHTML += renderRow(key, d);
+            if(searchBody.includes(document.getElementById('his_q').value.toLowerCase()) && (document.getElementById('his_m').value ? d.fecha.includes(document.getElementById('his_m').value) : true)) tableHis.innerHTML += renderRow(key, d);
         });
         document.getElementById('total-ingresos').innerText = `$${ing.toLocaleString()}`;
         document.getElementById('total-egresos').innerText = `$${eg.toLocaleString()}`;
         document.getElementById('total-saldo').innerText = `$${(ing - eg).toLocaleString()}`;
     }
 
+    function renderRow(key, d) {
+        return `<tr><td>${d.fecha}</td><td><b>${d.concepto}</b></td><td style="color:${d.tipo==='Ingreso'?'green':'red'}"><b>$${d.monto.toLocaleString()}</b></td><td><small>${d.cat}</small></td><td>${d.proveedor}</td><td><span style="font-size:11px; padding:3px 8px; border-radius:10px; background:${d.estado==='Pagado'?'#dcfce7':'#fee2e2'}; color:${d.estado==='Pagado'?'#166534':'#991b1b'}">${d.estado}</span></td><td><button class="btn-action" onclick="editItem('${key}')">✏️</button><button class="btn-action" onclick="deleteItem('${key}')" style="color:red;">🗑️</button></td></tr>`;
+    }
+
     function updateCharts() {
         const ctx = document.getElementById('chartDona');
         if(!ctx) return;
+
         const hoy = new Date();
-        const mesAct = hoy.toISOString().substring(0,7);
-        let catT = {}, tMes = 0;
+        const mesActual = hoy.toISOString().substring(0, 7); // YYYY-MM
+        
+        // Calcular inicio y fin de semana actual
+        const inicioSemana = new Date(hoy.setDate(hoy.getDate() - hoy.getDay() + 1)).toISOString().split('T')[0];
+        const finSemana = new Date(hoy.setDate(hoy.getDate() - hoy.getDay() + 7)).toISOString().split('T')[0];
+
+        let catTotalsMes = {};
+        let totalMes = 0;
+        let totalSemana = 0;
+
         Object.values(rawData).forEach(d => {
-            if(d.tipo === 'Egreso' && d.fecha.startsWith(mesAct)) {
-                catT[d.cat] = (catT[d.cat] || 0) + d.monto;
-                tMes += d.monto;
+            if(d.tipo === 'Egreso') {
+                // Cálculo Semanal
+                if(d.fecha >= inicioSemana && d.fecha <= finSemana) {
+                    totalSemana += d.monto;
+                }
+                // Cálculo Mensual
+                if(d.fecha.startsWith(mesActual)) {
+                    catTotalsMes[d.cat] = (catTotalsMes[d.cat] || 0) + d.monto;
+                    totalMes += d.monto;
+                }
             }
         });
-        document.getElementById('ana-mes-total').innerText = `$${tMes.toLocaleString()}`;
+
+        // Actualizar UI de Análisis
+        document.getElementById('ana-mes-total').innerText = `$${totalMes.toLocaleString()}`;
+        document.getElementById('ana-semana-total').innerText = `$${totalSemana.toLocaleString()}`;
+        
+        const sortedCats = Object.entries(catTotalsMes).sort((a,b) => b[1] - a[1]);
+        document.getElementById('ana-top-cat').innerText = sortedCats.length > 0 ? sortedCats[0][0] : "---";
+        
+        const tableBody = document.getElementById('ana-table-body');
+        tableBody.innerHTML = sortedCats.map(c => `<tr><td>${c[0]}</td><td style="font-weight:700;">$${c[1].toLocaleString()}</td></tr>`).join('');
+
+        // Gráfico
         if(donaChart) donaChart.destroy();
-        donaChart = new Chart(ctx, { type: 'doughnut', data: { labels: Object.keys(catT), datasets: [{ data: Object.values(catT), backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#ef4444'] }] }, options: { responsive: true, maintainAspectRatio: false } });
+        donaChart = new Chart(ctx, { 
+            type: 'doughnut', 
+            data: { 
+                labels: Object.keys(catTotalsMes), 
+                datasets: [{ 
+                    data: Object.values(catTotalsMes), 
+                    backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899'] 
+                }] 
+            }, 
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } } 
+        });
     }
 
     function saveData() {
+        const id = document.getElementById('edit-id').value;
         const data = {
             fecha: document.getElementById('f_fecha').value,
             tipo: document.getElementById('f_tipo').value,
@@ -307,17 +382,61 @@
             proveedor: document.getElementById('f_proveedor').value,
             recurrente: document.getElementById('f_recurrente').value
         };
-        db.ref('movimientos').push(data);
+        if(id) db.ref('movimientos/' + id).set(data); else db.ref('movimientos').push(data);
         clearForm();
     }
 
+    function editItem(key) {
+        const d = rawData[key];
+        document.getElementById('edit-id').value = key;
+        document.getElementById('f_fecha').value = d.fecha;
+        document.getElementById('f_monto').value = d.monto;
+        document.getElementById('f_presupuesto').value = d.presupuesto;
+        document.getElementById('f_concepto').value = d.concepto;
+        document.getElementById('f_cat').value = d.cat;
+        document.getElementById('f_subcat').value = d.subcat;
+        document.getElementById('f_proveedor').value = d.proveedor;
+        document.getElementById('f_tipo').value = d.tipo;
+        document.getElementById('f_estado').value = d.estado;
+        document.getElementById('f_pago').value = d.pago;
+        document.getElementById('form-title').innerText = "✏️ Modificando...";
+        showTab('registro');
+    }
+
     function deleteItem(key) { if(confirm("¿Eliminar?")) db.ref('movimientos/' + key).remove(); }
-    function clearForm() { document.getElementById('f_monto').value = ''; document.getElementById('f_concepto').value = ''; }
+    function clearForm() { document.getElementById('edit-id').value = ''; document.getElementById('f_monto').value = ''; document.getElementById('f_concepto').value = ''; document.getElementById('form-title').innerText = "Nueva Operación"; }
     function calcLogic() {
         const m = parseFloat(document.getElementById('f_monto').value) || 0;
         const p = parseFloat(document.getElementById('f_presupuesto').value) || 0;
         document.getElementById('f_diff').innerText = `$${(p - m).toLocaleString()}`;
         document.getElementById('f_diff').style.color = (p - m) < 0 ? 'red' : 'green';
+    }
+
+    function renderConfigList() {
+        const param = document.getElementById('adj_param').value;
+        const query = document.getElementById('adj_search').value.toLowerCase();
+        const container = document.getElementById('adj_list_container');
+        container.innerHTML = '';
+        settings[param].forEach((item, index) => {
+            if(item.toLowerCase().includes(query)) {
+                container.innerHTML += `<div class="config-item"><span>${item}</span><button class="badge-del" onclick="removeParam('${param}', ${index})">✕</button></div>`;
+            }
+        });
+    }
+
+    function addParam() {
+        const param = document.getElementById('adj_param').value;
+        const val = document.getElementById('adj_new_val').value.trim();
+        if(val) { settings[param].push(val); saveSettings(); document.getElementById('adj_new_val').value = ''; renderConfigList(); }
+    }
+
+    function removeParam(param, index) {
+        if(confirm("¿Eliminar esta opción?")) { settings[param].splice(index, 1); saveSettings(); renderConfigList(); }
+    }
+
+    function saveSettings() {
+        localStorage.setItem('fpro_master_settings', JSON.stringify(settings));
+        loadDropdowns();
     }
 
     function loadDropdowns() {
@@ -334,6 +453,19 @@
         fill('f_recurrente', settings.recurrentes);
     }
 
+    function startTipsSystem() {
+        const textEl = document.getElementById('tips-text');
+        let index = 0;
+        setInterval(() => {
+            textEl.style.opacity = 0;
+            setTimeout(() => {
+                textEl.innerText = tips[index % tips.length];
+                textEl.style.opacity = 1;
+                index++;
+            }, 500);
+        }, 10000);
+    }
+
     function toggleMenu() { document.getElementById('sidebar').classList.toggle('open'); }
     function showTab(id) {
         document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
@@ -341,6 +473,8 @@
         document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
         const activeLink = document.querySelector(`[onclick="showTab('${id}')"]`);
         if(activeLink) activeLink.classList.add('active');
+        if(id === 'ajustes') renderConfigList();
+        if(id === 'analisis') updateCharts();
         if(window.innerWidth < 900) document.getElementById('sidebar').classList.remove('open');
     }
 
