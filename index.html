@@ -17,7 +17,6 @@
         * { margin:0; padding:0; box-sizing:border-box; font-family: 'Inter', sans-serif; }
         body { background: var(--bg); display: flex; min-height: 100vh; color: #1e293b; overflow-x: hidden; }
 
-        /* AUTH OVERLAY */
         #auth-screen { position: fixed; inset: 0; background: var(--p); z-index: 2000; display: flex; align-items: center; justify-content: center; color: white; }
         .auth-card { background: white; padding: 40px; border-radius: 20px; width: 100%; max-width: 400px; color: #1e293b; }
 
@@ -36,7 +35,6 @@
         .bal-item small { font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; }
         .bal-item p { font-size: 16px; font-weight: 900; }
 
-        /* METAS STYLE */
         .goal-progress { background: #e2e8f0; height: 10px; border-radius: 5px; margin: 10px 0; overflow: hidden; }
         .goal-bar { background: var(--success); height: 100%; transition: 0.5s; }
         .btn-goal-add { background: var(--success); color: white; border: none; padding: 8px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
@@ -204,7 +202,9 @@
         <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
             <div class="card">
                 <h3>Distribución de Gastos (Egresos)</h3><br>
-                <div style="height: 300px;"><canvas id="chartDona"></canvas></div>
+                <div style="height: 300px; position: relative;">
+                    <canvas id="chartDona"></canvas>
+                </div>
             </div>
             <div class="card">
                 <h3>Resumen Mensual y Semanal</h3><br>
@@ -214,7 +214,7 @@
                         <p id="ana-mes-total" style="font-size:20px; font-weight:900; color:var(--danger);">$0</p>
                     </div>
                     <div style="text-align:center; padding:15px; background:#f0fdf4; border-radius:12px; border:1px solid #bbf7d0;">
-                        <label>Gastos Semanales</label>
+                        <label>Gastos Últimos 7 Días</label>
                         <p id="ana-semana-total" style="font-size:20px; font-weight:900; color:var(--acc);">$0</p>
                     </div>
                 </div>
@@ -222,10 +222,12 @@
                     <label>Categoría Top del Mes</label>
                     <p id="ana-top-cat" style="font-size:18px; font-weight:900;">---</p>
                 </div>
-                <table style="min-width: 100%;">
-                    <thead><tr><th>Top Categorías (Mes)</th><th>Total</th></tr></thead>
-                    <tbody id="ana-table-body"></tbody>
-                </table>
+                <div class="table-wrap">
+                    <table style="min-width: 100%;">
+                        <thead><tr><th>Top Categorías (Mes)</th><th>Total</th></tr></thead>
+                        <tbody id="ana-table-body"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -273,7 +275,6 @@
 
     const tips = ["Regla 50/30/20: 50% necesidades, 30% deseos y 20% ahorro.", "Fondo de Emergencia: Ahorra de 3 a 6 meses de tus gastos básicos.", "Págate a ti primero: Separa tu ahorro apenas recibas tu sueldo."];
 
-    // --- LÓGICA DE AUTENTICACIÓN ---
     auth.onAuthStateChanged(user => {
         if (user) {
             currentUser = user;
@@ -319,7 +320,6 @@
         });
     }
 
-    // --- LÓGICA DE METAS MEJORADA ---
     function saveMeta() {
         const id = document.getElementById('m_edit_id').value;
         const data = {
@@ -327,15 +327,10 @@
             objetivo: parseFloat(document.getElementById('m_objetivo').value) || 0,
             actual: parseFloat(document.getElementById('m_actual').value) || 0
         };
-        
         if(!data.nombre || data.objetivo <= 0) return alert("Completa nombre y objetivo");
-
         const ref = db.collection('users').doc(currentUser.uid).collection('metas');
-        if(id) {
-            ref.doc(id).update(data).then(() => cancelEditMeta());
-        } else {
-            ref.add(data).then(() => cancelEditMeta());
-        }
+        if(id) ref.doc(id).update(data).then(() => cancelEditMeta());
+        else ref.add(data).then(() => cancelEditMeta());
     }
 
     function addSavings(id) {
@@ -343,9 +338,7 @@
         if (amount && !isNaN(amount)) {
             const currentActual = metasData[id].actual;
             const newTotal = currentActual + parseFloat(amount);
-            db.collection('users').doc(currentUser.uid).collection('metas').doc(id).update({
-                actual: newTotal
-            });
+            db.collection('users').doc(currentUser.uid).collection('metas').doc(id).update({ actual: newTotal });
         }
     }
 
@@ -355,7 +348,6 @@
         document.getElementById('m_nombre').value = m.nombre;
         document.getElementById('m_objetivo').value = m.objetivo;
         document.getElementById('m_actual').value = m.actual;
-        
         document.getElementById('meta-form-title').innerText = "📝 Editar Meta";
         document.getElementById('btn-save-meta').innerText = "ACTUALIZAR META";
         document.getElementById('btn-cancel-meta').style.display = "block";
@@ -399,7 +391,6 @@
 
     function deleteMeta(id) { if(confirm("¿Eliminar meta?")) db.collection('users').doc(currentUser.uid).collection('metas').doc(id).delete(); }
 
-    // --- EXPORTAR PDF ---
     function exportPDF() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
@@ -409,7 +400,6 @@
         doc.save(`Finanzas_${new Date().toLocaleDateString()}.pdf`);
     }
 
-    // --- FUNCIONES ORIGINALES ---
     function saveData() {
         const id = document.getElementById('edit-id').value;
         const data = {
@@ -437,8 +427,10 @@
         const val = document.getElementById('adj_new_val').value.trim();
         if(val) { 
             settings[param].push(val); 
-            db.collection('users').doc(currentUser.uid).collection('config').doc('listas').set(settings);
-            document.getElementById('adj_new_val').value = ''; 
+            db.collection('users').doc(currentUser.uid).collection('config').doc('listas').set(settings).then(() => {
+                document.getElementById('adj_new_val').value = ''; 
+                renderConfigList(); // Refleja inmediato
+            });
         }
     }
 
@@ -468,9 +460,49 @@
 
     function updateCharts() {
         const ctx = document.getElementById('chartDona'); if(!ctx) return;
-        let cats = {}; Object.values(rawData).forEach(d => { if(d.tipo==='Egreso'){ cats[d.cat] = (cats[d.cat]||0)+d.monto; } });
+        
+        let cats = {};
+        let totalMes = 0;
+        let totalSemana = 0;
+        const hoy = new Date();
+        const mesActual = hoy.getMonth();
+        const añoActual = hoy.getFullYear();
+        const hace7Dias = new Date(hoy.setDate(hoy.getDate() - 7));
+
+        Object.values(rawData).forEach(d => {
+            const f = new Date(d.fecha + 'T00:00:00');
+            if(d.tipo === 'Egreso') {
+                // Para el Dona
+                cats[d.cat] = (cats[d.cat]||0)+d.monto;
+                // Para Resumen Mensual
+                if(f.getMonth() === mesActual && f.getFullYear() === añoActual) totalMes += d.monto;
+                // Para Resumen Semanal
+                if(f >= hace7Dias) totalSemana += d.monto;
+            }
+        });
+
+        // Actualizar Textos Análisis
+        document.getElementById('ana-mes-total').innerText = `$${totalMes.toLocaleString()}`;
+        document.getElementById('ana-semana-total').innerText = `$${totalSemana.toLocaleString()}`;
+
+        // Tabla de Categorías
+        const sortedCats = Object.entries(cats).sort((a,b) => b[1] - a[1]);
+        const tableBody = document.getElementById('ana-table-body');
+        if(tableBody) {
+            tableBody.innerHTML = sortedCats.slice(0,5).map(c => `<tr><td>${c[0]}</td><td>$${c[1].toLocaleString()}</td></tr>`).join('');
+            document.getElementById('ana-top-cat').innerText = sortedCats[0] ? sortedCats[0][0] : '---';
+        }
+
+        // Gráfico
         if(donaChart) donaChart.destroy();
-        donaChart = new Chart(ctx, { type:'doughnut', data:{ labels:Object.keys(cats), datasets:[{data:Object.values(cats), backgroundColor:['#2563eb','#10b981','#f59e0b','#ef4444']}] } });
+        donaChart = new Chart(ctx, { 
+            type:'doughnut', 
+            data:{ 
+                labels:Object.keys(cats), 
+                datasets:[{data:Object.values(cats), backgroundColor:['#2563eb','#10b981','#f59e0b','#ef4444','#8b5cf6']}] 
+            },
+            options: { maintainAspectRatio: false } 
+        });
     }
 
     function loadDropdowns() {
@@ -485,7 +517,7 @@
         const container = document.getElementById('adj_list_container'); container.innerHTML = '';
         settings[p].forEach((item, i) => { container.innerHTML += `<div class="config-item"><span>${item}</span><button class="badge-del" onclick="removeParam('${p}', ${i})">✕</button></div>`; });
     }
-    function removeParam(p, i) { if(confirm("¿Eliminar?")) { settings[p].splice(i,1); db.collection('users').doc(currentUser.uid).collection('config').doc('listas').set(settings); renderConfigList(); } }
+    function removeParam(p, i) { if(confirm("¿Eliminar?")) { settings[p].splice(i,1); db.collection('users').doc(currentUser.uid).collection('config').doc('listas').set(settings).then(() => renderConfigList()); } }
     function showTab(id) { document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none'); document.getElementById(id).style.display = 'block'; document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active')); const al = document.querySelector(`[onclick="showTab('${id}')"]`); if(al) al.classList.add('active'); if(id==='ajustes') renderConfigList(); if(id==='analisis') updateCharts(); }
     function startTipsSystem() { const textEl = document.getElementById('tips-text'); let i = 0; setInterval(() => { textEl.style.opacity = 0; setTimeout(() => { textEl.innerText = tips[i % tips.length]; textEl.style.opacity = 1; i++; }, 500); }, 12000); }
     function toggleMenu() { document.getElementById('sidebar').classList.toggle('open'); }
