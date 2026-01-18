@@ -39,6 +39,8 @@
         /* METAS STYLE */
         .goal-progress { background: #e2e8f0; height: 10px; border-radius: 5px; margin: 10px 0; overflow: hidden; }
         .goal-bar { background: var(--success); height: 100%; transition: 0.5s; }
+        .btn-goal-add { background: var(--success); color: white; border: none; padding: 8px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
+        .btn-goal-edit { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 5px; border-radius: 5px; cursor: pointer; font-size: 12px; }
 
         .tips-container { display: flex; align-items: flex-end; gap: 12px; margin-bottom: 25px; max-width: 900px; animation: fadeIn 0.5s ease; }
         .assistant-avatar { width: 45px; height: 45px; background: var(--p); color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
@@ -183,12 +185,16 @@
 
     <div id="metas" class="tab-content" style="display:none;">
         <div class="card">
-            <h3>🎯 Mis Metas de Ahorro</h3><br>
+            <h3 id="meta-form-title">🎯 Mis Metas de Ahorro</h3><br>
+            <input type="hidden" id="m_edit_id">
             <div class="form-grid">
                 <div><label>Nombre Meta</label><input type="text" id="m_nombre" placeholder="Ej: Fondo Viaje"></div>
                 <div><label>Monto Objetivo ($)</label><input type="number" id="m_objetivo"></div>
                 <div><label>Monto Actual ($)</label><input type="number" id="m_actual"></div>
-                <div style="display:flex; align-items:flex-end;"><button class="btn-p" onclick="saveMeta()">➕ CREAR META</button></div>
+                <div style="display:flex; align-items:flex-end; gap:5px;">
+                    <button class="btn-p" onclick="saveMeta()" id="btn-save-meta">➕ CREAR META</button>
+                    <button class="btn-p" style="background:#64748b; display:none;" id="btn-cancel-meta" onclick="cancelEditMeta()">✕</button>
+                </div>
             </div>
             <div id="metas-container" style="margin-top:30px; display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:20px;"></div>
         </div>
@@ -297,34 +303,72 @@
         document.getElementById('f_fecha').valueAsDate = new Date();
         startTipsSystem();
 
-        // Cargar Ajustes por Usuario
         db.collection('users').doc(currentUser.uid).collection('config').doc('listas').onSnapshot(doc => {
             if(doc.exists) { settings = doc.data(); loadDropdowns(); }
             else { db.collection('users').doc(currentUser.uid).collection('config').doc('listas').set(settings); }
         });
 
-        // Cargar Movimientos por Usuario
         db.collection('users').doc(currentUser.uid).collection('movimientos').orderBy('fecha', 'desc').onSnapshot(snap => {
             rawData = {}; snap.forEach(doc => rawData[doc.id] = doc.data());
             refreshUI(); updateCharts();
         });
 
-        // Cargar Metas por Usuario
         db.collection('users').doc(currentUser.uid).collection('metas').onSnapshot(snap => {
             metasData = {}; snap.forEach(doc => metasData[doc.id] = doc.data());
             renderMetas();
         });
     }
 
-    // --- LÓGICA DE METAS ---
+    // --- LÓGICA DE METAS MEJORADA ---
     function saveMeta() {
+        const id = document.getElementById('m_edit_id').value;
         const data = {
             nombre: document.getElementById('m_nombre').value,
-            objetivo: parseFloat(document.getElementById('m_objetivo').value),
-            actual: parseFloat(document.getElementById('m_actual').value)
+            objetivo: parseFloat(document.getElementById('m_objetivo').value) || 0,
+            actual: parseFloat(document.getElementById('m_actual').value) || 0
         };
-        db.collection('users').doc(currentUser.uid).collection('metas').add(data);
+        
+        if(!data.nombre || data.objetivo <= 0) return alert("Completa nombre y objetivo");
+
+        const ref = db.collection('users').doc(currentUser.uid).collection('metas');
+        if(id) {
+            ref.doc(id).update(data).then(() => cancelEditMeta());
+        } else {
+            ref.add(data).then(() => cancelEditMeta());
+        }
+    }
+
+    function addSavings(id) {
+        const amount = prompt("¿Cuánto deseas ahorrar para esta meta?");
+        if (amount && !isNaN(amount)) {
+            const currentActual = metasData[id].actual;
+            const newTotal = currentActual + parseFloat(amount);
+            db.collection('users').doc(currentUser.uid).collection('metas').doc(id).update({
+                actual: newTotal
+            });
+        }
+    }
+
+    function editMeta(id) {
+        const m = metasData[id];
+        document.getElementById('m_edit_id').value = id;
+        document.getElementById('m_nombre').value = m.nombre;
+        document.getElementById('m_objetivo').value = m.objetivo;
+        document.getElementById('m_actual').value = m.actual;
+        
+        document.getElementById('meta-form-title').innerText = "📝 Editar Meta";
+        document.getElementById('btn-save-meta').innerText = "ACTUALIZAR META";
+        document.getElementById('btn-cancel-meta').style.display = "block";
+    }
+
+    function cancelEditMeta() {
+        document.getElementById('m_edit_id').value = '';
         document.getElementById('m_nombre').value = '';
+        document.getElementById('m_objetivo').value = '';
+        document.getElementById('m_actual').value = '';
+        document.getElementById('meta-form-title').innerText = "🎯 Mis Metas de Ahorro";
+        document.getElementById('btn-save-meta').innerText = "➕ CREAR META";
+        document.getElementById('btn-cancel-meta').style.display = "none";
     }
 
     function renderMetas() {
@@ -334,17 +378,25 @@
             const m = metasData[id];
             const porc = Math.min((m.actual / m.objetivo) * 100, 100).toFixed(1);
             container.innerHTML += `
-                <div class="card" style="margin-bottom:0;">
-                    <div style="display:flex; justify-content:space-between;">
+                <div class="card" style="margin-bottom:0; border-left: 5px solid ${porc >= 100 ? 'var(--success)' : 'var(--acc)'}">
+                    <div style="display:flex; justify-content:space-between; align-items: center;">
                         <h4 style="color:var(--acc)">${m.nombre}</h4>
-                        <button onclick="deleteMeta('${id}')" style="border:none; background:none; cursor:pointer;">🗑️</button>
+                        <div style="display:flex; gap:5px;">
+                            <button class="btn-goal-edit" onclick="editMeta('${id}')">✏️</button>
+                            <button class="btn-goal-edit" onclick="deleteMeta('${id}')" style="color:red;">🗑️</button>
+                        </div>
                     </div>
                     <p style="font-size:20px; font-weight:900; margin:10px 0;">$${m.actual.toLocaleString()} / $${m.objetivo.toLocaleString()}</p>
                     <div class="goal-progress"><div class="goal-bar" style="width:${porc}%"></div></div>
-                    <small style="font-weight:800;">${porc}% COMPLETADO</small>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <small style="font-weight:800;">${porc}% COMPLETADO</small>
+                        ${porc >= 100 ? '✅' : ''}
+                    </div>
+                    <button class="btn-goal-add" onclick="addSavings('${id}')">💰 APORTAR AHORRO</button>
                 </div>`;
         });
     }
+
     function deleteMeta(id) { if(confirm("¿Eliminar meta?")) db.collection('users').doc(currentUser.uid).collection('metas').doc(id).delete(); }
 
     // --- EXPORTAR PDF ---
@@ -357,7 +409,7 @@
         doc.save(`Finanzas_${new Date().toLocaleDateString()}.pdf`);
     }
 
-    // --- FUNCIONES ORIGINALES ADAPTADAS A USUARIO ---
+    // --- FUNCIONES ORIGINALES ---
     function saveData() {
         const id = document.getElementById('edit-id').value;
         const data = {
@@ -390,7 +442,6 @@
         }
     }
 
-    // (El resto de funciones: refreshUI, updateCharts, loadDropdowns, etc., permanecen iguales pero usando rawData filtrado por usuario)
     function refreshUI() {
         let ing = 0, eg = 0;
         const rq = document.getElementById('reg_q').value.toLowerCase();
