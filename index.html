@@ -274,12 +274,13 @@
     };
 
     firebase.initializeApp(firebaseConfig);
-    // CAMBIO: Apuntamos a Firestore
     const db = firebase.firestore();
 
     let rawData = {};
     let donaChart = null;
-    let settings = JSON.parse(localStorage.getItem('fpro_master_settings')) || {
+    
+    // Objeto de configuración inicial por defecto
+    let settings = {
         tipos: ['Egreso', 'Ingreso'],
         cats: ['Servicios básicos', 'Alimentación', 'Transporte', 'Salud', 'Ocio'],
         subs_list: ['Agua potable', 'Luz', 'Gas', 'Internet', 'Supermercado'],
@@ -325,9 +326,20 @@
     function init() {
         document.getElementById('f_fecha').valueAsDate = new Date();
         startTipsSystem();
-        loadDropdowns();
 
-        // CAMBIO: Listener para Firestore
+        // 1. Sincronizar AJUSTES desde Firebase (Colección: configuracion, Doc: listas)
+        db.collection('configuracion').doc('listas').onSnapshot(doc => {
+            if(doc.exists) {
+                settings = doc.data();
+                loadDropdowns();
+                if(document.getElementById('ajustes').style.display !== 'none') renderConfigList();
+            } else {
+                // Si no existe el documento en Firebase, lo creamos con los valores iniciales
+                db.collection('configuracion').doc('listas').set(settings);
+            }
+        });
+
+        // 2. Listener para MOVIMIENTOS
         db.collection('movimientos').orderBy('fecha', 'desc').onSnapshot(snapshot => {
             rawData = {};
             snapshot.forEach(doc => {
@@ -352,18 +364,15 @@
         const tableHis = document.getElementById('list_his_table');
         tableReg.innerHTML = ''; tableHis.innerHTML = '';
 
-        // En Firestore los datos ya vienen ordenados por el listener
         Object.keys(rawData).forEach(key => {
             const d = rawData[key];
             if(d.tipo === 'Ingreso') ing += d.monto; else eg += d.monto;
             
             const searchBody = `${d.concepto} ${d.cat} ${d.proveedor}`.toLowerCase();
             
-            // Filtros Registro
             if(searchBody.includes(rq) && (rd ? d.fecha === rd : true) && (rm ? d.fecha.includes(rm) : true)) {
                 tableReg.innerHTML += renderRow(key, d);
             }
-            // Filtros Historial
             if(searchBody.includes(hq) && (hm ? d.fecha.includes(hm) : true)) {
                 tableHis.innerHTML += renderRow(key, d);
             }
@@ -453,7 +462,6 @@
             recurrente: document.getElementById('f_recurrente').value
         };
         
-        // CAMBIO: Sintaxis de guardado Firestore
         if(id) {
             db.collection('movimientos').doc(id).set(data).then(() => clearForm());
         } else {
@@ -478,7 +486,6 @@
         showTab('registro');
     }
 
-    // CAMBIO: Eliminación en Firestore
     function deleteItem(key) { 
         if(confirm("¿Eliminar?")) {
             db.collection('movimientos').doc(key).delete();
@@ -514,16 +521,27 @@
     function addParam() {
         const param = document.getElementById('adj_param').value;
         const val = document.getElementById('adj_new_val').value.trim();
-        if(val) { settings[param].push(val); saveSettings(); document.getElementById('adj_new_val').value = ''; renderConfigList(); }
+        if(val) { 
+            settings[param].push(val); 
+            saveSettingsInFirebase(); 
+            document.getElementById('adj_new_val').value = ''; 
+        }
     }
 
     function removeParam(param, index) {
-        if(confirm("¿Eliminar esta opción?")) { settings[param].splice(index, 1); saveSettings(); renderConfigList(); }
+        if(confirm("¿Eliminar esta opción?")) { 
+            settings[param].splice(index, 1); 
+            saveSettingsInFirebase(); 
+        }
     }
 
-    function saveSettings() {
-        localStorage.setItem('fpro_master_settings', JSON.stringify(settings));
-        loadDropdowns();
+    // MODIFICADO: Ahora guarda directamente en el documento de configuración de Firebase
+    function saveSettingsInFirebase() {
+        db.collection('configuracion').doc('listas').set(settings)
+          .then(() => {
+              console.log("Configuración actualizada en Firebase");
+              renderConfigList();
+          });
     }
 
     function loadDropdowns() {
