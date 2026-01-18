@@ -125,8 +125,8 @@
             <div class="form-grid">
                 <div><label>Fecha</label><input type="date" id="f_fecha"></div>
                 <div><label>Tipo</label><select id="f_tipo"></select></div>
-                <div><label>Monto ($)</label><input type="number" id="f_monto" oninput="calcLogic()"></div>
-                <div><label>Presupuesto ($)</label><input type="number" id="f_presupuesto" oninput="calcLogic()"></div>
+                <div><label>Monto ($)</label><input type="text" id="f_monto" oninput="formatInput(this); calcLogic()"></div>
+                <div><label>Presupuesto ($)</label><input type="text" id="f_presupuesto" oninput="formatInput(this); calcLogic()"></div>
             </div>
             <div class="form-grid">
                 <div><label>Concepto</label><input type="text" id="f_concepto" placeholder="Ej: Pago agua"></div>
@@ -187,8 +187,8 @@
             <input type="hidden" id="m_edit_id">
             <div class="form-grid">
                 <div><label>Nombre Meta</label><input type="text" id="m_nombre" placeholder="Ej: Fondo Viaje"></div>
-                <div><label>Monto Objetivo ($)</label><input type="number" id="m_objetivo"></div>
-                <div><label>Monto Actual ($)</label><input type="number" id="m_actual"></div>
+                <div><label>Monto Objetivo ($)</label><input type="text" id="m_objetivo" oninput="formatInput(this)"></div>
+                <div><label>Monto Actual ($)</label><input type="text" id="m_actual" oninput="formatInput(this)"></div>
                 <div style="display:flex; align-items:flex-end; gap:5px;">
                     <button class="btn-p" onclick="saveMeta()" id="btn-save-meta">➕ CREAR META</button>
                     <button class="btn-p" style="background:#64748b; display:none;" id="btn-cancel-meta" onclick="cancelEditMeta()">✕</button>
@@ -275,6 +275,19 @@
 
     const tips = ["Regla 50/30/20: 50% necesidades, 30% deseos y 20% ahorro.", "Fondo de Emergencia: Ahorra de 3 a 6 meses de tus gastos básicos.", "Págate a ti primero: Separa tu ahorro apenas recibas tu sueldo."];
 
+    // --- NUEVAS FUNCIONES DE FORMATO ---
+    function formatInput(input) {
+        let value = input.value.replace(/\D/g, "");
+        if (value === "") { input.value = ""; return; }
+        input.value = parseInt(value).toLocaleString('es-CL').replace(/,/g, ".");
+    }
+
+    function parseFormatted(val) {
+        if (!val) return 0;
+        return parseFloat(val.toString().replace(/\./g, "")) || 0;
+    }
+    // ------------------------------------
+
     auth.onAuthStateChanged(user => {
         if (user) {
             currentUser = user;
@@ -320,12 +333,23 @@
         });
     }
 
+    function startTipsSystem() {
+        setInterval(() => {
+            const text = document.getElementById('tips-text');
+            text.style.opacity = 0;
+            setTimeout(() => {
+                text.innerText = tips[Math.floor(Math.random()*tips.length)];
+                text.style.opacity = 1;
+            }, 500);
+        }, 8000);
+    }
+
     function saveMeta() {
         const id = document.getElementById('m_edit_id').value;
         const data = {
             nombre: document.getElementById('m_nombre').value,
-            objetivo: parseFloat(document.getElementById('m_objetivo').value) || 0,
-            actual: parseFloat(document.getElementById('m_actual').value) || 0
+            objetivo: parseFormatted(document.getElementById('m_objetivo').value),
+            actual: parseFormatted(document.getElementById('m_actual').value)
         };
         if(!data.nombre || data.objetivo <= 0) return alert("Completa nombre y objetivo");
         const ref = db.collection('users').doc(currentUser.uid).collection('metas');
@@ -346,8 +370,8 @@
         const m = metasData[id];
         document.getElementById('m_edit_id').value = id;
         document.getElementById('m_nombre').value = m.nombre;
-        document.getElementById('m_objetivo').value = m.objetivo;
-        document.getElementById('m_actual').value = m.actual;
+        document.getElementById('m_objetivo').value = m.objetivo.toLocaleString('es-CL').replace(/,/g, ".");
+        document.getElementById('m_actual').value = m.actual.toLocaleString('es-CL').replace(/,/g, ".");
         document.getElementById('meta-form-title').innerText = "📝 Editar Meta";
         document.getElementById('btn-save-meta').innerText = "ACTUALIZAR META";
         document.getElementById('btn-cancel-meta').style.display = "block";
@@ -378,7 +402,7 @@
                             <button class="btn-goal-edit" onclick="deleteMeta('${id}')" style="color:red;">🗑️</button>
                         </div>
                     </div>
-                    <p style="font-size:20px; font-weight:900; margin:10px 0;">$${m.actual.toLocaleString()} / $${m.objetivo.toLocaleString()}</p>
+                    <p style="font-size:20px; font-weight:900; margin:10px 0;">$${m.actual.toLocaleString('es-CL').replace(/,/g, ".")} / $${m.objetivo.toLocaleString('es-CL').replace(/,/g, ".")}</p>
                     <div class="goal-progress"><div class="goal-bar" style="width:${porc}%"></div></div>
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <small style="font-weight:800;">${porc}% COMPLETADO</small>
@@ -395,7 +419,7 @@
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         doc.text("Reporte de Finanzas PRO", 14, 15);
-        const rows = Object.values(rawData).map(d => [d.fecha, d.concepto, `$${d.monto}`, d.cat, d.estado]);
+        const rows = Object.values(rawData).map(d => [d.fecha, d.concepto, `$${d.monto.toLocaleString('es-CL').replace(/,/g, ".")}`, d.cat, d.estado]);
         doc.autoTable({ head: [['Fecha', 'Concepto', 'Monto', 'Categoría', 'Estado']], body: rows, startY: 20 });
         doc.save(`Finanzas_${new Date().toLocaleDateString()}.pdf`);
     }
@@ -405,8 +429,8 @@
         const data = {
             fecha: document.getElementById('f_fecha').value,
             tipo: document.getElementById('f_tipo').value,
-            monto: parseFloat(document.getElementById('f_monto').value) || 0,
-            presupuesto: parseFloat(document.getElementById('f_presupuesto').value) || 0,
+            monto: parseFormatted(document.getElementById('f_monto').value),
+            presupuesto: parseFormatted(document.getElementById('f_presupuesto').value),
             concepto: document.getElementById('f_concepto').value,
             cat: document.getElementById('f_cat').value,
             subcat: document.getElementById('f_subcat').value,
@@ -420,6 +444,25 @@
         else ref.add(data).then(() => clearForm());
     }
 
+    function editItem(key) {
+        const d = rawData[key];
+        document.getElementById('edit-id').value = key;
+        document.getElementById('f_fecha').value = d.fecha;
+        document.getElementById('f_tipo').value = d.tipo;
+        document.getElementById('f_monto').value = d.monto.toLocaleString('es-CL').replace(/,/g, ".");
+        document.getElementById('f_presupuesto').value = d.presupuesto.toLocaleString('es-CL').replace(/,/g, ".");
+        document.getElementById('f_concepto').value = d.concepto;
+        document.getElementById('f_cat').value = d.cat;
+        document.getElementById('f_subcat').value = d.subcat;
+        document.getElementById('f_pago').value = d.pago;
+        document.getElementById('f_estado').value = d.estado;
+        document.getElementById('f_proveedor').value = d.proveedor;
+        document.getElementById('f_recurrente').value = d.recurrente;
+        document.getElementById('form-title').innerText = "Editando Operación";
+        showTab('registro');
+        calcLogic();
+    }
+
     function deleteItem(key) { if(confirm("¿Eliminar?")) db.collection('users').doc(currentUser.uid).collection('movimientos').doc(key).delete(); }
     
     function addParam() {
@@ -429,7 +472,7 @@
             settings[param].push(val); 
             db.collection('users').doc(currentUser.uid).collection('config').doc('listas').set(settings).then(() => {
                 document.getElementById('adj_new_val').value = ''; 
-                renderConfigList(); // Refleja inmediato
+                renderConfigList();
             });
         }
     }
@@ -449,51 +492,44 @@
             tableHis.innerHTML += renderRow(key, d);
         });
 
-        document.getElementById('total-ingresos').innerText = `$${ing.toLocaleString()}`;
-        document.getElementById('total-egresos').innerText = `$${eg.toLocaleString()}`;
-        document.getElementById('total-saldo').innerText = `$${(ing - eg).toLocaleString()}`;
+        document.getElementById('total-ingresos').innerText = `$${ing.toLocaleString('es-CL').replace(/,/g, ".")}`;
+        document.getElementById('total-egresos').innerText = `$${eg.toLocaleString('es-CL').replace(/,/g, ".")}`;
+        document.getElementById('total-saldo').innerText = `$${(ing - eg).toLocaleString('es-CL').replace(/,/g, ".")}`;
     }
 
     function renderRow(key, d) {
-        return `<tr><td>${d.fecha}</td><td><b>${d.concepto}</b></td><td style="color:${d.tipo==='Ingreso'?'green':'red'}">$${d.monto.toLocaleString()}</td><td>${d.cat}</td><td>${d.proveedor}</td><td><span style="font-size:11px; padding:3px 8px; border-radius:10px; background:${d.estado==='Pagado'?'#dcfce7':'#fee2e2'}; color:${d.estado==='Pagado'?'#166534':'#991b1b'}">${d.estado}</span></td><td><button class="btn-action" onclick="editItem('${key}')">✏️</button><button class="btn-action" onclick="deleteItem('${key}')" style="color:red;">🗑️</button></td></tr>`;
+        return `<tr><td>${d.fecha}</td><td><b>${d.concepto}</b></td><td style="color:${d.tipo==='Ingreso'?'green':'red'}">$${d.monto.toLocaleString('es-CL').replace(/,/g, ".")}</td><td>${d.cat}</td><td>${d.proveedor}</td><td><span style="font-size:11px; padding:3px 8px; border-radius:10px; background:${d.estado==='Pagado'?'#dcfce7':'#fee2e2'}; color:${d.estado==='Pagado'?'#166534':'#991b1b'}">${d.estado}</span></td><td><button class="btn-action" onclick="editItem('${key}')">✏️</button><button class="btn-action" onclick="deleteItem('${key}')" style="color:red;">🗑️</button></td></tr>`;
     }
 
     function updateCharts() {
         const ctx = document.getElementById('chartDona'); if(!ctx) return;
-        
         let cats = {};
         let totalMes = 0;
         let totalSemana = 0;
         const hoy = new Date();
         const mesActual = hoy.getMonth();
         const añoActual = hoy.getFullYear();
-        const hace7Dias = new Date(hoy.setDate(hoy.getDate() - 7));
+        const hace7Dias = new Date(new Date().setDate(hoy.getDate() - 7));
 
         Object.values(rawData).forEach(d => {
             const f = new Date(d.fecha + 'T00:00:00');
             if(d.tipo === 'Egreso') {
-                // Para el Dona
                 cats[d.cat] = (cats[d.cat]||0)+d.monto;
-                // Para Resumen Mensual
                 if(f.getMonth() === mesActual && f.getFullYear() === añoActual) totalMes += d.monto;
-                // Para Resumen Semanal
                 if(f >= hace7Dias) totalSemana += d.monto;
             }
         });
 
-        // Actualizar Textos Análisis
-        document.getElementById('ana-mes-total').innerText = `$${totalMes.toLocaleString()}`;
-        document.getElementById('ana-semana-total').innerText = `$${totalSemana.toLocaleString()}`;
+        document.getElementById('ana-mes-total').innerText = `$${totalMes.toLocaleString('es-CL').replace(/,/g, ".")}`;
+        document.getElementById('ana-semana-total').innerText = `$${totalSemana.toLocaleString('es-CL').replace(/,/g, ".")}`;
 
-        // Tabla de Categorías
         const sortedCats = Object.entries(cats).sort((a,b) => b[1] - a[1]);
         const tableBody = document.getElementById('ana-table-body');
         if(tableBody) {
-            tableBody.innerHTML = sortedCats.slice(0,5).map(c => `<tr><td>${c[0]}</td><td>$${c[1].toLocaleString()}</td></tr>`).join('');
+            tableBody.innerHTML = sortedCats.slice(0,5).map(c => `<tr><td>${c[0]}</td><td>$${c[1].toLocaleString('es-CL').replace(/,/g, ".")}</td></tr>`).join('');
             document.getElementById('ana-top-cat').innerText = sortedCats[0] ? sortedCats[0][0] : '---';
         }
 
-        // Gráfico
         if(donaChart) donaChart.destroy();
         donaChart = new Chart(ctx, { 
             type:'doughnut', 
@@ -510,18 +546,39 @@
         fill('f_tipo', settings.tipos); fill('f_cat', settings.cats); fill('f_subcat', settings.subs_list); fill('f_proveedor', settings.provs); fill('f_pago', settings.pagos); fill('f_estado', settings.estados); fill('f_recurrente', settings.recurrentes);
     }
 
-    function clearForm() { document.getElementById('edit-id').value = ''; document.getElementById('f_monto').value = ''; document.getElementById('form-title').innerText = "Nueva Operación"; }
-    function calcLogic() { const m = parseFloat(document.getElementById('f_monto').value)||0, p = parseFloat(document.getElementById('f_presupuesto').value)||0; document.getElementById('f_diff').innerText = `$${(p-m).toLocaleString()}`; document.getElementById('f_diff').style.color = (p-m)<0?'red':'green'; }
+    function clearForm() { 
+        document.getElementById('edit-id').value = ''; 
+        document.getElementById('f_monto').value = ''; 
+        document.getElementById('f_presupuesto').value = '';
+        document.getElementById('f_concepto').value = '';
+        document.getElementById('form-title').innerText = "Nueva Operación"; 
+    }
+
+    function calcLogic() { 
+        const m = parseFormatted(document.getElementById('f_monto').value);
+        const p = parseFormatted(document.getElementById('f_presupuesto').value);
+        const diff = p - m;
+        document.getElementById('f_diff').innerText = `$${diff.toLocaleString('es-CL').replace(/,/g, ".")}`; 
+        document.getElementById('f_diff').style.color = diff < 0 ? 'red' : 'green'; 
+    }
+
     function renderConfigList() {
         const p = document.getElementById('adj_param').value;
         const container = document.getElementById('adj_list_container'); container.innerHTML = '';
         settings[p].forEach((item, i) => { container.innerHTML += `<div class="config-item"><span>${item}</span><button class="badge-del" onclick="removeParam('${p}', ${i})">✕</button></div>`; });
     }
     function removeParam(p, i) { if(confirm("¿Eliminar?")) { settings[p].splice(i,1); db.collection('users').doc(currentUser.uid).collection('config').doc('listas').set(settings).then(() => renderConfigList()); } }
-    function showTab(id) { document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none'); document.getElementById(id).style.display = 'block'; document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active')); const al = document.querySelector(`[onclick="showTab('${id}')"]`); if(al) al.classList.add('active'); if(id==='ajustes') renderConfigList(); if(id==='analisis') updateCharts(); }
-    function startTipsSystem() { const textEl = document.getElementById('tips-text'); let i = 0; setInterval(() => { textEl.style.opacity = 0; setTimeout(() => { textEl.innerText = tips[i % tips.length]; textEl.style.opacity = 1; i++; }, 500); }, 12000); }
+    
+    function showTab(id) { 
+        document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none'); 
+        document.getElementById(id).style.display = 'block'; 
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active')); 
+        const al = document.querySelector(`[onclick="showTab('${id}')"]`); 
+        if(al) al.classList.add('active'); 
+        if(id==='ajustes') renderConfigList();
+    }
+
     function toggleMenu() { document.getElementById('sidebar').classList.toggle('open'); }
-    function editItem(key) { const d = rawData[key]; document.getElementById('edit-id').value = key; document.getElementById('f_fecha').value = d.fecha; document.getElementById('f_monto').value = d.monto; document.getElementById('f_concepto').value = d.concepto; document.getElementById('f_cat').value = d.cat; showTab('registro'); }
 </script>
 </body>
 </html>
