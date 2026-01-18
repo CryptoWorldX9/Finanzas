@@ -83,7 +83,6 @@
             .sidebar { left: -100%; width: 280px; }
             .sidebar.open { left: 0; }
             .top-bar { left: 0; height: auto; padding: 15px; flex-wrap: wrap; }
-            /* Ajuste para que los indicadores no tapen los tips */
             .main-content { margin-left: 0; margin-top: 140px; width: 100%; padding: 15px; }
             .menu-btn { display: block; }
             .balance-card { width: 100%; justify-content: space-between; order: 2; margin-top: 10px; }
@@ -289,7 +288,6 @@
         recurrentes: ['No', 'Sí']
     };
 
-    // 30 TIPS PROFESIONALES ACTUALIZADOS
     const tips = [
         "Regla 50/30/20: 50% necesidades, 30% deseos y 20% ahorro e inversión.",
         "Fondo de Emergencia: Ahorra de 3 a 6 meses de tus gastos básicos obligatorios.",
@@ -327,10 +325,14 @@
         document.getElementById('f_fecha').valueAsDate = new Date();
         startTipsSystem();
         loadDropdowns();
+
+        // MODIFICACIÓN TÉCNICA: Escucha robusta de datos
         db.ref('movimientos').on('value', snap => {
             rawData = snap.val() || {};
             refreshUI();
             updateCharts();
+        }, error => {
+            console.error("Error en conexión Firebase:", error);
         });
     }
 
@@ -339,6 +341,9 @@
         const rq = document.getElementById('reg_q').value.toLowerCase();
         const rd = document.getElementById('reg_d').value;
         const rm = document.getElementById('reg_m').value;
+        const hq = document.getElementById('his_q').value.toLowerCase();
+        const hm = document.getElementById('his_m').value;
+        
         const tableReg = document.getElementById('list_reg_table');
         const tableHis = document.getElementById('list_his_table');
         tableReg.innerHTML = ''; tableHis.innerHTML = '';
@@ -346,22 +351,37 @@
         Object.keys(rawData).reverse().forEach(key => {
             const d = rawData[key];
             if(d.tipo === 'Ingreso') ing += d.monto; else eg += d.monto;
+            
             const searchBody = `${d.concepto} ${d.cat} ${d.proveedor}`.toLowerCase();
             
+            // Filtros Registro
             if(searchBody.includes(rq) && (rd ? d.fecha === rd : true) && (rm ? d.fecha.includes(rm) : true)) {
                 tableReg.innerHTML += renderRow(key, d);
             }
-            if(searchBody.includes(document.getElementById('his_q').value.toLowerCase()) && (document.getElementById('his_m').value ? d.fecha.includes(document.getElementById('his_m').value) : true)) {
+            // Filtros Historial
+            if(searchBody.includes(hq) && (hm ? d.fecha.includes(hm) : true)) {
                 tableHis.innerHTML += renderRow(key, d);
             }
         });
+        
         document.getElementById('total-ingresos').innerText = `$${ing.toLocaleString()}`;
         document.getElementById('total-egresos').innerText = `$${eg.toLocaleString()}`;
         document.getElementById('total-saldo').innerText = `$${(ing - eg).toLocaleString()}`;
     }
 
     function renderRow(key, d) {
-        return `<tr><td>${d.fecha}</td><td><b>${d.concepto}</b></td><td style="color:${d.tipo==='Ingreso'?'green':'red'}"><b>$${d.monto.toLocaleString()}</b></td><td><small>${d.cat}</small></td><td>${d.proveedor}</td><td><span style="font-size:11px; padding:3px 8px; border-radius:10px; background:${d.estado==='Pagado'?'#dcfce7':'#fee2e2'}; color:${d.estado==='Pagado'?'#166534':'#991b1b'}">${d.estado}</span></td><td><button class="btn-action" onclick="editItem('${key}')">✏️</button><button class="btn-action" onclick="deleteItem('${key}')" style="color:red;">🗑️</button></td></tr>`;
+        return `<tr>
+            <td>${d.fecha}</td>
+            <td><b>${d.concepto}</b></td>
+            <td style="color:${d.tipo==='Ingreso'?'green':'red'}"><b>$${d.monto.toLocaleString()}</b></td>
+            <td><small>${d.cat}</small></td>
+            <td>${d.proveedor}</td>
+            <td><span style="font-size:11px; padding:3px 8px; border-radius:10px; background:${d.estado==='Pagado'?'#dcfce7':'#fee2e2'}; color:${d.estado==='Pagado'?'#166534':'#991b1b'}">${d.estado}</span></td>
+            <td>
+                <button class="btn-action" onclick="editItem('${key}')">✏️</button>
+                <button class="btn-action" onclick="deleteItem('${key}')" style="color:red;">🗑️</button>
+            </td>
+        </tr>`;
     }
 
     function updateCharts() {
@@ -371,7 +391,6 @@
         const hoy = new Date();
         const mesActual = hoy.toISOString().substring(0, 7);
         
-        // Calcular inicio y fin de semana actual
         const tempDate = new Date();
         const inicioSemana = new Date(tempDate.setDate(tempDate.getDate() - tempDate.getDay() + 1)).toISOString().split('T')[0];
         const finSemana = new Date(tempDate.setDate(tempDate.getDate() - tempDate.getDay() + 7)).toISOString().split('T')[0];
@@ -450,10 +469,13 @@
     }
 
     function deleteItem(key) { if(confirm("¿Eliminar?")) db.ref('movimientos/' + key).remove(); }
+    
     function clearForm() { 
         document.getElementById('edit-id').value = ''; 
         document.getElementById('f_monto').value = ''; 
         document.getElementById('f_concepto').value = ''; 
+        document.getElementById('f_presupuesto').value = '';
+        document.getElementById('f_diff').innerText = '$0';
         document.getElementById('form-title').innerText = "Nueva Operación"; 
     }
 
@@ -519,6 +541,7 @@
     }
 
     function toggleMenu() { document.getElementById('sidebar').classList.toggle('open'); }
+    
     function showTab(id) {
         document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
         document.getElementById(id).style.display = 'block';
