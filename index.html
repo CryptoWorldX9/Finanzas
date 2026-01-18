@@ -18,34 +18,43 @@
         * { margin:0; padding:0; box-sizing:border-box; font-family: 'Inter', sans-serif; }
         body { background: var(--bg); display: flex; min-height: 100vh; color: #1e293b; overflow-x: hidden; }
 
-        #auth-screen { position: fixed; inset: 0; background: var(--p); z-index: 2000; display: flex; align-items: center; justify-content: center; color: white; overflow-y: auto; padding: 20px; }
-        .auth-card { background: white; padding: 40px; border-radius: 20px; width: 100%; max-width: 850px; color: #1e293b; box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center; }
+        #auth-screen { position: fixed; inset: 0; background: var(--p); z-index: 2000; display: flex; align-items: center; justify-content: center; color: white; }
+        .auth-card { background: white; padding: 40px; border-radius: 20px; width: 100%; max-width: 400px; color: #1e293b; box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: center; }
         .auth-card h2 { margin-bottom: 5px; color: var(--p); font-weight: 800; }
         .auth-card p { font-size: 13px; color: #64748b; margin-bottom: 25px; }
-        .auth-tabs { display: flex; gap: 10px; margin-bottom: 20px; background: #f1f5f9; padding: 5px; border-radius: 10px; max-width: 400px; margin-left: auto; margin-right: auto; }
+        .auth-tabs { display: flex; gap: 10px; margin-bottom: 20px; background: #f1f5f9; padding: 5px; border-radius: 10px; }
         .auth-tab { flex: 1; padding: 10px; border: none; background: none; cursor: pointer; border-radius: 8px; font-weight: 700; color: #64748b; font-size: 13px; }
         .auth-tab.active { background: white; color: var(--acc); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 
         .sidebar { width: 260px; background: var(--p); color: white; padding: 25px; position: fixed; height: 100vh; z-index: 1000; transition: 0.4s; }
-        .main-content { margin-left: 260px; padding: 20px; width: calc(100% - 260px); margin-top: 100px; transition: 0.4s; }
+        .main-content { margin-left: 260px; padding: 20px; width: calc(100% - 260px); margin-top: 75px; transition: 0.4s; }
 
         .logo-container { display: flex; align-items: center; gap: 12px; margin-bottom: 5px; }
+        .logo-img { width: 45px; height: 45px; object-fit: contain; border-radius: 8px; }
         .slogan { font-size: 11px; color: #94a3b8; font-weight: 500; margin-bottom: 30px; display: block; }
 
         .top-bar { 
-            position: fixed; top: 0; left: 260px; right: 0; height: 100px; 
+            position: fixed; top: 0; left: 260px; right: 0; height: 75px; 
             background: white; display: flex; align-items: center; padding: 0 30px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05); z-index: 900; gap: 20px; transition: 0.4s;
         }
 
-        /* Logo de cabecera 800x600 proporcional */
-        .header-logo-app { max-height: 80px; width: auto; max-width: 400px; margin-right: auto; object-fit: contain; }
-        
+        .header-logo-app { height: 40px; margin-right: auto; }
         .menu-btn { display: none; background: var(--p); color: white; border: none; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 1.2rem; }
         .balance-card { display: flex; gap: 15px; flex-grow: 1; justify-content: flex-end; }
         .bal-item { text-align: right; }
         .bal-item small { font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; }
         .bal-item p { font-size: 16px; font-weight: 900; }
+
+        .goal-card { background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 12px; }
+        .goal-progress { background: #e2e8f0; height: 10px; border-radius: 5px; margin: 10px 0; overflow: hidden; }
+        .goal-bar { background: var(--success); height: 100%; transition: 0.5s; }
+
+        .tips-container { display: flex; align-items: flex-end; gap: 12px; margin-bottom: 25px; max-width: 900px; animation: fadeIn 0.5s ease; }
+        .assistant-avatar { width: 45px; height: 45px; background: var(--p); color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .bubble-content { background: white; padding: 15px 20px; border-radius: 18px 18px 18px 4px; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.03); position: relative; width: 100%; }
+        .bubble-content small { display: block; font-size: 10px; font-weight: 700; color: var(--acc); text-transform: uppercase; margin-bottom: 5px; letter-spacing: 0.5px; }
+        #tips-text { font-size: 14px; color: #334155; line-height: 1.5; font-weight: 500; transition: opacity 0.5s ease; }
 
         .card { background: white; border-radius: 16px; padding: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); margin-bottom: 25px; border: 1px solid #e2e8f0; }
         .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 15px; }
@@ -59,14 +68,17 @@
         th { text-align: left; padding: 15px; background: #f8fafc; color: #64748b; font-size: 11px; border-bottom: 2px solid #edf2f7; }
         td { padding: 15px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
         .btn-action { background: none; border: 1px solid #e2e8f0; padding: 6px; border-radius: 6px; cursor: pointer; margin-right: 5px; }
+        .filter-header { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 15px; background: #f1f5f9; padding: 15px; border-radius: 12px; }
         
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
         @media (max-width: 900px) {
             .sidebar { left: -100%; width: 280px; }
             .sidebar.open { left: 0; }
             .top-bar { left: 0; height: auto; padding: 15px; flex-wrap: wrap; }
-            .main-content { margin-left: 0; margin-top: 160px; width: 100%; padding: 15px; }
+            .main-content { margin-left: 0; margin-top: 140px; width: 100%; padding: 15px; }
             .menu-btn { display: block; }
-            .header-logo-app { max-height: 60px; max-width: 200px; }
+            .balance-card { width: 100%; justify-content: space-between; order: 2; margin-top: 10px; }
         }
     </style>
 </head>
@@ -74,15 +86,16 @@
 
 <div id="auth-screen">
     <div class="auth-card">
-        <img src="logofinanzas.PNG" alt="QuantyA" style="width: 100%; max-width: 800px; height: auto; max-height: 600px; object-fit: contain; margin-bottom: 10px;">
-        <p style="font-weight: 700; color: var(--p); font-size: 18px; margin-bottom: 30px;">"Más Control. Menos preocupación"</p>
+        <img src="logofinanzas.PNG" alt="QuantyA" style="width: 80px; margin-bottom: 15px;">
+        <h2>QuantyA</h2>
+        <p>"Más Control. Menos preocupación"</p>
         
         <div class="auth-tabs">
             <button class="auth-tab active" id="tab-login" onclick="setAuthMode('login')">Ingresar</button>
             <button class="auth-tab" id="tab-register" onclick="setAuthMode('register')">Crear Cuenta</button>
         </div>
 
-        <div id="auth-form" style="max-width: 400px; margin: 0 auto;">
+        <div id="auth-form">
             <label>Email</label>
             <input type="email" id="auth-email" placeholder="tu@email.com" style="margin-bottom:15px;">
             <label id="label-pass">Contraseña</label>
@@ -111,7 +124,8 @@
 
 <nav class="sidebar" id="sidebar">
     <div class="logo-container">
-        <h1 style="font-weight: 900; font-size: 28px; letter-spacing: -1px;">QuantyA</h1>
+        <img src="logofinanzas.PNG" alt="Logo" class="logo-img">
+        <h1 style="font-weight: 900; font-size: 24px; letter-spacing: -1px;">QuantyA</h1>
     </div>
     <span class="slogan">Más Control. Menos preocupación</span>
 
@@ -127,10 +141,10 @@
 </nav>
 
 <main class="main-content">
-    <div class="tips-container" style="display: flex; align-items: flex-end; gap: 12px; margin-bottom: 25px; max-width: 900px;">
-        <div class="assistant-avatar" style="width: 45px; height: 45px; background: var(--p); color: white; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;">💼</div>
-        <div class="bubble-content" style="background: white; padding: 15px 20px; border-radius: 18px 18px 18px 4px; border: 1px solid #e2e8f0; width: 100%;">
-            <small style="display: block; font-size: 10px; font-weight: 700; color: var(--acc); text-transform: uppercase;">Asistente de QuantyA</small>
+    <div class="tips-container">
+        <div class="assistant-avatar">💼</div>
+        <div class="bubble-content">
+            <small>Asistente de QuantyA</small>
             <div id="tips-text">Analizando tus movimientos para optimizar tu presupuesto...</div>
         </div>
     </div>
@@ -165,6 +179,11 @@
 
         <div class="card">
             <h3>Movimientos Recientes</h3><br>
+            <div class="filter-header">
+                <div style="flex:2;"><label>Buscador</label><input type="text" id="reg_q" placeholder="Buscar..." oninput="refreshUI()"></div>
+                <div style="flex:1;"><label>Día</label><input type="date" id="reg_d" onchange="refreshUI()"></div>
+                <div style="flex:1;"><label>Mes</label><select id="reg_m" onchange="refreshUI()"><option value="">Todos</option><option value="-01-">Enero</option><option value="-02-">Febrero</option><option value="-03-">Marzo</option><option value="-04-">Abril</option><option value="-05-">Mayo</option><option value="-06-">Junio</option><option value="-07-">Julio</option><option value="-08-">Agosto</option><option value="-09-">Septiembre</option><option value="-10-">Octubre</option><option value="-11-">Noviembre</option><option value="-12-">Diciembre</option></select></div>
+            </div>
             <div class="table-wrap">
                 <table>
                     <thead><tr><th>Fecha</th><th>Concepto</th><th>Monto</th><th>Categoría</th><th>Proveedor</th><th>Estado</th><th>Acciones</th></tr></thead>
@@ -176,8 +195,19 @@
 
     <div id="historial" class="tab-content" style="display:none;">
         <div class="card">
-             <h3>Historial General</h3>
-             <div class="table-wrap">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap: 10px;">
+                <h3>Historial General</h3>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-p" style="width:auto; padding:8px 15px; font-size:12px; background:#10b981;" onclick="exportExcel()">🟢 EXCEL</button>
+                    <button class="btn-p" style="width:auto; padding:8px 15px; font-size:12px; background:#1e293b;" onclick="exportPDF()">📄 PDF DETALLADO</button>
+                </div>
+            </div><br>
+            <div class="filter-header">
+                <div style="flex:2;"><label>Buscador</label><input type="text" id="his_q" placeholder="Buscar..." oninput="refreshUI()"></div>
+                <div style="flex:1;"><label>Día Exacto</label><input type="date" id="his_d" onchange="refreshUI()"></div>
+                <div style="flex:1;"><label>Mes</label><select id="his_m" onchange="refreshUI()"><option value="">Todos</option><option value="-01-">Enero</option><option value="-02-">Febrero</option><option value="-03-">Marzo</option><option value="-04-">Abril</option><option value="-05-">Mayo</option><option value="-06-">Junio</option><option value="-07-">Julio</option><option value="-08-">Agosto</option><option value="-09-">Septiembre</option><option value="-10-">Octubre</option><option value="-11-">Noviembre</option><option value="-12-">Diciembre</option></select></div>
+            </div>
+            <div class="table-wrap">
                 <table id="table-to-export">
                     <thead><tr><th>Fecha</th><th>Concepto</th><th>Monto</th><th>Categoría</th><th>Proveedor</th><th>Estado</th><th>Acciones</th></tr></thead>
                     <tbody id="list_his_table"></tbody>
@@ -185,22 +215,61 @@
             </div>
         </div>
     </div>
-    
+
     <div id="metas" class="tab-content" style="display:none;">
-        <div class="card"><h3>🎯 Mis Metas de Ahorro</h3><div id="metas-container"></div></div>
+        <div class="card">
+            <h3 id="meta-form-title">🎯 Mis Metas de Ahorro</h3><br>
+            <input type="hidden" id="m_edit_id">
+            <div class="form-grid">
+                <div><label>Nombre Meta</label><input type="text" id="m_nombre" placeholder="Ej: Fondo Viaje"></div>
+                <div><label>Monto Objetivo ($)</label><input type="text" id="m_objetivo" oninput="formatInput(this)"></div>
+                <div><label>Monto Actual ($)</label><input type="text" id="m_actual" oninput="formatInput(this)"></div>
+                <div style="display:flex; align-items:flex-end; gap:5px;">
+                    <button class="btn-p" onclick="saveMeta()" id="btn-save-meta">➕ GUARDAR META</button>
+                    <button class="btn-p" style="background:#64748b; display:none;" id="btn-cancel-meta" onclick="cancelEditMeta()">✕</button>
+                </div>
+            </div>
+            <div id="metas-container" style="margin-top:30px; display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:20px;"></div>
+        </div>
     </div>
 
     <div id="analisis" class="tab-content" style="display:none;">
-        <div class="card"><h3>Distribución de Gastos</h3><canvas id="chartDona"></canvas></div>
+        <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+            <div class="card">
+                <h3>Distribución de Gastos (Mes Actual)</h3><br>
+                <div style="height: 300px; position: relative;"><canvas id="chartDona"></canvas></div>
+            </div>
+            <div class="card">
+                <h3>Resumen de Impacto</h3><br>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+                    <div style="text-align:center; padding:15px; background:#f0f9ff; border-radius:12px; border:1px solid #bae6fd;">
+                        <label>Egresos Mes</label><p id="ana-mes-total" style="font-size:20px; font-weight:900; color:var(--danger);">$0</p>
+                    </div>
+                    <div style="text-align:center; padding:15px; background:#f0fdf4; border-radius:12px; border:1px solid #bbf7d0;">
+                        <label>Ingresos Mes</label><p id="ana-semana-total" style="font-size:20px; font-weight:900; color:var(--success);">$0</p>
+                    </div>
+                </div>
+                <div id="ana-top-cat-box" style="text-align:center; padding:10px; background:#f8fafc; border-radius:10px; border:1px solid #e2e8f0;">
+                    <label>Mayor Categoría de Gasto</label><p id="ana-top-cat" style="font-size:18px; font-weight:900;">---</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div id="ajustes" class="tab-content" style="display:none;">
-        <div class="card"><h2>⚙️ Configuración</h2><div id="adj_list_container"></div></div>
+        <div class="card">
+            <h2>⚙️ Configuración</h2>
+            <div class="form-grid">
+                <div><label>Parámetro</label><select id="adj_param" onchange="renderConfigList()"><option value="tipos">Tipos</option><option value="cats">Categorías</option><option value="subs_list">Subcategorías</option><option value="provs">Proveedores</option><option value="pagos">Métodos de Pago</option><option value="estados">Estados</option><option value="recurrentes">Recurrencia</option></select></div>
+                <div><label>Nuevo Valor</label><input type="text" id="adj_new_val"></div>
+                <div style="display:flex; align-items:flex-end;"><button class="btn-p" onclick="addParam()">➕ AGREGAR</button></div>
+            </div>
+            <div id="adj_list_container" style="max-height: 400px; overflow-y: auto;"></div>
+        </div>
     </div>
 </main>
 
 <script>
-    /* Lógica de Firebase y funciones originales intactas */
     const firebaseConfig = {
       apiKey: "AIzaSyCO6WXu9iZsyEUmNNxrE4oWToLYY8wl-y4",
       authDomain: "misfinanzaspro-d2f3f.firebaseapp.com",
@@ -216,6 +285,9 @@
 
     let currentUser = null;
     let rawData = {};
+    let metasData = {};
+    let donaChart = null;
+    let currentAuthMode = 'login';
     let settings = {
         tipos: ['Egreso', 'Ingreso'],
         cats: ['Servicios básicos', 'Alimentación', 'Transporte', 'Salud', 'Ocio', 'Ahorro'],
@@ -226,57 +298,12 @@
         recurrentes: ['No', 'Sí']
     };
 
-    function toggleMenu() { document.getElementById('sidebar').classList.toggle('open'); }
-    
-    function showTab(tabId) {
-        document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
-        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-        document.getElementById(tabId).style.display = 'block';
-    }
-
-    function setAuthMode(mode) {
-        currentAuthMode = mode;
-        document.getElementById('tab-login').classList.toggle('active', mode === 'login');
-        document.getElementById('tab-register').classList.toggle('active', mode === 'register');
-        document.getElementById('auth-btn').innerText = mode === 'login' ? 'INGRESAR' : 'CREAR CUENTA';
-    }
-
-    auth.onAuthStateChanged(user => {
-        if (user) {
-            currentUser = user;
-            document.getElementById('auth-screen').style.display = 'none';
-            initData();
-        } else {
-            document.getElementById('auth-screen').style.display = 'flex';
-        }
-    });
-
-    function initData() {
-        loadDropdowns();
-        db.collection('users').doc(currentUser.uid).collection('movimientos').orderBy('fecha', 'desc').onSnapshot(snap => {
-            rawData = {}; snap.forEach(doc => rawData[doc.id] = doc.data());
-            refreshUI();
-        });
-    }
-
-    function refreshUI() {
-        const tableReg = document.getElementById('list_reg_table');
-        if(tableReg) {
-            tableReg.innerHTML = '';
-            Object.keys(rawData).forEach(key => {
-                const d = rawData[key];
-                tableReg.innerHTML += `<tr><td>${d.fecha}</td><td>${d.concepto}</td><td>$${d.monto}</td><td>${d.cat}</td><td>${d.proveedor}</td><td>${d.estado}</td><td>...</td></tr>`;
-            });
-        }
-    }
-
-    function loadDropdowns() {
-        const map = { f_tipo: 'tipos', f_cat: 'cats', f_subcat: 'subs_list', f_proveedor: 'provs', f_pago: 'pagos', f_estado: 'estados', f_recurrente: 'recurrentes' };
-        for(let id in map) {
-            const el = document.getElementById(id);
-            if(el) el.innerHTML = settings[map[id]].map(v => `<option value="${v}">${v}</option>`).join('');
-        }
-    }
+    const tips = [
+        "QuantyA te ayuda a visualizar tu futuro financiero.",
+        "Regla 50/30/20: 50% necesidades, 30% deseos y 20% ahorro.",
+        "Fondo de Emergencia: Ahorra de 3 a 6 meses de tus gastos básicos.",
+        "Págate a ti primero: Separa tu ahorro apenas recibas tu sueldo."
+    ];
 
     function formatInput(input) {
         let value = input.value.replace(/\D/g, "");
@@ -289,6 +316,197 @@
         return parseFloat(val.toString().replace(/\./g, "")) || 0;
     }
 
+    function toggleMenu() { document.getElementById('sidebar').classList.toggle('open'); }
+
+    function showTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        document.getElementById(tabId).style.display = 'block';
+        if(event) event.currentTarget.classList.add('active');
+        if(tabId === 'analisis') updateCharts();
+    }
+
+    function setAuthMode(mode) {
+        currentAuthMode = mode;
+        document.getElementById('tab-login').classList.toggle('active', mode === 'login');
+        document.getElementById('tab-register').classList.toggle('active', mode === 'register');
+        document.getElementById('auth-btn').innerText = mode === 'login' ? 'INGRESAR' : 'CREAR CUENTA';
+    }
+
+    async function handleAuth() {
+        const email = document.getElementById('auth-email').value;
+        const pass = document.getElementById('auth-pass').value;
+        const errorEl = document.getElementById('auth-error');
+        errorEl.innerText = "";
+        if(!email || !pass) { errorEl.innerText = "Completa todos los campos"; return; }
+        try {
+            if(currentAuthMode === 'login') await auth.signInWithEmailAndPassword(email, pass);
+            else await auth.createUserWithEmailAndPassword(email, pass);
+        } catch (err) { errorEl.innerText = err.message; }
+    }
+
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            currentUser = user;
+            document.getElementById('auth-screen').style.display = 'none';
+            initData();
+        } else {
+            document.getElementById('auth-screen').style.display = 'flex';
+        }
+    });
+
+    function logout() { auth.signOut(); location.reload(); }
+
+    function initData() {
+        document.getElementById('f_fecha').valueAsDate = new Date();
+        startTipsSystem();
+
+        db.collection('users').doc(currentUser.uid).collection('config').doc('listas').onSnapshot(doc => {
+            if(doc.exists) { settings = doc.data(); loadDropdowns(); renderConfigList(); }
+            else { db.collection('users').doc(currentUser.uid).collection('config').doc('listas').set(settings); }
+        });
+
+        db.collection('users').doc(currentUser.uid).collection('movimientos').orderBy('fecha', 'desc').onSnapshot(snap => {
+            rawData = {}; snap.forEach(doc => rawData[doc.id] = doc.data());
+            refreshUI();
+            if(document.getElementById('analisis').style.display !== 'none') updateCharts();
+        });
+
+        db.collection('users').doc(currentUser.uid).collection('metas').onSnapshot(snap => {
+            metasData = {}; snap.forEach(doc => metasData[doc.id] = doc.data());
+            renderMetas();
+        });
+    }
+
+    function startTipsSystem() {
+        setInterval(() => {
+            const text = document.getElementById('tips-text');
+            if(text) {
+                text.style.opacity = 0;
+                setTimeout(() => {
+                    text.innerText = tips[Math.floor(Math.random()*tips.length)];
+                    text.style.opacity = 1;
+                }, 500);
+            }
+        }, 8000);
+    }
+
+    function refreshUI() {
+        let ing = 0, eg = 0;
+        const rq = document.getElementById('reg_q').value.toLowerCase();
+        const rd = document.getElementById('reg_d').value;
+        const rm = document.getElementById('reg_m').value;
+        const hq = document.getElementById('his_q').value.toLowerCase();
+        const hd = document.getElementById('his_d').value;
+        const hm = document.getElementById('his_m').value;
+
+        const tableReg = document.getElementById('list_reg_table');
+        const tableHis = document.getElementById('list_his_table');
+        tableReg.innerHTML = ''; tableHis.innerHTML = '';
+
+        Object.keys(rawData).forEach(key => {
+            const d = rawData[key];
+            if(d.tipo === 'Ingreso') ing += d.monto; else eg += d.monto;
+            
+            const matchRegQ = `${d.concepto} ${d.cat}`.toLowerCase().includes(rq);
+            const matchRegD = !rd || d.fecha === rd;
+            const matchRegM = !rm || d.fecha.includes(rm);
+            if(matchRegQ && matchRegD && matchRegM) tableReg.innerHTML += renderRow(key, d);
+
+            const matchHisQ = `${d.concepto} ${d.cat}`.toLowerCase().includes(hq);
+            const matchHisD = !hd || d.fecha === hd;
+            const matchHisM = !hm || d.fecha.includes(hm);
+            if(matchHisQ && matchHisD && matchHisM) tableHis.innerHTML += renderRow(key, d);
+        });
+
+        document.getElementById('total-ingresos').innerText = `$${ing.toLocaleString('es-CL')}`;
+        document.getElementById('total-egresos').innerText = `$${eg.toLocaleString('es-CL')}`;
+        document.getElementById('total-saldo').innerText = `$${(ing - eg).toLocaleString('es-CL')}`;
+    }
+
+    function renderRow(key, d) {
+        return `<tr><td>${d.fecha}</td><td><b>${d.concepto}</b></td><td style="color:${d.tipo==='Ingreso'?'green':'red'}">$${d.monto.toLocaleString('es-CL')}</td><td>${d.cat}</td><td>${d.proveedor}</td><td><span style="font-size:11px; padding:3px 8px; border-radius:10px; background:${d.estado==='Pagado'?'#dcfce7':'#fee2e2'}; color:${d.estado==='Pagado'?'#166534':'#991b1b'}">${d.estado}</span></td><td><button class="btn-action" onclick="editItem('${key}')">✏️</button><button class="btn-action" onclick="deleteItem('${key}')" style="color:red;">🗑️</button></td></tr>`;
+    }
+
+    function updateCharts() {
+        const ctx = document.getElementById('chartDona').getContext('2d');
+        const now = new Date();
+        const currentMonthStr = `-${String(now.getMonth() + 1).padStart(2, '0')}-`;
+        
+        let catTotals = {};
+        let mesIng = 0, mesEg = 0;
+
+        Object.values(rawData).forEach(d => {
+            if(d.fecha.includes(currentMonthStr)) {
+                if(d.tipo === 'Ingreso') mesIng += d.monto;
+                else {
+                    mesEg += d.monto;
+                    catTotals[d.cat] = (catTotals[d.cat] || 0) + d.monto;
+                }
+            }
+        });
+
+        document.getElementById('ana-mes-total').innerText = `$${mesEg.toLocaleString('es-CL')}`;
+        document.getElementById('ana-semana-total').innerText = `$${mesIng.toLocaleString('es-CL')}`;
+
+        let maxCat = "---";
+        let maxVal = 0;
+        for(let c in catTotals) {
+            if(catTotals[c] > maxVal) { maxVal = catTotals[c]; maxCat = c; }
+        }
+        document.getElementById('ana-top-cat').innerText = maxCat !== "---" ? `${maxCat} ($${maxVal.toLocaleString()})` : "---";
+
+        if(donaChart) donaChart.destroy();
+        donaChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(catTotals),
+                datasets: [{
+                    data: Object.values(catTotals),
+                    backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']
+                }]
+            },
+            options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+        });
+    }
+
+    function exportPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        doc.setFontSize(22);
+        doc.text("Reporte QuantyA", 14, 20);
+        doc.setFontSize(10);
+        doc.text(`Generado el: ${new Date().toLocaleDateString()}`, 14, 26);
+
+        const body = Object.values(rawData).map(d => [d.fecha, d.concepto, d.tipo, `$${d.monto.toLocaleString('es-CL')}`, d.cat, d.estado]);
+        doc.autoTable({
+            startY: 35,
+            head: [['Fecha', 'Concepto', 'Tipo', 'Monto', 'Categoría', 'Estado']],
+            body: body,
+            theme: 'grid',
+            headStyles: { fillColor: [37, 99, 235] }
+        });
+
+        let finalY = doc.lastAutoTable.finalY + 15;
+        doc.text("RESUMEN DE METAS", 14, finalY);
+        const metasBody = Object.values(metasData).map(m => [m.nombre, `$${m.objetivo.toLocaleString()}`, `$${m.actual.toLocaleString()}`, `${((m.actual/m.objetivo)*100).toFixed(1)}%`]);
+        doc.autoTable({
+            startY: finalY + 5,
+            head: [['Meta', 'Objetivo', 'Actual', 'Progreso']],
+            body: metasBody,
+            headStyles: { fillColor: [16, 185, 129] }
+        });
+
+        doc.save("Reporte_QuantyA.pdf");
+    }
+
+    function exportExcel() {
+        const ws = XLSX.utils.json_to_sheet(Object.values(rawData));
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Movimientos");
+        XLSX.writeFile(wb, "QuantyA_Export.xlsx");
+    }
+
     function calcLogic() {
         const m = parseFormatted(document.getElementById('f_monto').value);
         const p = parseFormatted(document.getElementById('f_presupuesto').value);
@@ -298,16 +516,150 @@
         el.style.color = diff >= 0 ? 'green' : 'red';
     }
 
-    async function handleAuth() {
-        const email = document.getElementById('auth-email').value;
-        const pass = document.getElementById('auth-pass').value;
-        try {
-            if(currentAuthMode === 'login') await auth.signInWithEmailAndPassword(email, pass);
-            else await auth.createUserWithEmailAndPassword(email, pass);
-        } catch (err) { alert(err.message); }
+    function loadDropdowns() {
+        const map = { f_tipo: 'tipos', f_cat: 'cats', f_subcat: 'subs_list', f_proveedor: 'provs', f_pago: 'pagos', f_estado: 'estados', f_recurrente: 'recurrentes' };
+        for(let id in map) {
+            const el = document.getElementById(id);
+            if(el) el.innerHTML = settings[map[id]].map(v => `<option value="${v}">${v}</option>`).join('');
+        }
     }
 
-    function logout() { auth.signOut(); location.reload(); }
+    async function saveData() {
+        const id = document.getElementById('edit-id').value;
+        const data = {
+            fecha: document.getElementById('f_fecha').value,
+            tipo: document.getElementById('f_tipo').value,
+            monto: parseFormatted(document.getElementById('f_monto').value),
+            presupuesto: parseFormatted(document.getElementById('f_presupuesto').value),
+            concepto: document.getElementById('f_concepto').value,
+            cat: document.getElementById('f_cat').value,
+            subcat: document.getElementById('f_subcat').value,
+            pago: document.getElementById('f_pago').value,
+            estado: document.getElementById('f_estado').value,
+            proveedor: document.getElementById('f_proveedor').value,
+            recurrente: document.getElementById('f_recurrente').value
+        };
+
+        if(id) await db.collection('users').doc(currentUser.uid).collection('movimientos').doc(id).update(data);
+        else await db.collection('users').doc(currentUser.uid).collection('movimientos').add(data);
+        clearForm();
+    }
+
+    function editItem(id) {
+        const d = rawData[id];
+        document.getElementById('edit-id').value = id;
+        document.getElementById('f_fecha').value = d.fecha;
+        document.getElementById('f_tipo').value = d.tipo;
+        document.getElementById('f_monto').value = d.monto.toLocaleString('es-CL');
+        document.getElementById('f_presupuesto').value = d.presupuesto.toLocaleString('es-CL');
+        document.getElementById('f_concepto').value = d.concepto;
+        document.getElementById('f_cat').value = d.cat;
+        document.getElementById('f_subcat').value = d.subcat;
+        document.getElementById('f_pago').value = d.pago;
+        document.getElementById('f_estado').value = d.estado;
+        document.getElementById('f_proveedor').value = d.proveedor;
+        document.getElementById('f_recurrente').value = d.recurrente;
+        document.getElementById('form-title').innerText = "Editando Operación";
+        calcLogic();
+        showTab('registro');
+    }
+
+    async function deleteItem(id) {
+        if(confirm("¿Eliminar este registro?")) await db.collection('users').doc(currentUser.uid).collection('movimientos').doc(id).delete();
+    }
+
+    function clearForm() {
+        document.getElementById('edit-id').value = "";
+        document.getElementById('f_concepto').value = "";
+        document.getElementById('f_monto').value = "";
+        document.getElementById('f_presupuesto').value = "";
+        document.getElementById('form-title').innerText = "Nueva Operación";
+        document.getElementById('f_fecha').valueAsDate = new Date();
+        calcLogic();
+    }
+
+    async function saveMeta() {
+        const id = document.getElementById('m_edit_id').value;
+        const data = {
+            nombre: document.getElementById('m_nombre').value,
+            objetivo: parseFormatted(document.getElementById('m_objetivo').value),
+            actual: parseFormatted(document.getElementById('m_actual').value)
+        };
+        if(id) await db.collection('users').doc(currentUser.uid).collection('metas').doc(id).update(data);
+        else await db.collection('users').doc(currentUser.uid).collection('metas').add(data);
+        cancelEditMeta();
+    }
+
+    function renderMetas() {
+        const container = document.getElementById('metas-container');
+        container.innerHTML = '';
+        Object.keys(metasData).forEach(key => {
+            const m = metasData[key];
+            const porc = Math.min((m.actual / m.objetivo) * 100, 100).toFixed(1);
+            container.innerHTML += `
+                <div class="goal-card">
+                    <div style="display:flex; justify-content:space-between;">
+                        <span style="font-weight:800;">${m.nombre}</span>
+                        <div>
+                            <button class="btn-action" onclick="editMeta('${key}')">✏️</button>
+                            <button class="btn-action" onclick="deleteMeta('${key}')" style="color:red;">🗑️</button>
+                        </div>
+                    </div>
+                    <div class="goal-progress"><div class="goal-bar" style="width:${porc}%"></div></div>
+                    <div style="display:flex; justify-content:space-between; font-size:12px;">
+                        <span>$${m.actual.toLocaleString()} / $${m.objetivo.toLocaleString()}</span>
+                        <span style="font-weight:bold; color:var(--success);">${porc}%</span>
+                    </div>
+                </div>`;
+        });
+    }
+
+    function editMeta(id) {
+        const m = metasData[id];
+        document.getElementById('m_edit_id').value = id;
+        document.getElementById('m_nombre').value = m.nombre;
+        document.getElementById('m_objetivo').value = m.objetivo.toLocaleString('es-CL');
+        document.getElementById('m_actual').value = m.actual.toLocaleString('es-CL');
+        document.getElementById('btn-save-meta').innerText = "💾 ACTUALIZAR";
+        document.getElementById('btn-cancel-meta').style.display = 'block';
+    }
+
+    function cancelEditMeta() {
+        document.getElementById('m_edit_id').value = "";
+        document.getElementById('m_nombre').value = "";
+        document.getElementById('m_objetivo').value = "";
+        document.getElementById('m_actual').value = "";
+        document.getElementById('btn-save-meta').innerText = "➕ GUARDAR META";
+        document.getElementById('btn-cancel-meta').style.display = 'none';
+    }
+
+    async function deleteMeta(id) {
+        if(confirm("¿Eliminar meta?")) await db.collection('users').doc(currentUser.uid).collection('metas').doc(id).delete();
+    }
+
+    function renderConfigList() {
+        const param = document.getElementById('adj_param').value;
+        const container = document.getElementById('adj_list_container');
+        container.innerHTML = settings[param].map((v, i) => `
+            <div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #f1f5f9; align-items:center;">
+                <span style="font-size:13px;">${v}</span>
+                <button onclick="removeParam('${param}', ${i})" style="color:red; background:none; border:none; cursor:pointer;">🗑️</button>
+            </div>`).join('');
+    }
+
+    async function addParam() {
+        const param = document.getElementById('adj_param').value;
+        const val = document.getElementById('adj_new_val').value;
+        if(!val) return;
+        settings[param].push(val);
+        await db.collection('users').doc(currentUser.uid).collection('config').doc('listas').set(settings);
+        document.getElementById('adj_new_val').value = '';
+    }
+
+    async function removeParam(param, idx) {
+        settings[param].splice(idx, 1);
+        await db.collection('users').doc(currentUser.uid).collection('config').doc('listas').set(settings);
+    }
 </script>
 </body>
 </html>
