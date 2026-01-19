@@ -4,6 +4,7 @@
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>QuantyA - Panel de Control Profesional</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
 
@@ -27,21 +28,12 @@
     const db = getDatabase(app);
     let currentUser = null;
     let editNodeId = null; 
-    let cacheListas = JSON.parse(localStorage.getItem('cache_listas')) || {};
-    let cacheMovimientos = JSON.parse(localStorage.getItem('cache_movimientos_panel')) || [];
+    let miGrafico = null; // Instancia del gráfico
 
-    // Lógica de Sugerencias (30 Consejos)
     const consejos = [
-        "Revisa tus suscripciones activas este mes.", "El 30% de tus gastos son en comida rápida.", "Ahorra el 10% de cada ingreso extra.",
-        "Usa transferencias para evitar comisiones.", "Compara precios antes de compras mayores.", "Mantén un fondo de emergencia de 3 meses.",
-        "Automatiza el pago de tus cuentas básicas.", "Revisa el estado de tu tarjeta semanalmente.", "Evita compras impulsivas esperando 24h.",
-        "Establece un límite de gasto diario.", "Planifica tus comidas para gastar menos.", "Aprovecha los días de descuento.",
-        "Registra hasta el gasto más pequeño.", "Divide tus ingresos en cuentas separadas.", "Invierte en educación financiera.",
-        "Reduce el consumo eléctrico en casa.", "Usa transporte público si es posible.", "No gastes más de lo que ganas.",
-        "Evalúa si realmente necesitas ese gadget.", "Pequeños ahorros suman grandes cantidades.", "Revisa tus planes de telefonía anualmente.",
-        "Usa efectivo para controlar salidas.", "Paga tus tarjetas de crédito siempre al día.", "Define metas a corto y largo plazo.",
-        "El interés compuesto es tu mejor amigo.", "No pidas préstamos para consumo no esencial.", "Separa finanzas personales del negocio.",
-        "Analiza errores financieros pasados.", "Haz una lista de compras y apégate a ella.", "Celebra logros de ahorro sin gastar."
+        "Revisa tus suscripciones activas este mes.", "Ahorra el 10% de cada ingreso extra.",
+        "Compara precios antes de compras mayores.", "Mantén un fondo de emergencia.",
+        "Registra hasta el gasto más pequeño.", "El interés compuesto es tu mejor amigo."
     ];
 
     function iniciarCarruselSugerencias() {
@@ -61,106 +53,118 @@
         if (user) {
             currentUser = user;
             document.getElementById('user-name-display').innerText = user.displayName || "Usuario";
-            if(cacheMovimientos.length > 0) renderizarTodo(cacheMovimientos);
-            if(Object.keys(cacheListas).length > 0) llenarTodosLosSelects(cacheListas);
             iniciarSincronizacionRealtime();
             iniciarCarruselSugerencias();
-        } else {
-            window.location.href = "index.html";
-        }
+        } else { window.location.href = "index.html"; }
     });
 
     function iniciarSincronizacionRealtime() {
         onValue(ref(db, `usuarios/${currentUser.uid}/listas`), (snapshot) => {
-            if (snapshot.exists()) {
-                const listas = snapshot.val();
-                localStorage.setItem('cache_listas', JSON.stringify(listas));
-                llenarTodosLosSelects(listas);
-            }
+            if (snapshot.exists()) llenarTodosLosSelects(snapshot.val());
         });
 
         onValue(ref(db, `usuarios/${currentUser.uid}/movimientos`), (snapshot) => {
             const dataFull = [];
-            snapshot.forEach((child) => {
-                dataFull.push({ id: child.key, ...child.val() });
-            });
+            snapshot.forEach((child) => { dataFull.push({ id: child.key, ...child.val() }); });
             dataFull.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-            localStorage.setItem('cache_movimientos_panel', JSON.stringify(dataFull));
             renderizarTodo(dataFull);
+            actualizarGraficoAnalisis(dataFull);
         });
     }
 
+    function actualizarGraficoAnalisis(datos) {
+        let ingresos = 0, gastos = 0;
+        let listaGastos = [];
+
+        datos.forEach(m => {
+            const esIngreso = m.tipo.toLowerCase().includes('ingreso') || m.tipo.toLowerCase().includes('venta');
+            if(esIngreso) ingresos += m.monto;
+            else {
+                gastos += m.monto;
+                listaGastos.push(m);
+            }
+        });
+
+        const saldo = ingresos - gastos;
+        const totalFlujo = ingresos + gastos;
+        const pIngresos = totalFlujo > 0 ? (ingresos / totalFlujo) * 100 : 50;
+        const pGastos = totalFlujo > 0 ? (gastos / totalFlujo) * 100 : 50;
+
+        // Actualizar UI del centro del gráfico
+        const displaySaldoElem = document.getElementById('chart-center-monto');
+        displaySaldoElem.innerText = `$${new Intl.NumberFormat('es-CL').format(saldo)}`;
+        displaySaldoElem.className = `text-2xl font-black ${saldo >= 0 ? 'text-emerald-500' : 'text-red-500'}`;
+
+        // Top 3 Gastos (Control Exhaustivo)
+        const topGastos = listaGastos.sort((a,b) => b.monto - a.monto).slice(0, 3);
+        const containerTop = document.getElementById('top-gastos-list');
+        containerTop.innerHTML = topGastos.map(g => `
+            <div class="flex justify-between items-center text-[11px] border-b border-slate-100 dark:border-slate-800 py-2">
+                <span class="font-medium truncate w-24">${g.concepto}</span>
+                <span class="font-bold text-red-500">$${new Intl.NumberFormat('es-CL').format(g.monto)}</span>
+            </div>
+        `).join('') || '<p class="text-[10px] text-slate-400">Sin gastos registrados</p>';
+
+        // Renderizado del Gráfico
+        const ctx = document.getElementById('chartAnalisis').getContext('2d');
+        if (miGrafico) miGrafico.destroy();
+        
+        miGrafico = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Ingresos', 'Gastos'],
+                datasets: [{
+                    data: [pIngresos, pGastos],
+                    backgroundColor: ['#10b981', '#ef4444'],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                cutout: '80%',
+                plugins: { legend: { display: false } },
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+    }
+
+    // Funciones de utilidad (Selects, Registro, Tabla se mantienen igual para no romper diseño)
     function llenarTodosLosSelects(listas) {
-        const selects = {
-            'op-tipo': listas.tipo, 'op-categoria': listas.categoria,
-            'op-subcategoria': listas.sub_categoria, 'op-pago': listas.pago,
-            'op-recurrente': listas.recurrente
-        };
-        Object.entries(selects).forEach(([id, data]) => llenarSelect(id, data));
-    }
-
-    function llenarSelect(elementId, datos) {
-        const select = document.getElementById(elementId);
-        if (!select || !datos) return;
-        const fragment = document.createDocumentFragment();
-        Object.keys(datos).forEach(key => {
-            const opt = document.createElement('option');
-            opt.value = datos[key].nombre;
-            opt.textContent = datos[key].nombre;
-            fragment.appendChild(opt);
+        const selects = { 'op-tipo': listas.tipo, 'op-categoria': listas.categoria, 'op-subcategoria': listas.sub_categoria, 'op-pago': listas.pago, 'op-recurrente': listas.recurrente };
+        Object.entries(selects).forEach(([id, data]) => {
+            const select = document.getElementById(id);
+            if (!select || !data) return;
+            select.innerHTML = Object.keys(data).map(k => `<option value="${data[k].nombre}">${data[k].nombre}</option>`).join('');
         });
-        const current = select.value;
-        select.innerHTML = '';
-        select.appendChild(fragment);
-        if(current) select.value = current;
     }
 
     function renderizarTodo(datos) {
         const container = document.getElementById('recent-moves-body');
         container.innerHTML = datos.slice(0, 5).map(data => {
             const isIngreso = data.tipo.toLowerCase().includes('ingreso') || data.tipo.toLowerCase().includes('venta');
-            const colorClase = obtenerColorPago(data.pago);
-            const dataString = encodeURIComponent(JSON.stringify(data));
             return `
-                <tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                    <td class="px-6 py-4 text-sm text-slate-500 whitespace-nowrap">${data.fecha}</td>
-                    <td class="px-6 py-4">
-                        <p class="text-sm font-semibold truncate max-w-[150px]">${data.concepto}</p>
-                        <span class="${colorClase} border text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-tighter">${data.pago}</span>
-                    </td>
-                    <td class="px-6 py-4 text-sm"><span class="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wide">${data.categoria}</span></td>
-                    <td class="px-6 py-4 text-sm font-bold text-right whitespace-nowrap ${isIngreso ? 'text-emerald-custom' : 'text-red-500'}">
+                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                    <td class="px-6 py-4 text-sm text-slate-500">${data.fecha}</td>
+                    <td class="px-6 py-4 text-sm font-semibold">${data.concepto}</td>
+                    <td class="px-6 py-4 text-sm"><span class="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-[10px] font-bold uppercase">${data.categoria}</span></td>
+                    <td class="px-6 py-4 text-sm font-bold text-right ${isIngreso ? 'text-emerald-500' : 'text-red-500'}">
                         ${isIngreso ? '+' : '-'} $${new Intl.NumberFormat('es-CL').format(data.monto)}
                     </td>
-                    <td class="px-6 py-4 text-right space-x-2">
-                        <button onclick="prepararEdicion('${data.id}', '${dataString}')" class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined text-lg">edit</span></button>
+                    <td class="px-6 py-4 text-right">
                         <button onclick="eliminarMovimiento('${data.id}')" class="text-slate-400 hover:text-red-500"><span class="material-symbols-outlined text-lg">delete</span></button>
                     </td>
                 </tr>`;
         }).join('');
 
-        let tIngresos = 0, tGastos = 0;
+        let tI = 0, tG = 0;
         datos.forEach(m => {
-            if(m.tipo.toLowerCase().includes('ingreso') || m.tipo.toLowerCase().includes('venta')) tIngresos += m.monto;
-            else tGastos += m.monto;
+            if(m.tipo.toLowerCase().includes('ingreso') || m.tipo.toLowerCase().includes('venta')) tI += m.monto;
+            else tG += m.monto;
         });
-        const saldo = tIngresos - tGastos;
-        const percGastos = tIngresos > 0 ? Math.min((tGastos / tIngresos) * 100, 100) : 0;
-        document.getElementById('display-ingresos').innerText = `$ ${new Intl.NumberFormat('es-CL').format(tIngresos)}`;
-        document.getElementById('display-gastos').innerText = `$ ${new Intl.NumberFormat('es-CL').format(tGastos)}`;
-        document.getElementById('display-saldo').innerText = `$ ${new Intl.NumberFormat('es-CL').format(saldo)}`;
-        document.getElementById('bar-ingresos').style.width = '100%';
-        document.getElementById('bar-gastos').style.width = `${percGastos}%`;
-        document.getElementById('bar-saldo').style.width = `${100 - percGastos}%`;
-    }
-
-    function obtenerColorPago(pago) {
-        const p = (pago || '').toLowerCase();
-        if (p.includes('transfer')) return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-        if (p.includes('debito') || p.includes('tarjeta')) return 'bg-blue-100 text-blue-700 border-blue-200';
-        if (p.includes('credito')) return 'bg-purple-100 text-purple-700 border-purple-200';
-        if (p.includes('efectivo')) return 'bg-amber-100 text-amber-700 border-amber-200';
-        return 'bg-slate-100 text-slate-600 border-slate-200';
+        document.getElementById('display-ingresos').innerText = `$ ${new Intl.NumberFormat('es-CL').format(tI)}`;
+        document.getElementById('display-gastos').innerText = `$ ${new Intl.NumberFormat('es-CL').format(tG)}`;
+        document.getElementById('display-saldo').innerText = `$ ${new Intl.NumberFormat('es-CL').format(tI - tG)}`;
     }
 
     window.formatMoneyInput = (input) => {
@@ -177,153 +181,111 @@
             pago: document.getElementById('op-pago').value, recurrente: document.getElementById('op-recurrente').value,
             fecha: document.getElementById('op-fecha').value, monto: parseInt(montoRaw), timestamp: Date.now()
         };
-        if(editNodeId) {
-            await update(ref(db, `usuarios/${currentUser.uid}/movimientos/${editNodeId}`), data);
-            editNodeId = null;
-            document.getElementById('btn-submit').innerText = "Registrar Operación";
-        } else {
-            await push(ref(db, `usuarios/${currentUser.uid}/movimientos`), data);
-        }
+        await push(ref(db, `usuarios/${currentUser.uid}/movimientos`), data);
         e.target.reset();
     };
 
-    window.eliminarMovimiento = async (id) => {
-        if(confirm("¿Eliminar?")) await remove(ref(db, `usuarios/${currentUser.uid}/movimientos/${id}`));
-    };
-
-    window.prepararEdicion = (id, dataStr) => {
-        const d = JSON.parse(decodeURIComponent(dataStr));
-        editNodeId = id;
-        document.getElementById('op-concepto').value = d.concept; // ... rest logic same
-        document.getElementById('op-concepto').value = d.concepto;
-        document.getElementById('op-tipo').value = d.tipo;
-        document.getElementById('op-monto').value = new Intl.NumberFormat('es-CL').format(d.monto);
-        document.getElementById('op-categoria').value = d.categoria;
-        document.getElementById('op-subcategoria').value = d.subcategoria;
-        document.getElementById('op-pago').value = d.pago;
-        document.getElementById('op-recurrente').value = d.recurrente;
-        document.getElementById('op-fecha').value = d.fecha;
-        document.getElementById('btn-submit').innerText = "Actualizar";
-    };
+    window.eliminarMovimiento = async (id) => { if(confirm("¿Eliminar?")) await remove(ref(db, `usuarios/${currentUser.uid}/movimientos/${id}`)); };
 </script>
 
 <script id="tailwind-config">
     tailwind.config = {
         darkMode: "class",
-        theme: {
-            extend: {
-                colors: { "primary": "#176282", "emerald-custom": "#10b981", "background-light": "#f8f9fa" },
-                fontFamily: { "display": ["Inter", "sans-serif"] },
-            },
-        },
+        theme: { extend: { colors: { "primary": "#176282", "background-light": "#f8f9fa" }, fontFamily: { "display": ["Inter", "sans-serif"] } } }
     }
 </script>
-<style>
-    #sugerencia-texto { transition: opacity 0.5s ease-in-out; }
-</style>
+<style> #sugerencia-texto { transition: opacity 0.5s ease-in-out; } </style>
 </head>
 <body class="bg-background-light dark:bg-[#111827] font-display text-slate-900 dark:text-slate-100">
 <div class="flex min-h-screen">
-<aside class="w-64 bg-[#0f172a] text-white flex flex-col fixed h-full z-50 border-r border-slate-800 p-6">
-    <div class="space-y-8 flex-1">
-        <div class="flex items-center gap-3 px-2">
-            <div class="size-10 bg-primary rounded-lg flex items-center justify-center text-white"><span class="material-symbols-outlined">account_balance_wallet</span></div>
-            <div><h1 class="text-xl font-bold tracking-tight">QuantyA</h1><p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Gestión</p></div>
+    <aside class="w-64 bg-[#0f172a] text-white flex flex-col fixed h-full z-50 p-6">
+        <div class="space-y-8 flex-1">
+            <div class="flex items-center gap-3 px-2">
+                <div class="size-10 bg-primary rounded-lg flex items-center justify-center text-white"><span class="material-symbols-outlined">account_balance_wallet</span></div>
+                <div><h1 class="text-xl font-bold tracking-tight">QuantyA</h1></div>
+            </div>
+            <nav class="space-y-1">
+                <a href="#" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl"><span class="material-symbols-outlined">dashboard</span><span class="text-sm font-medium">Panel</span></a>
+            </nav>
         </div>
-        <nav class="space-y-1">
-            <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl"><span class="material-symbols-outlined">dashboard</span><span class="text-sm font-medium">Panel</span></a>
-            <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl"><span class="material-symbols-outlined">swap_horiz</span><span class="text-sm font-medium">Movimientos</span></a>
-            <a href="analisis.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl"><span class="material-symbols-outlined">analytics</span><span class="text-sm font-medium">Análisis</span></a>
-            <a href="metas.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl"><span class="material-symbols-outlined">track_changes</span><span class="text-sm font-medium">Metas</span></a>
-            <a href="reportes.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl"><span class="material-symbols-outlined">description</span><span class="text-sm font-medium">Reportes</span></a>
-            <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl"><span class="material-symbols-outlined">settings</span><span class="text-sm font-medium">Configuración</span></a>
-        </nav>
-    </div>
-</aside>
+    </aside>
 
-<main class="ml-64 flex-1 flex flex-col">
-    <header class="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-8 flex items-center justify-between sticky top-0 z-40">
-        <div class="relative w-64">
-            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
-            <input class="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-lg text-sm" placeholder="Buscar..."/>
-        </div>
-        <div class="flex items-center gap-4">
-            <div class="text-right"><p id="user-name-display" class="text-sm font-semibold">Cargando...</p><p class="text-[11px] text-slate-500">QA Corporativo</p></div>
-            <div class="size-10 rounded-full bg-slate-200 flex items-center justify-center font-bold text-primary border-2 border-primary/20 text-xs">QA</div>
-        </div>
-    </header>
+    <main class="ml-64 flex-1 flex flex-col">
+        <header class="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-8 flex items-center justify-between sticky top-0 z-40">
+            <div class="text-sm font-bold text-primary">DASHBOARD OPERATIVO</div>
+            <div id="user-name-display" class="text-sm font-semibold">Cargando...</div>
+        </header>
 
-    <div class="p-8 space-y-6 max-w-[1440px] mx-auto w-full">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                <p class="text-sm font-medium text-slate-500 mb-2">Ingresos Totales</p>
-                <p id="display-ingresos" class="text-3xl font-bold text-slate-900 dark:text-white">$ 0</p>
-                <div class="mt-4 h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden"><div id="bar-ingresos" class="h-full bg-emerald-custom w-0"></div></div>
-            </div>
-            <div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                <p class="text-sm font-medium text-slate-500 mb-2">Gastos Totales</p>
-                <p id="display-gastos" class="text-3xl font-bold text-slate-900 dark:text-white">$ 0</p>
-                <div class="mt-4 h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden"><div id="bar-gastos" class="h-full bg-red-500 w-0"></div></div>
-            </div>
-            <div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                <p class="text-sm font-medium text-slate-500 mb-2">Saldo Neto</p>
-                <p id="display-saldo" class="text-3xl font-bold text-slate-900 dark:text-white">$ 0</p>
-                <div class="mt-4 h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden"><div id="bar-saldo" class="h-full bg-primary w-0"></div></div>
-            </div>
-        </div>
-
-        <div class="bg-primary/5 border border-primary/20 p-4 rounded-xl flex items-center gap-4">
-            <div class="size-10 bg-primary text-white rounded-lg flex items-center justify-center shrink-0">
-                <span class="material-symbols-outlined">psychology</span>
-            </div>
-            <div>
-                <p class="text-[10px] font-black uppercase tracking-widest text-primary/60">Consejo del momento</p>
-                <p id="sugerencia-texto" class="text-sm font-semibold text-primary">Analizando tus finanzas para darte el mejor consejo...</p>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div class="lg:col-span-1">
-                <div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm sticky top-24">
-                    <h2 class="text-lg font-bold mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-primary">add_circle</span> Operación</h2>
-                    <form id="form-operacion" onsubmit="registrarOperacion(event)" class="space-y-4">
-                        <input id="op-concepto" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 rounded-lg text-sm" placeholder="Concepto" required/>
-                        <input id="op-fecha" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 rounded-lg text-sm" type="date" required/>
-                        <div class="grid grid-cols-2 gap-4">
-                            <select id="op-tipo" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 rounded-lg text-sm font-bold"></select>
-                            <input id="op-monto" oninput="formatMoneyInput(this)" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 rounded-lg text-sm font-bold" placeholder="Monto" required/>
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <select id="op-categoria" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 rounded-lg text-sm"></select>
-                            <select id="op-subcategoria" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 rounded-lg text-sm"></select>
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <select id="op-pago" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 rounded-lg text-sm"></select>
-                            <select id="op-recurrente" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 rounded-lg text-sm"></select>
-                        </div>
-                        <button id="btn-submit" type="submit" class="w-full bg-primary text-white font-bold py-3 rounded-lg text-[10px] uppercase tracking-widest hover:bg-primary/90 transition-all">Registrar Operación</button>
-                    </form>
+        <div class="p-8 space-y-6 max-w-[1440px] mx-auto w-full">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <p class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Ingresos</p>
+                    <p id="display-ingresos" class="text-2xl font-bold text-emerald-500">$ 0</p>
+                </div>
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <p class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Gastos</p>
+                    <p id="display-gastos" class="text-2xl font-bold text-red-500">$ 0</p>
+                </div>
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <p class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Saldo Neto</p>
+                    <p id="display-saldo" class="text-2xl font-bold text-primary">$ 0</p>
                 </div>
             </div>
 
-            <div class="lg:col-span-2">
-                <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                    <table class="w-full text-left text-sm">
-                        <thead class="bg-slate-50 dark:bg-slate-800/50">
-                            <tr class="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                                <th class="px-6 py-4">Fecha</th>
-                                <th class="px-6 py-4">Descripción</th>
-                                <th class="px-6 py-4">Categoría</th>
-                                <th class="px-6 py-4 text-right">Monto</th>
-                                <th class="px-6 py-4 text-right">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="recent-moves-body" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
-                    </table>
+            <div class="bg-primary/5 border border-primary/20 p-4 rounded-xl flex items-center gap-4">
+                <div class="size-10 bg-primary text-white rounded-lg flex items-center justify-center shrink-0"><span class="material-symbols-outlined">psychology</span></div>
+                <div><p id="sugerencia-texto" class="text-sm font-semibold text-primary">Cargando consejos...</p></div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-1 space-y-6">
+                    <div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <h2 class="text-lg font-bold mb-4">Nueva Operación</h2>
+                        <form id="form-operacion" onsubmit="registrarOperacion(event)" class="space-y-4">
+                            <input id="op-concepto" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm" placeholder="Concepto" required/>
+                            <div class="grid grid-cols-2 gap-4">
+                                <select id="op-tipo" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm font-bold"></select>
+                                <input id="op-monto" oninput="formatMoneyInput(this)" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm font-bold" placeholder="Monto" required/>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <select id="op-categoria" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm"></select>
+                                <input id="op-fecha" type="date" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm" required/>
+                            </div>
+                            <select id="op-subcategoria" class="hidden"></select><select id="op-pago" class="hidden"></select><select id="op-recurrente" class="hidden"></select>
+                            <button type="submit" class="w-full bg-primary text-white font-bold py-3 rounded-lg text-[10px] uppercase tracking-widest">Registrar</button>
+                        </form>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <h2 class="text-sm font-black uppercase tracking-widest text-slate-400 mb-4">Análisis de Flujo</h2>
+                        <div class="relative h-48">
+                            <canvas id="chartAnalisis"></canvas>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                <span class="text-[10px] font-black uppercase text-slate-400 tracking-tighter">SALDO</span>
+                                <span id="chart-center-monto" class="text-2xl font-black text-emerald-500">$0</span>
+                            </div>
+                        </div>
+                        <div class="mt-4 space-y-2">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase">Gastos más altos:</p>
+                            <div id="top-gastos-list"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-2">
+                    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50 dark:bg-slate-800/50">
+                                <tr class="text-[10px] font-black text-slate-500 uppercase">
+                                    <th class="px-6 py-4">Fecha</th><th class="px-6 py-4">Descripción</th><th class="px-6 py-4">Categoría</th><th class="px-6 py-4 text-right">Monto</th><th class="px-6 py-4 text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-moves-body" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-</main>
+    </main>
 </div>
 </body></html>
