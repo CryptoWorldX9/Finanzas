@@ -6,6 +6,111 @@
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getDatabase, ref, push, onValue, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCO6WXu9iZsyEUmNNxrE4oWToLYY8wl-y4",
+        authDomain: "misfinanzaspro-d2f3f.firebaseapp.com",
+        databaseURL: "https://misfinanzaspro-d2f3f-default-rtdb.firebaseio.com",
+        projectId: "misfinanzaspro-d2f3f",
+        storageBucket: "misfinanzaspro-d2f3f.firebasestorage.app",
+        messagingSenderId: "613366165036",
+        appId: "1:613366165036:web:bebc72b38d39ab64932b89"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+    let currentUser = null;
+
+    // Control de Sesión y Carga de Datos
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            currentUser = user;
+            document.getElementById('user-name-display').innerText = user.displayName || "Usuario";
+            cargarMovimientosRecientes();
+        } else {
+            window.location.href = "index.html";
+        }
+    });
+
+    // Formateador CLP para inputs (Separador de miles punto)
+    window.formatMoneyInput = (input) => {
+        let value = input.value.replace(/\D/g, "");
+        if (value === "") return;
+        input.value = new Intl.NumberFormat('es-CL').format(value);
+    };
+
+    // Registrar Operación
+    window.registrarOperacion = async (event) => {
+        event.preventDefault();
+        const concepto = document.getElementById('op-concepto').value;
+        const tipo = document.getElementById('op-tipo').value;
+        const montoRaw = document.getElementById('op-monto').value.replace(/\./g, "");
+        const categoria = document.getElementById('op-categoria').value;
+        const subcategoria = document.getElementById('op-subcategoria').value;
+        const pago = document.getElementById('op-pago').value;
+        const recurrente = document.getElementById('op-recurrente').value;
+
+        if(!concepto || !montoRaw) return alert("Por favor complete los campos");
+
+        const nuevaOp = {
+            concepto, tipo, categoria, subcategoria, pago, recurrente,
+            monto: parseInt(montoRaw),
+            fecha: new Date().toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' }),
+            timestamp: Date.now()
+        };
+
+        try {
+            await push(ref(db, `usuarios/${currentUser.uid}/movimientos`), nuevaOp);
+            event.target.reset();
+            alert("Operación registrada con éxito");
+        } catch (error) {
+            alert("Error al guardar: " + error.message);
+        }
+    };
+
+    // Cargar Movimientos Recientes
+    function cargarMovimientosRecientes() {
+        const movRef = query(ref(db, `usuarios/${currentUser.uid}/movimientos`), limitToLast(5));
+        onValue(movRef, (snapshot) => {
+            const container = document.getElementById('recent-moves-body');
+            container.innerHTML = '';
+            let totalIngresos = 0;
+            let totalGastos = 0;
+
+            snapshot.forEach((child) => {
+                const data = child.val();
+                const isIngreso = data.tipo === 'ingreso';
+                const color = isIngreso ? 'text-emerald-custom' : 'text-red-500';
+                const signo = isIngreso ? '+' : '-';
+                
+                if(isIngreso) totalIngresos += data.monto; else totalGastos += data.monto;
+
+                container.insertAdjacentHTML('afterbegin', `
+                    <tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">${data.fecha}</td>
+                        <td class="px-6 py-4 text-sm font-semibold">${data.concepto}</td>
+                        <td class="px-6 py-4 text-sm"><span class="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-[10px] font-bold uppercase">${data.categoria}</span></td>
+                        <td class="px-6 py-4"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-custom/10 text-emerald-custom">Pagado</span></td>
+                        <td class="px-6 py-4 text-sm font-bold text-right ${color}">${signo} $${new Intl.NumberFormat('es-CL').format(data.monto)}</td>
+                        <td class="px-6 py-4 text-right"></td>
+                    </tr>
+                `);
+            });
+
+            // Actualizar Widgets Superiores
+            document.getElementById('display-ingresos').innerText = `$ ${new Intl.NumberFormat('es-CL').format(totalIngresos)}`;
+            document.getElementById('display-gastos').innerText = `$ ${new Intl.NumberFormat('es-CL').format(totalGastos)}`;
+            document.getElementById('display-saldo').innerText = `$ ${new Intl.NumberFormat('es-CL').format(totalIngresos - totalGastos)}`;
+        });
+    }
+</script>
+
 <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -18,24 +123,15 @@
                         "emerald-custom": "#10b981",
                         "background-light": "#f8f9fa"
                     },
-                    fontFamily: {
-                        "display": ["Inter", "sans-serif"]
-                    },
-                    borderRadius: {
-                        "DEFAULT": "0.5rem",
-                        "lg": "1rem",
-                        "xl": "1.5rem",
-                        "full": "9999px"
-                    },
+                    fontFamily: { "display": ["Inter", "sans-serif"] },
+                    borderRadius: { "DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px" },
                 },
             },
         }
     </script>
 <style type="text/tailwindcss">
         body { font-family: 'Inter', sans-serif; }
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
     </style>
 </head>
 <body class="bg-background-light dark:bg-[#111827] font-display text-slate-900 dark:text-slate-100">
@@ -80,15 +176,6 @@
     </div>
     
     <div class="mt-auto space-y-4">
-        <div class="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
-            <p class="text-[10px] font-bold text-slate-500 uppercase mb-2">Plan Corporativo</p>
-            <div class="flex items-center gap-2">
-                <div class="h-1.5 flex-1 bg-slate-700 rounded-full overflow-hidden">
-                    <div class="h-full bg-primary w-4/5"></div>
-                </div>
-                <span class="text-[10px] font-bold">80%</span>
-            </div>
-        </div>
         <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors">
             <span class="material-symbols-outlined text-[20px]">logout</span>
             <span class="text-sm font-medium">Cerrar Sesión</span>
@@ -101,139 +188,116 @@
 <div class="flex items-center gap-4 flex-1">
 <div class="relative w-64">
 <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl">search</span>
-<input class="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-lg text-sm focus:ring-2 focus:ring-primary" placeholder="Buscar transacciones..." type="text"/>
+<input class="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-lg text-sm focus:ring-2 focus:ring-primary" placeholder="Buscar..." type="text"/>
 </div>
-<div class="flex items-center gap-2 px-3 py-1.5 bg-emerald-custom/10 text-emerald-custom rounded-full text-[11px] font-bold">
-<span class="relative flex h-2 w-2">
-<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-custom opacity-75"></span>
-<span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-custom"></span>
-</span>
-                    Sincronizado con Firebase
-                </div>
 </div>
 <div class="flex items-center gap-4">
-<button class="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg relative">
-<span class="material-symbols-outlined">notifications</span>
-<span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-900"></span>
-</button>
-<div class="h-8 w-[1px] bg-slate-200 dark:bg-slate-800 mx-2"></div>
 <div class="flex items-center gap-3">
 <div class="text-right">
-<p class="text-sm font-semibold text-slate-700 dark:text-slate-200">Alex Rivera</p>
-<p class="text-[11px] text-slate-500 font-medium">Cuenta Corporativa</p>
+<p id="user-name-display" class="text-sm font-semibold text-slate-700 dark:text-slate-200 tracking-tight">Cargando...</p>
+<p class="text-[11px] text-slate-500 font-medium uppercase tracking-widest">Cuenta Corporativa</p>
 </div>
-<div class="size-10 rounded-full bg-slate-200 flex items-center justify-center font-bold text-primary border-2 border-primary/20">AR</div>
+<div class="size-10 rounded-full bg-slate-200 flex items-center justify-center font-bold text-primary border-2 border-primary/20 tracking-tighter text-xs">QA</div>
 </div>
 </div>
 </header>
+
 <div class="p-8 space-y-8 max-w-[1440px] mx-auto w-full">
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 <div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-<div class="flex justify-between items-start mb-4">
-<p class="text-sm font-medium text-slate-500">Ingresos Totales</p>
-<span class="flex items-center text-emerald-custom text-xs font-bold bg-emerald-custom/10 px-2 py-1 rounded">
-<span class="material-symbols-outlined text-xs mr-1">trending_up</span> +12.5%
-                        </span>
-</div>
-<p class="text-3xl font-bold tracking-tight">12.450,00 €</p>
-<div class="mt-4 h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-<div class="h-full bg-emerald-custom w-[75%] rounded-full"></div>
-</div>
+<p class="text-sm font-medium text-slate-500 mb-2">Ingresos Totales</p>
+<p id="display-ingresos" class="text-3xl font-bold tracking-tight text-emerald-custom">$ 0</p>
 </div>
 <div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-<div class="flex justify-between items-start mb-4">
-<p class="text-sm font-medium text-slate-500">Gastos Totales</p>
-<span class="flex items-center text-red-500 text-xs font-bold bg-red-500/10 px-2 py-1 rounded">
-<span class="material-symbols-outlined text-xs mr-1">trending_down</span> -5.2%
-                        </span>
-</div>
-<p class="text-3xl font-bold tracking-tight">8.120,00 €</p>
-<div class="mt-4 h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-<div class="h-full bg-red-500 w-[45%] rounded-full"></div>
-</div>
+<p class="text-sm font-medium text-slate-500 mb-2">Gastos Totales</p>
+<p id="display-gastos" class="text-3xl font-bold tracking-tight text-red-500">$ 0</p>
 </div>
 <div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-<div class="flex justify-between items-start mb-4">
-<p class="text-sm font-medium text-slate-500">Saldo Neto</p>
-<span class="flex items-center text-primary text-xs font-bold bg-primary/10 px-2 py-1 rounded">
-<span class="material-symbols-outlined text-xs mr-1">analytics</span> Estable
-                        </span>
-</div>
-<p class="text-3xl font-bold tracking-tight">4.330,00 €</p>
-<div class="mt-4 h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-<div class="h-full bg-primary w-[60%] rounded-full"></div>
+<p class="text-sm font-medium text-slate-500 mb-2">Saldo Neto</p>
+<p id="display-saldo" class="text-3xl font-bold tracking-tight text-primary">$ 0</p>
 </div>
 </div>
-</div>
-<div class="bg-primary/5 border border-primary/20 rounded-xl p-6 flex flex-col md:flex-row items-center gap-6">
-<div class="size-14 bg-primary text-white rounded-full flex items-center justify-center shrink-0">
-<span class="material-symbols-outlined text-3xl">lightbulb</span>
-</div>
-<div class="flex-1">
-<h3 class="text-lg font-bold text-primary">Asistente Financiero</h3>
-<p class="text-slate-600 dark:text-slate-400">
-                        ¡Buen día, Alex! Basado en tu actividad reciente, has ahorrado un 12% más que el mes pasado. ¿Te gustaría ver consejos personalizados para optimizar tus gastos fijos actuales?
-                    </p>
-</div>
-<div class="flex gap-3 shrink-0">
-<button class="px-6 py-2.5 bg-primary text-white font-bold rounded-lg hover:bg-primary/90 transition-all">Ver Consejos</button>
-<button class="px-6 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold rounded-lg hover:bg-slate-50 transition-all">Descartar</button>
-</div>
-</div>
+
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 <div class="lg:col-span-1 space-y-4">
 <h2 class="text-xl font-bold flex items-center gap-2 text-slate-700 dark:text-slate-200">
-<span class="material-symbols-outlined text-primary">add_circle</span>
-                        Nueva Operación
-                    </h2>
-<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+<span class="material-symbols-outlined text-primary">add_circle</span> Nueva Operación
+</h2>
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+<form onsubmit="registrarOperacion(event)" class="space-y-4">
 <div>
 <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Concepto</label>
-<input class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary text-sm" placeholder="Ej. Suscripción AWS" type="text"/>
+<input id="op-concepto" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary text-sm" placeholder="Descripción de la operación" type="text"/>
 </div>
 <div class="grid grid-cols-2 gap-4">
 <div>
-<label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Monto</label>
+<label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Tipo</label>
+<select id="op-tipo" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary text-sm font-bold">
+<option value="ingreso">Ingreso (+)</option>
+<option value="egreso">Egreso (-)</option>
+</select>
+</div>
+<div>
+<label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Monto (CLP)</label>
 <div class="relative">
-<span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">€</span>
-<input class="w-full pl-7 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary text-sm" placeholder="0.00" type="number"/>
+<span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+<input id="op-monto" oninput="formatMoneyInput(this)" class="w-full pl-7 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary text-sm font-bold" placeholder="0" type="text"/>
 </div>
 </div>
+</div>
+<div class="grid grid-cols-2 gap-4">
 <div>
 <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Categoría</label>
-<select class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary text-sm">
-<option>Software</option>
+<select id="op-categoria" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary text-sm">
+<option>Operaciones</option>
+<option>Sueldos</option>
 <option>Marketing</option>
-<option>Salarios</option>
-<option>Suministros</option>
+<option>Ventas</option>
+<option>Inversiones</option>
+</select>
+</div>
+<div>
+<label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Sub Categoria</label>
+<select id="op-subcategoria" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary text-sm">
+<option>General</option>
+<option>Servicios</option>
+<option>Insumos</option>
+<option>Bonos</option>
 </select>
 </div>
 </div>
+<div class="grid grid-cols-2 gap-4">
 <div>
-<label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Fecha</label>
-<input class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary text-sm" type="date"/>
-</div>
-<div>
-<label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Cuenta</label>
-<select class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary text-sm">
-<option>Corriente Principal</option>
-<option>Fondo de Reserva</option>
-<option>Caja Chica Operativa</option>
+<label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Pago</label>
+<select id="op-pago" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary text-sm">
+<option>Transferencia</option>
+<option>Efectivo</option>
+<option>Tarjeta</option>
+<option>Pendiente</option>
 </select>
 </div>
-<button class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 rounded-lg mt-2 transition-all shadow-lg shadow-primary/20">
-                            Registrar Operación
-                        </button>
+<div>
+<label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Recurrente</label>
+<select id="op-recurrente" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary text-sm">
+<option>No</option>
+<option>Mensual</option>
+<option>Anual</option>
+</select>
 </div>
 </div>
+<button type="submit" class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 rounded-lg mt-2 transition-all shadow-lg shadow-primary/20 uppercase text-xs tracking-widest">
+Registrar Operación
+</button>
+</form>
+</div>
+</div>
+
 <div class="lg:col-span-2 space-y-4">
 <div class="flex items-center justify-between">
 <h2 class="text-xl font-bold text-slate-700 dark:text-slate-200">Movimientos Recientes</h2>
-<a href="movimientos.html" class="text-primary text-sm font-bold flex items-center gap-1 hover:underline">
-                            Ver todo el historial <span class="material-symbols-outlined text-sm">arrow_forward</span>
-</a>
+<a href="movimientos.html" class="text-primary text-sm font-bold flex items-center gap-1 hover:underline">Ver todo el historial</a>
 </div>
-<div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+<div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden text-slate-100">
 <table class="w-full text-left border-collapse">
 <thead>
 <tr class="bg-slate-50 dark:bg-slate-800/50">
@@ -242,61 +306,10 @@
 <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Categoría</th>
 <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Estado</th>
 <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Monto</th>
-<th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider"></th>
+<th class="px-6 py-4"></th>
 </tr>
 </thead>
-<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-<tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">24 Oct, 2023</td>
-<td class="px-6 py-4 text-sm font-semibold">Dividendo SaaS Q3</td>
-<td class="px-6 py-4 text-sm">
-<span class="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wide">Inversiones</span>
-</td>
-<td class="px-6 py-4">
-<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-custom/10 text-emerald-custom tracking-wide">Pagado</span>
-</td>
-<td class="px-6 py-4 text-sm font-bold text-right text-emerald-custom">+2.400,00 €</td>
-<td class="px-6 py-4 text-right whitespace-nowrap">
-<div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-<button class="material-symbols-outlined text-slate-400 hover:text-primary transition-colors text-lg">edit</button>
-<button class="material-symbols-outlined text-slate-400 hover:text-primary transition-colors text-lg">description</button>
-</div>
-</td>
-</tr>
-<tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">22 Oct, 2023</td>
-<td class="px-6 py-4 text-sm font-semibold">Alquiler Oficina</td>
-<td class="px-6 py-4 text-sm">
-<span class="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wide">Operaciones</span>
-</td>
-<td class="px-6 py-4">
-<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-custom/10 text-emerald-custom tracking-wide">Pagado</span>
-</td>
-<td class="px-6 py-4 text-sm font-bold text-right text-red-500">-1.250,00 €</td>
-<td class="px-6 py-4 text-right whitespace-nowrap">
-<div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-<button class="material-symbols-outlined text-slate-400 hover:text-primary transition-colors text-lg">edit</button>
-<button class="material-symbols-outlined text-slate-400 hover:text-primary transition-colors text-lg">description</button>
-</div>
-</td>
-</tr>
-<tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">20 Oct, 2023</td>
-<td class="px-6 py-4 text-sm font-semibold">Adobe Creative Cloud</td>
-<td class="px-6 py-4 text-sm">
-<span class="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wide">Software</span>
-</td>
-<td class="px-6 py-4">
-<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-slate-200 text-slate-600 tracking-wide">Pendiente</span>
-</td>
-<td class="px-6 py-4 text-sm font-bold text-right text-red-500">-52,99 €</td>
-<td class="px-6 py-4 text-right whitespace-nowrap">
-<div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-<button class="material-symbols-outlined text-slate-400 hover:text-primary transition-colors text-lg">edit</button>
-<button class="material-symbols-outlined text-slate-400 hover:text-primary transition-colors text-lg">description</button>
-</div>
-</td>
-</tr>
+<tbody id="recent-moves-body" class="divide-y divide-slate-100 dark:divide-slate-800">
 </tbody>
 </table>
 </div>
@@ -305,5 +318,4 @@
 </div>
 </main>
 </div>
-
 </body></html>
