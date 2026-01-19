@@ -27,12 +27,14 @@
         const auth = getAuth(app);
         const db = getDatabase(app);
         
-        let allMovements = [];
+        let allMovements = JSON.parse(localStorage.getItem('cache_movimientos')) || [];
         let currentUser = null;
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
+                // Renderizado inicial con lo que haya en caché para velocidad 0ms
+                if(allMovements.length > 0) filtrarYRenderizar();
                 inicializarApp();
             } else {
                 window.location.href = "index.html";
@@ -40,79 +42,107 @@
         });
 
         function inicializarApp() {
-            // Cargar Listas para los Selects (Categorías)
+            // Categorías dinámicas
             const listasRef = ref(db, `usuarios/${currentUser.uid}/listas/categoria`);
             onValue(listasRef, (snapshot) => {
                 const selectCat = document.getElementById('filter-categoria');
-                selectCat.innerHTML = '<option value="Todas">Todas</option>';
+                const fragment = document.createDocumentFragment();
+                const optTodas = document.createElement('option');
+                optTodas.value = "Todas"; optTodas.textContent = "Todas";
+                fragment.appendChild(optTodas);
+
                 if (snapshot.exists()) {
                     snapshot.forEach(child => {
                         const opt = document.createElement('option');
                         opt.value = child.val().nombre;
                         opt.textContent = child.val().nombre;
-                        selectCat.appendChild(opt);
+                        fragment.appendChild(opt);
                     });
                 }
+                selectCat.innerHTML = '';
+                selectCat.appendChild(fragment);
             });
 
-            // Cargar Movimientos
+            // Movimientos con Sincronización Fluida
             const movRef = ref(db, `usuarios/${currentUser.uid}/movimientos`);
             onValue(movRef, (snapshot) => {
-                allMovements = [];
+                const nuevosDatos = [];
                 snapshot.forEach(child => {
-                    allMovements.push({ id: child.key, ...child.val() });
+                    nuevosDatos.push({ id: child.key, ...child.val() });
                 });
-                allMovements.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-                filtrarYRenderizar();
+                
+                nuevosDatos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+                
+                // Si los datos son distintos a la caché, actualizamos
+                if(JSON.stringify(nuevosDatos) !== JSON.stringify(allMovements)) {
+                    allMovements = nuevosDatos;
+                    localStorage.setItem('cache_movimientos', JSON.stringify(allMovements));
+                    requestAnimationFrame(filtrarYRenderizar);
+                }
             });
         }
 
-        function filtrarYRenderizar() {
+        window.filtrarYRenderizar = () => {
             const searchText = document.getElementById('filter-search').value.toLowerCase();
             const type = document.getElementById('filter-tipo').value;
             const category = document.getElementById('filter-categoria').value;
             const date = document.getElementById('filter-fecha').value;
 
             const filtered = allMovements.filter(m => {
-                const matchSearch = m.concepto.toLowerCase().includes(searchText) || (m.id && m.id.toLowerCase().includes(searchText));
+                const matchSearch = (m.concepto || "").toLowerCase().includes(searchText) || (m.id && m.id.toLowerCase().includes(searchText));
                 const matchType = type === "Todos" || (type === "Ingresos" && m.tipo.includes("Ingreso")) || (type === "Egresos" && !m.tipo.includes("Ingreso"));
                 const matchCat = category === "Todas" || m.categoria === category;
                 const matchDate = !date || m.fecha === date;
-                
                 return matchSearch && matchType && matchCat && matchDate;
             });
 
             renderTable(filtered);
-        }
+        };
 
         function renderTable(data) {
             const tbody = document.getElementById('table-body');
-            tbody.innerHTML = '';
+            const fragment = document.createDocumentFragment();
             
             data.forEach(m => {
                 const isIngreso = m.tipo.toLowerCase().includes('ingreso') || m.tipo.toLowerCase().includes('venta');
-                const row = `
-                    <tr class="hover:bg-slate-50/50 transition-colors border-b border-slate-100 last:border-0">
-                        <td class="px-6 py-4 text-sm text-slate-500">${m.fecha}</td>
-                        <td class="px-6 py-4">
-                            <p class="text-sm font-bold text-slate-700">${m.concepto}</p>
-                            <p class="text-[10px] text-slate-400 uppercase">CAT: ${m.categoria} | ${m.subcategoria || ''}</p>
-                        </td>
-                        <td class="px-6 py-4 text-sm font-black text-right ${isIngreso ? 'text-emerald-custom' : 'text-red-500'}">
-                            ${isIngreso ? '+' : '-'} $${new Intl.NumberFormat('es-CL').format(m.monto)}
-                        </td>
-                        <td class="px-6 py-4">
-                            <span class="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-1 rounded-full uppercase">${m.pago}</span>
-                        </td>
-                    </tr>
+                
+                // Lógica de colores Pro por método de pago
+                const metodo = (m.pago || 'Otro').toLowerCase();
+                let colorClase = 'bg-slate-100 text-slate-600 border-slate-200';
+
+                if (metodo.includes('transferencia')) {
+                    colorClase = 'bg-emerald-100 text-emerald-700 border-emerald-200';
+                } else if (metodo.includes('debito') || metodo.includes('tarjeta')) {
+                    colorClase = 'bg-blue-100 text-blue-700 border-blue-200';
+                } else if (metodo.includes('credito')) {
+                    colorClase = 'bg-purple-100 text-purple-700 border-purple-200';
+                } else if (metodo.includes('efectivo')) {
+                    colorClase = 'bg-amber-100 text-amber-700 border-amber-200';
+                }
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors border-b border-slate-100 dark:border-slate-800 last:border-0";
+                tr.innerHTML = `
+                    <td class="px-6 py-4 text-sm text-slate-500">${m.fecha}</td>
+                    <td class="px-6 py-4">
+                        <p class="text-sm font-bold text-slate-700 dark:text-slate-200">${m.concepto}</p>
+                        <p class="text-[10px] text-slate-400 uppercase tracking-tight font-medium">CAT: ${m.categoria} | ${m.subcategoria || 'General'}</p>
+                    </td>
+                    <td class="px-6 py-4 text-sm font-black text-right ${isIngreso ? 'text-emerald-custom' : 'text-red-500'}">
+                        ${isIngreso ? '+' : '-'} $${new Intl.NumberFormat('es-CL').format(m.monto)}
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="${colorClase} border text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-tighter">
+                            ${m.pago}
+                        </span>
+                    </td>
                 `;
-                tbody.insertAdjacentHTML('beforeend', row);
+                fragment.appendChild(tr);
             });
+
+            tbody.innerHTML = '';
+            tbody.appendChild(fragment);
         }
-
-        // Exponer funciones al buscador en tiempo real
-        window.ejecutarFiltro = filtrarYRenderizar;
-
     </script>
 
     <script>
@@ -125,9 +155,7 @@
                         "navy-900": "#0f172a",
                         "slate-custom": "#64748b",
                         "emerald-custom": "#10b981",
-                        "background-light": "#f8f9fa",
-                        "danger": "#E04040",
-                        "warning": "#FFD60A"
+                        "background-light": "#f8f9fa"
                     },
                     fontFamily: { "display": ["Inter", "sans-serif"] }
                 }
@@ -158,7 +186,7 @@
                 <span class="material-symbols-outlined text-[20px]">dashboard</span>
                 <span class="text-sm font-medium">Panel</span>
             </a>
-            <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary text-white transition-all">
+            <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary text-white transition-all shadow-lg shadow-primary/20">
                 <span class="material-symbols-outlined text-[20px]">swap_horiz</span>
                 <span class="text-sm font-medium">Movimientos</span>
             </a>
@@ -191,7 +219,7 @@
     <main class="ml-64 flex-1 flex flex-col">
         <header class="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-8 flex items-center justify-between sticky top-0 z-40">
             <h2 class="text-lg font-bold text-slate-700 dark:text-slate-200">Registro de Movimientos</h2>
-            <a href="dashboard.html" class="bg-primary text-white px-4 py-2 rounded-lg text-xs font-bold shadow-lg flex items-center gap-2">
+            <a href="dashboard.html" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-lg flex items-center gap-2 transition-all">
                 <span class="material-symbols-outlined text-sm">add</span> Nuevo Movimiento
             </a>
         </header>
@@ -200,29 +228,29 @@
             <section class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
                 <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
                     <div>
-                        <label class="block text-[10px] font-black text-slate-500 uppercase mb-1">Buscador</label>
-                        <input id="filter-search" oninput="ejecutarFiltro()" type="text" placeholder="Concepto o ID..." class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm">
+                        <label class="block text-[10px] font-black text-slate-500 uppercase mb-1.5">Buscador</label>
+                        <input id="filter-search" oninput="filtrarYRenderizar()" type="text" placeholder="Concepto o ID..." class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-primary">
                     </div>
                     <div>
-                        <label class="block text-[10px] font-black text-slate-500 uppercase mb-1">Tipo</label>
-                        <select id="filter-tipo" onchange="ejecutarFiltro()" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-600 dark:text-slate-300">
+                        <label class="block text-[10px] font-black text-slate-500 uppercase mb-1.5">Tipo</label>
+                        <select id="filter-tipo" onchange="filtrarYRenderizar()" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-600 dark:text-slate-300">
                             <option>Todos</option>
                             <option>Ingresos</option>
                             <option>Egresos</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-[10px] font-black text-slate-500 uppercase mb-1">Categoría</label>
-                        <select id="filter-categoria" onchange="ejecutarFiltro()" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm">
+                        <label class="block text-[10px] font-black text-slate-500 uppercase mb-1.5">Categoría</label>
+                        <select id="filter-categoria" onchange="filtrarYRenderizar()" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm">
                             <option>Todas</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-[10px] font-black text-slate-500 uppercase mb-1">Fecha</label>
-                        <input id="filter-fecha" onchange="ejecutarFiltro()" type="date" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm">
+                        <label class="block text-[10px] font-black text-slate-500 uppercase mb-1.5">Fecha</label>
+                        <input id="filter-fecha" onchange="filtrarYRenderizar()" type="date" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm">
                     </div>
                     <div class="flex items-end">
-                        <button onclick="document.getElementById('filter-search').value=''; ejecutarFiltro();" class="w-full bg-slate-800 dark:bg-slate-700 text-white font-bold py-2 rounded-lg text-sm hover:bg-slate-700 transition-colors">Limpiar Filtros</button>
+                        <button onclick="document.getElementById('filter-search').value=''; document.getElementById('filter-fecha').value=''; filtrarYRenderizar();" class="w-full bg-slate-800 dark:bg-slate-700 text-white font-bold py-2.5 rounded-lg text-xs uppercase tracking-widest hover:bg-slate-700 transition-colors">Limpiar</button>
                     </div>
                 </div>
             </section>
