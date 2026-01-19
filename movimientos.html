@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html class="light" lang="es">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>QuantyA - Movimientos</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { "primary": "#286ceb" }, fontFamily: { "display": ["Manrope"] } } }
+        }
+    </script>
+</head>
+<body class="bg-[#f1f2f4] font-display text-[#111318] antialiased">
+<div class="flex h-screen overflow-hidden">
+    
+    <aside class="w-64 bg-white border-r border-[#e5e7eb] flex flex-col shrink-0">
+        <div class="p-6 flex items-center gap-3">
+            <span class="material-symbols-outlined text-3xl text-primary font-bold">account_balance_wallet</span>
+            <h2 class="text-xl font-extrabold tracking-tight">QuantyA</h2>
+        </div>
+        <nav class="flex-1 px-4 space-y-1">
+            <a href="dashboard.html" class="flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:bg-gray-50 rounded-lg">
+                <span class="material-symbols-outlined">dashboard</span> Panel
+            </a>
+            <a href="movimientos.html" class="flex items-center gap-3 px-3 py-2.5 text-sm font-bold bg-primary/10 text-primary border-r-4 border-primary rounded-lg">
+                <span class="material-symbols-outlined">sync_alt</span> Movimientos
+            </a>
+            <a href="analisis.html" class="flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:bg-gray-50 rounded-lg">
+                <span class="material-symbols-outlined">analytics</span> Análisis
+            </a>
+            <a href="metas.html" class="flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:bg-gray-50 rounded-lg">
+                <span class="material-symbols-outlined">flag</span> Metas
+            </a>
+            <a href="reportes.html" class="flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:bg-gray-50 rounded-lg">
+                <span class="material-symbols-outlined">description</span> Reportes
+            </a>
+            <a href="configuracion.html" class="flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:bg-gray-50 rounded-lg">
+                <span class="material-symbols-outlined">settings</span> Configuración
+            </a>
+        </nav>
+        <div class="p-4 border-t border-slate-100">
+            <a href="index.html" class="flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-red-500 hover:bg-red-50 rounded-lg">
+                <span class="material-symbols-outlined">logout</span> Cerrar Sesión
+            </a>
+        </div>
+    </aside>
+
+    <main class="flex-1 overflow-y-auto">
+        <header class="h-16 bg-white border-b border-slate-200 px-8 flex items-center justify-between sticky top-0 z-10">
+            <h2 class="font-black text-lg uppercase tracking-tight">Historial de Movimientos</h2>
+            <button class="bg-primary text-white px-5 py-2 rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-blue-700 transition-colors">
+                <span class="material-symbols-outlined text-sm">add</span> Nuevo Registro
+            </button>
+        </header>
+
+        <div class="p-8">
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex gap-4">
+                    <input type="text" placeholder="Buscar transacción..." class="text-sm border-slate-200 rounded-lg focus:ring-primary w-64">
+                    <select class="text-sm border-slate-200 rounded-lg focus:ring-primary">
+                        <option>Todos los meses</option>
+                        <option>Enero 2026</option>
+                    </select>
+                </div>
+
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-200">
+                            <th class="p-4">Fecha</th>
+                            <th class="p-4">Descripción / Concepto</th>
+                            <th class="p-4">Categoría</th>
+                            <th class="p-4 text-right">Monto</th>
+                            <th class="p-4 text-center">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        <tr class="hover:bg-slate-50/50 transition-colors">
+                            <td class="p-4 text-sm font-medium text-slate-500">18/01/2026</td>
+                            <td class="p-4 text-sm font-bold">Pago suscripción mensual ChatGPT</td>
+                            <td class="p-4 text-sm">
+                                <span class="px-2 py-1 bg-blue-50 text-blue-600 rounded-md text-[10px] font-bold uppercase">Software</span>
+                            </td>
+                            <td class="p-4 text-sm font-black text-red-500 text-right">-$20.00</td>
+                            <td class="p-4 text-center text-slate-400">
+                                <button class="material-symbols-outlined text-lg hover:text-slate-600">more_vert</button>
+                            </td>
+                        </tr>
+                        <tr class="hover:bg-slate-50/50 transition-colors">
+                            <td class="p-4 text-sm font-medium text-slate-500">15/01/2026</td>
+                            <td class="p-4 text-sm font-bold">Transferencia Proyecto Alpha</td>
+                            <td class="p-4 text-sm">
+                                <span class="px-2 py-1 bg-emerald-50 text-emerald-600 rounded-md text-[10px] font-bold uppercase">Ingreso</span>
+                            </td>
+                            <td class="p-4 text-sm font-black text-emerald-600 text-right">+$1,500.00</td>
+                            <td class="p-4 text-center text-slate-400">
+                                <button class="material-symbols-outlined text-lg hover:text-slate-600">more_vert</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>
