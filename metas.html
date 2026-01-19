@@ -2,28 +2,29 @@
 <html class="light" lang="es"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Metas de Ahorro | QuantyA Firebase Sync</title>
+<title>QuantyA - Gestión de Metas</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
 <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
             theme: {
                 extend: {
                     colors: {
-                        "primary": "#0f2d4d",
-                        "accent-success": "#10b981",
-                        "background-light": "#f6f7f8",
-                        "background-dark": "#121920",
+                        "primary": "#176282",
+                        "navy-900": "#0f172a",
+                        "slate-custom": "#64748b",
+                        "emerald-custom": "#10b981",
+                        "background-light": "#f8f9fa"
                     },
                     fontFamily: {
-                        "display": ["Manrope", "sans-serif"]
+                        "display": ["Inter", "sans-serif"]
                     },
                     borderRadius: {
-                        "DEFAULT": "0.25rem",
-                        "lg": "0.5rem",
-                        "xl": "0.75rem",
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
                         "full": "9999px"
                     },
                 },
@@ -31,288 +32,251 @@
         }
     </script>
 <style type="text/tailwindcss">
-        @layer base {
-            body {
-                @apply font-display text-slate-900 dark:text-slate-100 bg-background-light dark:bg-background-dark;
-            }
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
         .progress-bar-glow {
             box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
         }
-        .firebase-sync-badge {
-            @apply flex items-center gap-1.5 px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px] font-bold rounded-md uppercase tracking-tighter border border-blue-100 dark:border-blue-800;
-        }
     </style>
 </head>
-<body class="transition-colors duration-300">
+<body class="bg-background-light dark:bg-[#111827] font-display text-slate-900 dark:text-slate-100">
 <div class="flex min-h-screen">
-<aside class="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col fixed h-full z-20">
-<div class="p-6 flex items-center gap-3">
-<div class="h-10 w-10 bg-primary rounded-xl flex items-center justify-center text-white">
-<span class="material-symbols-outlined text-2xl">account_balance</span>
-</div>
-<div class="flex flex-col">
-<h1 class="text-primary dark:text-white text-lg font-bold leading-tight">QuantyA</h1>
-<p class="text-slate-500 text-xs font-medium uppercase tracking-wider">ID: misfinanzaspro-d2f3f</p>
-</div>
-</div>
-<nav class="flex-1 mt-4 px-2 space-y-1">
-<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors group" href="#">
-<span class="material-symbols-outlined text-xl group-hover:text-primary transition-colors">dashboard</span>
-<span class="text-sm font-semibold">Panel</span>
-</a>
-<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors group" href="#">
-<span class="material-symbols-outlined text-xl group-hover:text-primary transition-colors">swap_horiz</span>
-<span class="text-sm font-semibold">Movimientos</span>
-</a>
-<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors group" href="#">
-<span class="material-symbols-outlined text-xl group-hover:text-primary transition-colors">analytics</span>
-<span class="text-sm font-semibold">Análisis</span>
-</a>
-<a class="flex items-center gap-3 px-4 py-3 text-primary dark:text-white bg-primary/10 dark:bg-primary/20 rounded-lg transition-colors border-r-4 border-primary" href="#">
-<span class="material-symbols-outlined text-xl">track_changes</span>
-<span class="text-sm font-bold">Metas</span>
-</a>
-<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors group" href="#">
-<span class="material-symbols-outlined text-xl group-hover:text-primary transition-colors">description</span>
-<span class="text-sm font-semibold">Reportes</span>
-</a>
-<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors group" href="#">
-<span class="material-symbols-outlined text-xl group-hover:text-primary transition-colors">settings</span>
-<span class="text-sm font-semibold">Configuración</span>
-</a>
-</nav>
-<div class="p-4 border-t border-slate-200 dark:border-slate-800">
-<div class="flex items-center gap-3 p-2 bg-slate-50 dark:bg-slate-800 rounded-xl">
-<div class="h-8 w-8 rounded-full bg-slate-300 overflow-hidden">
-<img alt="Perfil Usuario" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBMo2pWxeFEFB-1lyKVkXJbqoSVrhNWyuowT-34oN8xClawIm3UQxy-chwiE9s-9OFwFvHYPZk8pi4MJeO0sS4Ee7WsGkTDWf_84GDsjq9z2o0WnJFny_82HZKXPGjabuJpDoOAwoPljGirIUNwI38HdI6YTnPXWUP0G1co6HAL3-bbidB1IarAqsS0G217MP3FynliIHwJCA1ahHHejiJZenlaikKRjZXiVpiD4IqTX5MWq7npvtVH2wr7Rb_2LbuoyWd0shagnQ"/>
-</div>
-<div class="flex-1 overflow-hidden">
-<p class="text-xs font-bold text-slate-900 dark:text-white truncate">Carlos Méndez</p>
-<p class="text-[10px] text-slate-500 truncate">Admin Senior</p>
-</div>
-<span class="material-symbols-outlined text-slate-400 text-sm cursor-pointer hover:text-red-500 transition-colors">logout</span>
-</div>
-</div>
-</aside>
-<main class="flex-1 ml-64 p-8">
-<div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-<div class="max-w-2xl">
-<div class="flex items-center gap-3 mb-1">
-<h2 class="text-primary dark:text-white text-3xl font-extrabold tracking-tight">Metas de Ahorro</h2>
-<div class="firebase-sync-badge">
-<span class="material-symbols-outlined text-xs">sync</span>
-                        Firebase Sync
-                    </div>
-</div>
-<p class="text-slate-500 dark:text-slate-400 text-base">Gestión y monitoreo de objetivos financieros sincronizados en tiempo real con la colección 'metas'.</p>
-</div>
-<div class="flex gap-3">
-<div class="bg-white dark:bg-slate-800 px-5 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col items-end">
-<p class="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Ahorro Acumulado Total</p>
-<p class="text-primary dark:text-accent-success text-2xl font-black">$2,450,000.00</p>
-</div>
-</div>
-</div>
-<section class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm mb-10 overflow-hidden">
-<div class="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 px-6 py-4 flex justify-between items-center">
-<div class="flex items-center gap-2 text-primary dark:text-white">
-<span class="material-symbols-outlined">add_task</span>
-<h3 class="font-bold text-lg">Programar Nueva Meta</h3>
-</div>
-<span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-white dark:bg-slate-800 px-2 py-1 rounded border border-slate-200 dark:border-slate-700">Firebase Collection: metas</span>
-</div>
-<div class="p-6">
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-<label class="flex flex-col gap-2">
-<span class="text-slate-700 dark:text-slate-300 text-sm font-bold ml-1">Nombre de la Meta</span>
-<input class="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-primary focus:border-primary py-3 transition-all" name="nombre_meta" placeholder="Ej: Fondo de Expansión" type="text"/>
-</label>
-<label class="flex flex-col gap-2">
-<span class="text-slate-700 dark:text-slate-300 text-sm font-bold ml-1">Monto Objetivo</span>
-<div class="relative">
-<span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
-<input class="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-primary focus:border-primary py-3 pl-8 transition-all" name="monto_objetivo" placeholder="0.00" type="number"/>
-</div>
-</label>
-<label class="flex flex-col gap-2">
-<span class="text-slate-700 dark:text-slate-300 text-sm font-bold ml-1">Monto Actual</span>
-<div class="relative">
-<span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
-<input class="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-primary focus:border-primary py-3 pl-8 transition-all" name="monto_actual" placeholder="0.00" type="number"/>
-</div>
-</label>
-<label class="flex flex-col gap-2">
-<span class="text-slate-700 dark:text-slate-300 text-sm font-bold ml-1">Fecha Límite</span>
-<div class="relative">
-<span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 material-symbols-outlined text-lg leading-none">calendar_month</span>
-<input class="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-primary focus:border-primary py-3 pl-10 transition-all" name="fecha_limite" type="date"/>
-</div>
-</label>
-</div>
-<div class="mt-6 flex justify-end">
-<button class="bg-primary hover:bg-slate-800 text-white font-bold py-3 px-8 rounded-xl transition-all shadow-lg hover:shadow-primary/30 flex items-center gap-2">
-<span class="material-symbols-outlined">cloud_upload</span>
-                        Guardar en Firebase
-                    </button>
-</div>
-</div>
-</section>
-<div class="flex items-center justify-between mb-6">
-<h3 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-<span class="material-symbols-outlined text-accent-success">monetization_on</span>
-                Metas Activas
-            </h3>
-<div class="flex items-center gap-4 text-sm">
-<div class="flex items-center gap-1.5 text-slate-500">
-<span class="h-2 w-2 rounded-full bg-accent-success"></span>
-<span>Sincronizado</span>
-</div>
-<div class="h-4 w-px bg-slate-200 dark:bg-slate-700"></div>
-<div class="flex items-center gap-2 font-medium text-slate-500">
-<span>Filtrar:</span>
-<select class="bg-transparent border-none text-primary font-bold focus:ring-0 cursor-pointer text-sm">
-<option>Todas las Metas</option>
-<option>Completadas</option>
-<option>En progreso</option>
-</select>
-</div>
-</div>
-</div>
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-<div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm hover:shadow-xl transition-all group relative">
-<div class="flex justify-between items-start mb-4">
-<div class="bg-primary/5 dark:bg-primary/20 p-2.5 rounded-xl text-primary">
-<span class="material-symbols-outlined">storefront</span>
-</div>
-<div class="flex flex-col items-end">
-<span class="bg-accent-success/10 text-accent-success text-[10px] font-black px-2 py-1 rounded-full uppercase tracking-widest mb-1">En Tiempo</span>
-<span class="text-[9px] text-slate-400 font-medium">Ref: MET-001</span>
-</div>
-</div>
-<h4 class="text-lg font-bold text-slate-900 dark:text-white mb-1">Expansión Monterrey</h4>
-<p class="text-xs text-slate-500 mb-6">Apertura de nuevos puntos de venta corporativos.</p>
-<div class="space-y-3 mb-6">
-<div class="flex justify-between items-end">
-<div class="flex flex-col">
-<span class="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Diferencia Faltante</span>
-<span class="text-sm font-bold text-slate-700 dark:text-slate-300">$350,000</span>
-</div>
-<span class="font-black text-accent-success text-lg">65%</span>
-</div>
-<div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-3 overflow-hidden">
-<div class="bg-accent-success h-full progress-bar-glow rounded-full transition-all duration-1000" style="width: 65%"></div>
-</div>
-</div>
-<div class="grid grid-cols-2 gap-4 mb-6">
-<div class="space-y-0.5">
-<p class="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Monto Actual</p>
-<p class="text-xl font-black text-slate-900 dark:text-white">$650,000</p>
-</div>
-<div class="text-right space-y-0.5">
-<p class="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Objetivo</p>
-<p class="text-xl font-black text-slate-300 dark:text-slate-600">$1,000,000</p>
-</div>
-</div>
-<button class="w-full bg-primary text-white font-bold py-3 rounded-xl transition-all shadow-md hover:bg-slate-800 flex items-center justify-center gap-2 group-hover:scale-[1.02]">
-<span class="material-symbols-outlined text-lg">add_circle</span>
-                    Aportar Ahorro
-                </button>
-</div>
-<div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm hover:shadow-xl transition-all group">
-<div class="flex justify-between items-start mb-4">
-<div class="bg-blue-50 dark:bg-blue-900/30 p-2.5 rounded-xl text-blue-600">
-<span class="material-symbols-outlined">dns</span>
-</div>
-<span class="bg-amber-100 dark:bg-amber-900/30 text-amber-600 text-[10px] font-black px-2 py-1 rounded-full uppercase tracking-widest">Revisión Requerida</span>
-</div>
-<h4 class="text-lg font-bold text-slate-900 dark:text-white mb-1">Renovación Servidores</h4>
-<p class="text-xs text-slate-500 mb-6">Upgrade de infraestructura crítica Data Center.</p>
-<div class="space-y-3 mb-6">
-<div class="flex justify-between items-end">
-<div class="flex flex-col">
-<span class="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Diferencia Faltante</span>
-<span class="text-sm font-bold text-slate-700 dark:text-slate-300">$216,000</span>
-</div>
-<span class="font-black text-accent-success text-lg">28%</span>
-</div>
-<div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-3 overflow-hidden">
-<div class="bg-accent-success h-full progress-bar-glow rounded-full transition-all duration-1000" style="width: 28%"></div>
-</div>
-</div>
-<div class="grid grid-cols-2 gap-4 mb-6">
-<div class="space-y-0.5">
-<p class="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Monto Actual</p>
-<p class="text-xl font-black text-slate-900 dark:text-white">$84,000</p>
-</div>
-<div class="text-right space-y-0.5">
-<p class="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Objetivo</p>
-<p class="text-xl font-black text-slate-300 dark:text-slate-600">$300,000</p>
-</div>
-</div>
-<button class="w-full bg-primary text-white font-bold py-3 rounded-xl transition-all shadow-md hover:bg-slate-800 flex items-center justify-center gap-2 group-hover:scale-[1.02]">
-<span class="material-symbols-outlined text-lg">add_circle</span>
-                    Aportar Ahorro
-                </button>
-</div>
-<div class="bg-white dark:bg-slate-900 rounded-2xl border-2 border-accent-success p-6 shadow-sm hover:shadow-xl transition-all group relative overflow-hidden">
-<div class="absolute -right-6 -top-6 h-24 w-24 bg-accent-success/10 rounded-full flex items-center justify-center rotate-12">
-<span class="material-symbols-outlined text-accent-success text-6xl opacity-20">verified</span>
-</div>
-<div class="flex justify-between items-start mb-4">
-<div class="bg-accent-success p-2.5 rounded-xl text-white">
-<span class="material-symbols-outlined">verified_user</span>
-</div>
-<span class="bg-accent-success text-white text-[10px] font-black px-2 py-1 rounded-full uppercase tracking-widest">Completada</span>
-</div>
-<h4 class="text-lg font-bold text-slate-900 dark:text-white mb-1">Fondo de Emergencia</h4>
-<p class="text-xs text-slate-500 mb-6">Reserva para imprevistos operativos y nómina.</p>
-<div class="space-y-3 mb-6">
-<div class="flex justify-between items-end">
-<div class="flex flex-col">
-<span class="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Diferencia Faltante</span>
-<span class="text-sm font-bold text-accent-success">$0 (Meta Alcanzada)</span>
-</div>
-<span class="font-black text-accent-success text-lg">100%</span>
-</div>
-<div class="w-full bg-accent-success rounded-full h-3"></div>
-</div>
-<div class="grid grid-cols-2 gap-4 mb-6">
-<div class="space-y-0.5">
-<p class="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Monto Actual</p>
-<p class="text-xl font-black text-accent-success">$500,000</p>
-</div>
-<div class="text-right space-y-0.5">
-<p class="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Objetivo</p>
-<p class="text-xl font-black text-slate-300 dark:text-slate-600">$500,000</p>
-</div>
-</div>
-<button class="w-full bg-accent-success/10 text-accent-success font-bold py-3 rounded-xl transition-all border border-accent-success/20 flex items-center justify-center gap-2 cursor-default">
-<span class="material-symbols-outlined text-lg">check</span>
-                    Meta Sincronizada
-                </button>
-</div>
-</div>
-<div class="mt-10 border-t border-slate-200 dark:border-slate-800 pt-6 flex flex-col md:flex-row justify-between items-center gap-4">
-<div class="flex items-center gap-2 text-slate-400 text-xs">
-<span class="relative flex h-2 w-2">
-<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-success opacity-75"></span>
-<span class="relative inline-flex rounded-full h-2 w-2 bg-accent-success"></span>
-</span>
-                Sincronizado con misfinanzaspro-d2f3f.appspot.com
+<aside class="w-64 bg-[#0f172a] text-white flex flex-col fixed h-full z-50 border-r border-slate-800 p-6">
+    <div class="space-y-8 flex-1">
+        <div class="flex items-center gap-3 px-2">
+            <div class="size-10 bg-primary rounded-lg flex items-center justify-center text-white shadow-lg shadow-primary/20">
+                <span class="material-symbols-outlined text-2xl">account_balance_wallet</span>
             </div>
-<div class="flex gap-4">
-<button class="text-xs font-bold text-slate-500 hover:text-primary transition-colors flex items-center gap-1">
-<span class="material-symbols-outlined text-sm">download</span>
-                    Exportar JSON
+            <div>
+                <h1 class="text-xl font-bold tracking-tight leading-none">QuantyA</h1>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Gestión Financiera</p>
+            </div>
+        </div>
+        <nav class="space-y-1">
+            <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
+                <span class="material-symbols-outlined text-[20px]">dashboard</span>
+                <span class="text-sm font-medium">Panel</span>
+            </a>
+            <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
+                <span class="material-symbols-outlined text-[20px]">swap_horiz</span>
+                <span class="text-sm font-medium">Movimientos</span>
+            </a>
+            <a href="analisis.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
+                <span class="material-symbols-outlined text-[20px]">analytics</span>
+                <span class="text-sm font-medium">Análisis</span>
+            </a>
+            <a href="metas.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 transition-all">
+                <span class="material-symbols-outlined text-[20px]">track_changes</span>
+                <span class="text-sm font-medium">Metas</span>
+            </a>
+            <a href="reportes.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
+                <span class="material-symbols-outlined text-[20px]">description</span>
+                <span class="text-sm font-medium">Reportes</span>
+            </a>
+            <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
+                <span class="material-symbols-outlined text-[20px]">settings</span>
+                <span class="text-sm font-medium">Configuración</span>
+            </a>
+        </nav>
+    </div>
+    
+    <div class="mt-auto space-y-4">
+        <div class="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
+            <p class="text-[10px] font-bold text-slate-500 uppercase mb-2">Plan Corporativo</p>
+            <div class="flex items-center gap-2">
+                <div class="h-1.5 flex-1 bg-slate-700 rounded-full overflow-hidden">
+                    <div class="h-full bg-primary w-4/5"></div>
+                </div>
+                <span class="text-[10px] font-bold">80%</span>
+            </div>
+        </div>
+        <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors">
+            <span class="material-symbols-outlined text-[20px]">logout</span>
+            <span class="text-sm font-medium">Cerrar Sesión</span>
+        </a>
+    </div>
+</aside>
+
+<main class="ml-64 flex-1 flex flex-col">
+    <header class="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-8 flex items-center justify-between sticky top-0 z-40">
+        <div class="flex items-center gap-4">
+            <h2 class="text-lg font-bold text-slate-800 dark:text-white">Metas Financieras</h2>
+        </div>
+        <div class="flex items-center gap-6">
+            <div class="text-right border-r border-slate-200 dark:border-slate-800 pr-6">
+                <p class="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Ahorro Total</p>
+                <p class="text-lg font-black text-emerald-custom">$2,450,000.00</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="text-right">
+                    <p class="text-sm font-semibold">Alex Rivera</p>
+                    <p class="text-[11px] text-slate-500 font-medium">Admin Senior</p>
+                </div>
+                <div class="size-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary border border-primary/20">AR</div>
+            </div>
+        </div>
+    </header>
+
+    <div class="p-8 space-y-8 max-w-[1440px] mx-auto w-full">
+        <section class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+            <div class="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 px-6 py-4">
+                <div class="flex items-center gap-2 text-primary">
+                    <span class="material-symbols-outlined">add_circle</span>
+                    <h3 class="font-bold text-lg">Programar Nueva Meta</h3>
+                </div>
+            </div>
+            <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="space-y-2">
+                    <span class="text-slate-500 text-xs font-bold uppercase ml-1">Nombre de la Meta</span>
+                    <input class="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:ring-primary py-3" placeholder="Ej: Expansión Latam" type="text"/>
+                </div>
+                <div class="space-y-2">
+                    <span class="text-slate-500 text-xs font-bold uppercase ml-1">Monto Objetivo</span>
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+                        <input class="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:ring-primary py-3 pl-8" placeholder="0.00" type="number"/>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <span class="text-slate-500 text-xs font-bold uppercase ml-1">Monto Inicial</span>
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+                        <input class="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:ring-primary py-3 pl-8" placeholder="0.00" type="number"/>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <span class="text-slate-500 text-xs font-bold uppercase ml-1">Fecha Límite</span>
+                    <input class="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:ring-primary py-3" type="date"/>
+                </div>
+            </div>
+            <div class="px-6 pb-6 flex justify-end">
+                <button class="bg-primary hover:bg-primary/90 text-white font-bold py-3 px-8 rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-sm">check_circle</span>
+                    Crear Meta Financiera
                 </button>
-<button class="text-xs font-bold text-slate-500 hover:text-primary transition-colors flex items-center gap-1">
-<span class="material-symbols-outlined text-sm">history</span>
-                    Historial de Cambios
-                </button>
-</div>
-</div>
+            </div>
+        </section>
+
+        <div>
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold flex items-center gap-2">
+                    <span class="material-symbols-outlined text-emerald-custom">trending_up</span>
+                    Metas en Progreso
+                </h3>
+                <div class="flex items-center gap-2 text-sm text-slate-500">
+                    <span>Ordenar por:</span>
+                    <select class="bg-transparent border-none text-primary font-bold focus:ring-0 cursor-pointer text-sm">
+                        <option>Fecha Límite</option>
+                        <option>Progreso %</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm hover:shadow-md transition-all">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="size-10 bg-primary/10 rounded-lg text-primary flex items-center justify-center">
+                            <span class="material-symbols-outlined">rocket_launch</span>
+                        </div>
+                        <span class="bg-emerald-custom/10 text-emerald-custom text-[10px] font-black px-2 py-1 rounded-full uppercase">En Tiempo</span>
+                    </div>
+                    <h4 class="text-lg font-bold mb-1">Expansión Monterrey</h4>
+                    <p class="text-xs text-slate-500 mb-6 line-clamp-2">Meta para abrir 3 nuevas sucursales en Q3 2024</p>
+                    <div class="space-y-2 mb-6">
+                        <div class="flex justify-between text-xs font-bold">
+                            <span class="text-slate-500 uppercase">Progreso</span>
+                            <span class="text-emerald-custom">65%</span>
+                        </div>
+                        <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
+                            <div class="bg-emerald-custom h-full rounded-full" style="width: 65%"></div>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-end mb-6 border-t border-slate-50 dark:border-slate-800 pt-4">
+                        <div>
+                            <p class="text-[10px] text-slate-400 uppercase font-bold">Ahorrado</p>
+                            <p class="text-lg font-black">$650k</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[10px] text-slate-400 uppercase font-bold">Objetivo</p>
+                            <p class="text-sm font-bold text-slate-500">$1,000,000</p>
+                        </div>
+                    </div>
+                    <button class="w-full bg-slate-50 dark:bg-slate-800 hover:bg-emerald-custom hover:text-white text-slate-700 dark:text-slate-300 font-bold py-3 rounded-xl transition-all border border-slate-200 dark:border-slate-700 text-sm flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined text-lg">payments</span>
+                        Aportar Ahorro
+                    </button>
+                </div>
+
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm hover:shadow-md transition-all">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="size-10 bg-amber-100 rounded-lg text-amber-600 flex items-center justify-center">
+                            <span class="material-symbols-outlined">memory</span>
+                        </div>
+                        <span class="bg-amber-100 text-amber-600 text-[10px] font-black px-2 py-1 rounded-full uppercase">Requiere Atención</span>
+                    </div>
+                    <h4 class="text-lg font-bold mb-1">Renovación Servidores</h4>
+                    <p class="text-xs text-slate-500 mb-6 line-clamp-2">Infraestructura IT para el centro de datos principal</p>
+                    <div class="space-y-2 mb-6">
+                        <div class="flex justify-between text-xs font-bold">
+                            <span class="text-slate-500 uppercase">Progreso</span>
+                            <span class="text-emerald-custom">28%</span>
+                        </div>
+                        <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
+                            <div class="bg-emerald-custom h-full rounded-full" style="width: 28%"></div>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-end mb-6 border-t border-slate-50 dark:border-slate-800 pt-4">
+                        <div>
+                            <p class="text-[10px] text-slate-400 uppercase font-bold">Ahorrado</p>
+                            <p class="text-lg font-black">$84k</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[10px] text-slate-400 uppercase font-bold">Objetivo</p>
+                            <p class="text-sm font-bold text-slate-500">$300,000</p>
+                        </div>
+                    </div>
+                    <button class="w-full bg-slate-50 dark:bg-slate-800 hover:bg-emerald-custom hover:text-white text-slate-700 dark:text-slate-300 font-bold py-3 rounded-xl transition-all border border-slate-200 dark:border-slate-700 text-sm flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined text-lg">payments</span>
+                        Aportar Ahorro
+                    </button>
+                </div>
+
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border-2 border-emerald-custom p-6 shadow-sm relative overflow-hidden">
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="size-10 bg-emerald-custom rounded-lg text-white flex items-center justify-center">
+                            <span class="material-symbols-outlined">verified</span>
+                        </div>
+                        <span class="bg-emerald-custom text-white text-[10px] font-black px-2 py-1 rounded-full uppercase">Completada</span>
+                    </div>
+                    <h4 class="text-lg font-bold mb-1">Fondo de Emergencia</h4>
+                    <p class="text-xs text-slate-500 mb-6 line-clamp-2">Reserva para imprevistos operativos y nómina</p>
+                    <div class="space-y-2 mb-6">
+                        <div class="flex justify-between text-xs font-bold">
+                            <span class="text-slate-500 uppercase">Progreso</span>
+                            <span class="text-emerald-custom">100%</span>
+                        </div>
+                        <div class="w-full bg-emerald-custom rounded-full h-2"></div>
+                    </div>
+                    <div class="flex justify-between items-end mb-6 border-t border-slate-50 dark:border-slate-800 pt-4">
+                        <div>
+                            <p class="text-[10px] text-slate-400 uppercase font-bold">Ahorrado</p>
+                            <p class="text-lg font-black text-emerald-custom">$500,000</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[10px] text-slate-400 uppercase font-bold">Objetivo</p>
+                            <p class="text-sm font-bold text-slate-500">$500,000</p>
+                        </div>
+                    </div>
+                    <button class="w-full bg-emerald-custom/10 text-emerald-custom font-bold py-3 rounded-xl border border-emerald-custom/20 text-sm flex items-center justify-center gap-2 cursor-default">
+                        <span class="material-symbols-outlined text-lg">check</span>
+                        Meta Alcanzada
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </main>
 </div>
-
 </body></html>
