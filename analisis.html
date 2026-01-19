@@ -43,6 +43,12 @@
             snapshot.forEach(child => { movimientos.push(child.val()); });
             actualizarAnalisis(movimientos);
         });
+
+        onValue(ref(db, `usuarios/${uid}/metas`), (snapshot) => {
+            const metas = [];
+            snapshot.forEach(child => { metas.push({ id: child.key, ...child.val() }); });
+            renderizarMetas(metas);
+        });
     }
 
     function actualizarAnalisis(datos) {
@@ -54,10 +60,13 @@
         });
 
         const saldo = ingresos - gastos;
+        
+        // 1. Centro del Gráfico
         const montoCentro = document.getElementById('centro-monto');
         montoCentro.innerText = `$${new Intl.NumberFormat('es-CL').format(Math.abs(saldo))}`;
         montoCentro.className = `text-3xl font-black ${saldo >= 0 ? 'text-emerald-500' : 'text-red-500'}`;
 
+        // 2. Gastos más altos
         const topGastos = listaGastos.sort((a, b) => b.monto - a.monto).slice(0, 4);
         const contenedorLista = document.getElementById('lista-categorias-gastos');
         contenedorLista.innerHTML = topGastos.map((g, index) => {
@@ -65,6 +74,7 @@
             return `<div class="flex items-center justify-between"><div class="flex items-center gap-3"><span class="size-3 rounded-full" style="background-color: ${colors[index]}"></span><span class="text-sm font-semibold truncate w-32">${g.concepto}</span></div><span class="text-sm font-bold text-red-500">$${new Intl.NumberFormat('es-CL').format(g.monto)}</span></div>`;
         }).join('') || '<p class="text-xs text-slate-400">Sin gastos este mes</p>';
 
+        // 3. Gráfico Chart.js
         const ctx = document.getElementById('graficoDistribucion').getContext('2d');
         if (miGrafico) miGrafico.destroy();
         miGrafico = new Chart(ctx, {
@@ -72,6 +82,66 @@
             data: { labels: ['Ingresos', 'Gastos'], datasets: [{ data: [ingresos, gastos], backgroundColor: ['#10b981', '#ef4444'], borderWidth: 0 }] },
             options: { cutout: '80%', plugins: { legend: { display: false } }, responsive: true, maintainAspectRatio: false }
         });
+
+        // 4. NUEVO: Resumen de Rendimiento (KPIs)
+        const tasaAhorro = ingresos > 0 ? ((ingresos - gastos) / ingresos) * 100 : 0;
+        const ratioGastos = ingresos > 0 ? (gastos / ingresos) * 100 : 0;
+        
+        document.getElementById('resumen-rendimiento-dinamico').innerHTML = `
+            <div class="grid grid-cols-2 gap-4 p-6">
+                <div class="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Tasa de Ahorro</p>
+                    <p class="text-xl font-black ${tasaAhorro > 15 ? 'text-emerald-500' : 'text-orange-500'}">${tasaAhorro.toFixed(1)}%</p>
+                    <p class="text-[9px] text-slate-500 font-medium">ingresos no gastados</p>
+                </div>
+                <div class="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Ratio de Gastos</p>
+                    <p class="text-xl font-black ${ratioGastos > 85 ? 'text-red-500' : 'text-emerald-500'}">${ratioGastos.toFixed(1)}%</p>
+                    <p class="text-[9px] text-slate-500 font-medium">consumo de ingresos</p>
+                </div>
+                <div class="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Saldo Neto</p>
+                    <p class="text-xl font-black text-primary">$${new Intl.NumberFormat('es-CL').format(saldo)}</p>
+                    <p class="text-[9px] text-slate-500 font-medium">balance mensual</p>
+                </div>
+                <div class="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Salud Financiera</p>
+                    <p class="text-xl font-black ${saldo > 0 ? 'text-emerald-500' : 'text-red-500'}">${saldo > 0 ? 'Óptima' : 'En Crítico'}</p>
+                    <p class="text-[9px] text-slate-500 font-medium">estado actual</p>
+                </div>
+            </div>
+        `;
+    }
+
+    function renderizarMetas(metas) {
+        const contenedor = document.getElementById('contenedor-metas-dinamicas');
+        if (metas.length === 0) {
+            contenedor.innerHTML = '<p class="text-center text-slate-400 py-10 text-sm font-bold">No hay metas activas</p>';
+            return;
+        }
+        contenedor.innerHTML = metas.map(meta => {
+            const porcentaje = Math.min(Math.round((meta.monto_actual / meta.monto_objetivo) * 100), 100);
+            let icon = "savings", barColor = "bg-primary";
+            if (meta.nombre.toLowerCase().includes("emergencia")) { icon = "emergency"; barColor = "bg-red-500"; }
+            else if (meta.nombre.toLowerCase().includes("viaje")) { icon = "flight"; barColor = "bg-orange-500"; }
+            
+            return `
+                <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-100 dark:border-slate-700">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="size-10 bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center justify-center text-slate-600 dark:text-white">
+                                <span class="material-symbols-outlined text-xl">${icon}</span>
+                            </div>
+                            <div><h4 class="font-bold text-sm">${meta.nombre}</h4><p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">$${new Intl.NumberFormat('es-CL').format(meta.monto_objetivo)}</p></div>
+                        </div>
+                        <span class="font-black text-sm text-primary">${porcentaje}%</span>
+                    </div>
+                    <div class="w-full h-2 bg-slate-100 dark:bg-slate-700 rounded-full mb-3 overflow-hidden">
+                        <div class="h-full ${barColor} transition-all duration-700" style="width: ${porcentaje}%"></div>
+                    </div>
+                    <div class="flex justify-between items-center"><span class="text-xs font-bold">$${new Intl.NumberFormat('es-CL').format(meta.monto_actual)}</span><span class="text-[9px] font-black text-slate-400 uppercase">Ahorrado</span></div>
+                </div>`;
+        }).join('');
     }
 </script>
 
@@ -103,28 +173,22 @@
             </div>
             <nav class="space-y-1">
                 <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
-                    <span class="material-symbols-outlined">dashboard</span>
-                    <span class="font-semibold text-sm">Panel</span>
+                    <span class="material-symbols-outlined">dashboard</span> <span class="font-semibold text-sm">Panel</span>
                 </a>
                 <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
-                    <span class="material-symbols-outlined">swap_horiz</span>
-                    <span class="font-semibold text-sm">Movimientos</span>
+                    <span class="material-symbols-outlined">swap_horiz</span> <span class="font-semibold text-sm">Movimientos</span>
                 </a>
                 <a href="analisis.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 transition-all">
-                    <span class="material-symbols-outlined font-fill">analytics</span>
-                    <span class="font-bold text-sm">Análisis</span>
+                    <span class="material-symbols-outlined font-fill">analytics</span> <span class="font-bold text-sm">Análisis</span>
                 </a>
                 <a href="metas.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
-                    <span class="material-symbols-outlined">track_changes</span>
-                    <span class="font-semibold text-sm">Metas</span>
+                    <span class="material-symbols-outlined">track_changes</span> <span class="font-semibold text-sm">Metas</span>
                 </a>
                 <a href="reportes.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
-                    <span class="material-symbols-outlined">description</span>
-                    <span class="font-semibold text-sm">Reportes</span>
+                    <span class="material-symbols-outlined">description</span> <span class="font-semibold text-sm">Reportes</span>
                 </a>
                 <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
-                    <span class="material-symbols-outlined">settings</span>
-                    <span class="font-semibold text-sm">Configuración</span>
+                    <span class="material-symbols-outlined">settings</span> <span class="font-semibold text-sm">Configuración</span>
                 </a>
             </nav>
         </div>
@@ -137,8 +201,7 @@
                 </div>
             </div>
             <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors w-full">
-                <span class="material-symbols-outlined">logout</span>
-                <span class="font-semibold text-sm">Cerrar Sesión</span>
+                <span class="material-symbols-outlined">logout</span> <span class="font-semibold text-sm">Cerrar Sesión</span>
             </a>
         </div>
     </aside>
@@ -147,21 +210,17 @@
         <header class="sticky top-0 z-10 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md px-10 py-6 flex justify-between items-center border-b border-transparent">
             <div>
                 <h2 class="text-3xl font-black tracking-tight">Análisis Operativo</h2>
-                <p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Control de Ingresos vs Gastos</p>
+                <p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Control de Ingresos, Gastos y Metas</p>
             </div>
-            <div class="flex items-center gap-4">
-                <button class="bg-primary text-white px-6 h-10 rounded-xl font-bold text-sm shadow-lg shadow-primary/20 flex items-center gap-2">
-                    <span class="material-symbols-outlined text-sm">download</span> Exportar Informe
-                </button>
-            </div>
+            <button class="bg-primary text-white px-6 h-10 rounded-xl font-bold text-sm shadow-lg shadow-primary/20 flex items-center gap-2">
+                <span class="material-symbols-outlined text-sm">download</span> Exportar
+            </button>
         </header>
 
-        <div class="px-10 pb-10 flex gap-8">
+        <div class="px-10 pb-10 flex gap-8 mt-6">
             <section class="flex-[1.2] space-y-6 min-w-0">
                 <div class="bg-white dark:bg-slate-800 rounded-xl p-8 shadow-sm border border-slate-100 dark:border-slate-700">
-                    <div class="flex justify-between items-end mb-8">
-                        <h3 class="text-xl font-bold tracking-tight">Distribución: Ingresos vs Gastos</h3>
-                    </div>
+                    <h3 class="text-xl font-bold tracking-tight mb-8">Flujo de Caja Real</h3>
                     <div class="flex items-center gap-12">
                         <div class="relative size-64 flex items-center justify-center shrink-0">
                             <canvas id="graficoDistribucion"></canvas>
@@ -171,53 +230,29 @@
                             </div>
                         </div>
                         <div id="lista-categorias-gastos" class="flex-1 space-y-4">
-                            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Cargando...</p>
-                        </div>
+                            </div>
                     </div>
                 </div>
 
                 <div class="bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-sm border border-slate-100 dark:border-slate-700">
-                    <div class="p-6 border-b border-slate-50 dark:border-slate-700">
-                        <h3 class="text-lg font-bold">Resumen de Rendimiento</h3>
+                    <div class="p-6 border-b border-slate-50 dark:border-slate-700 flex justify-between items-center">
+                        <h3 class="text-lg font-bold tracking-tight">Resumen de Rendimiento</h3>
+                        <span class="text-[10px] bg-primary/10 text-primary px-2 py-1 rounded-full font-bold uppercase">Mes Actual</span>
                     </div>
-                    <table class="w-full text-left text-sm">
-                        <thead class="bg-slate-50 dark:bg-slate-800/50">
-                            <tr>
-                                <th class="px-6 py-4 text-xs font-black uppercase text-slate-400 tracking-widest">Concepto</th>
-                                <th class="px-6 py-4 text-xs font-black uppercase text-slate-400 tracking-widest text-right">Monto</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-50 dark:divide-slate-700">
-                            <tr>
-                                <td class="px-6 py-4 font-semibold">Flujo de Caja Real</td>
-                                <td class="px-6 py-4 text-right font-black">Sincronizado</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <div id="resumen-rendimiento-dinamico">
+                        </div>
                 </div>
             </section>
 
             <section class="flex-1 space-y-6">
                 <div class="flex justify-between items-center">
-                    <h3 class="text-xl font-bold tracking-tight">Metas de Ahorro</h3>
-                    <button class="size-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-primary hover:text-white transition-all flex items-center justify-center">
+                    <h3 class="text-xl font-bold tracking-tight">Metas Activas</h3>
+                    <a href="metas.html" class="size-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-primary hover:text-white transition-all flex items-center justify-center">
                         <span class="material-symbols-outlined">add</span>
-                    </button>
+                    </a>
                 </div>
-                <div class="grid grid-cols-1 gap-5">
-                    <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-100 dark:border-slate-700">
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="flex items-center gap-3">
-                                <div class="size-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary"><span class="material-symbols-outlined">emergency</span></div>
-                                <div><h4 class="font-bold text-base">Fondo de Emergencia</h4></div>
-                            </div>
-                            <span class="text-primary font-black text-lg">Activo</span>
-                        </div>
-                        <div class="w-full h-3 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                            <div class="h-full bg-primary" style="width: 82%"></div>
-                        </div>
+                <div id="contenedor-metas-dinamicas" class="grid grid-cols-1 gap-5">
                     </div>
-                </div>
             </section>
         </div>
     </main>
