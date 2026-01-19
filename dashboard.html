@@ -34,11 +34,8 @@
         if (user) {
             currentUser = user;
             document.getElementById('user-name-display').innerText = user.displayName || "Usuario";
-            
-            // CARGA INSTANTÁNEA DESDE CACHÉ
             if(cacheMovimientos.length > 0) renderizarTodo(cacheMovimientos);
             if(Object.keys(cacheListas).length > 0) llenarTodosLosSelects(cacheListas);
-            
             iniciarSincronizacionRealtime();
         } else {
             window.location.href = "index.html";
@@ -46,7 +43,6 @@
     });
 
     function iniciarSincronizacionRealtime() {
-        // Listas (Selects)
         onValue(ref(db, `usuarios/${currentUser.uid}/listas`), (snapshot) => {
             if (snapshot.exists()) {
                 const listas = snapshot.val();
@@ -55,7 +51,6 @@
             }
         });
 
-        // Movimientos y Totales
         onValue(ref(db, `usuarios/${currentUser.uid}/movimientos`), (snapshot) => {
             const dataFull = [];
             snapshot.forEach((child) => {
@@ -95,13 +90,11 @@
     }
 
     function renderizarTodo(datos) {
-        // 1. TABLA (Solo 5)
         const container = document.getElementById('recent-moves-body');
         container.innerHTML = datos.slice(0, 5).map(data => {
             const isIngreso = data.tipo.toLowerCase().includes('ingreso') || data.tipo.toLowerCase().includes('venta');
             const colorClase = obtenerColorPago(data.pago);
             const dataString = encodeURIComponent(JSON.stringify(data));
-            
             return `
                 <tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                     <td class="px-6 py-4 text-sm text-slate-500 whitespace-nowrap">${data.fecha}</td>
@@ -121,21 +114,16 @@
             `;
         }).join('');
 
-        // 2. TOTALES Y BARRAS
         let tIngresos = 0, tGastos = 0;
         datos.forEach(m => {
             if(m.tipo.toLowerCase().includes('ingreso') || m.tipo.toLowerCase().includes('venta')) tIngresos += m.monto;
             else tGastos += m.monto;
         });
-        
         const saldo = tIngresos - tGastos;
         const percGastos = tIngresos > 0 ? Math.min((tGastos / tIngresos) * 100, 100) : 0;
-
         document.getElementById('display-ingresos').innerText = `$ ${new Intl.NumberFormat('es-CL').format(tIngresos)}`;
         document.getElementById('display-gastos').innerText = `$ ${new Intl.NumberFormat('es-CL').format(tGastos)}`;
         document.getElementById('display-saldo').innerText = `$ ${new Intl.NumberFormat('es-CL').format(saldo)}`;
-        
-        // Actualizar barras de progreso
         document.getElementById('bar-ingresos').style.width = '100%';
         document.getElementById('bar-gastos').style.width = `${percGastos}%`;
         document.getElementById('bar-saldo').style.width = `${100 - percGastos}%`;
@@ -244,47 +232,26 @@
     <div class="p-8 space-y-8 max-w-[1440px] mx-auto w-full">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                <div class="flex justify-between items-start mb-4">
-                    <p class="text-sm font-medium text-slate-500">Ingresos Totales</p>
-                    <span class="flex items-center text-emerald-custom text-xs font-bold bg-emerald-custom/10 px-2 py-1 rounded">
-                        <span class="material-symbols-outlined text-xs mr-1">trending_up</span> +12.5%
-                    </span>
-                </div>
+                <div class="flex justify-between items-start mb-4"><p class="text-sm font-medium text-slate-500">Ingresos Totales</p><span class="flex items-center text-emerald-custom text-xs font-bold bg-emerald-custom/10 px-2 py-1 rounded"><span class="material-symbols-outlined text-xs mr-1">trending_up</span> +12.5%</span></div>
                 <p id="display-ingresos" class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">$ 0</p>
-                <div class="mt-4 h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                    <div id="bar-ingresos" class="h-full bg-emerald-custom transition-all duration-1000" style="width: 0%"></div>
-                </div>
+                <div class="mt-4 h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden"><div id="bar-ingresos" class="h-full bg-emerald-custom transition-all duration-1000" style="width: 0%"></div></div>
             </div>
 
             <div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                <div class="flex justify-between items-start mb-4">
-                    <p class="text-sm font-medium text-slate-500">Gastos Totales</p>
-                    <span class="flex items-center text-red-500 text-xs font-bold bg-red-500/10 px-2 py-1 rounded">
-                        <span class="material-symbols-outlined text-xs mr-1">trending_down</span> -5.2%
-                    </span>
-                </div>
+                <div class="flex justify-between items-start mb-4"><p class="text-sm font-medium text-slate-500">Gastos Totales</p><span class="flex items-center text-red-500 text-xs font-bold bg-red-500/10 px-2 py-1 rounded"><span class="material-symbols-outlined text-xs mr-1">trending_down</span> -5.2%</span></div>
                 <p id="display-gastos" class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">$ 0</p>
-                <div class="mt-4 h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                    <div id="bar-gastos" class="h-full bg-red-500 transition-all duration-1000" style="width: 0%"></div>
-                </div>
+                <div class="mt-4 h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden"><div id="bar-gastos" class="h-full bg-red-500 transition-all duration-1000" style="width: 0%"></div></div>
             </div>
 
             <div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                <div class="flex justify-between items-start mb-4">
-                    <p class="text-sm font-medium text-slate-500">Saldo Neto</p>
-                    <span class="flex items-center text-primary text-xs font-bold bg-primary/10 px-2 py-1 rounded">
-                        <span class="material-symbols-outlined text-xs mr-1">analytics</span> Estable
-                    </span>
-                </div>
+                <div class="flex justify-between items-start mb-4"><p class="text-sm font-medium text-slate-500">Saldo Neto</p><span class="flex items-center text-primary text-xs font-bold bg-primary/10 px-2 py-1 rounded"><span class="material-symbols-outlined text-xs mr-1">analytics</span> Estable</span></div>
                 <p id="display-saldo" class="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">$ 0</p>
-                <div class="mt-4 h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                    <div id="bar-saldo" class="h-full bg-primary transition-all duration-1000" style="width: 0%"></div>
-                </div>
+                <div class="mt-4 h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden"><div id="bar-saldo" class="h-full bg-primary transition-all duration-1000" style="width: 0%"></div></div>
             </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div class="lg:col-span-1">
+            <div class="lg:col-span-1 space-y-8">
                 <div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
                     <h2 class="text-lg font-bold mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-primary">add_circle</span> Operación</h2>
                     <form id="form-operacion" onsubmit="registrarOperacion(event)" class="space-y-4">
@@ -304,6 +271,42 @@
                         </div>
                         <button id="btn-submit" type="submit" class="w-full bg-primary text-white font-bold py-3 rounded-lg text-[10px] uppercase tracking-widest hover:bg-primary/90 transition-all">Registrar Operación</button>
                     </form>
+                </div>
+
+                <div class="bg-[#fef9c3] border border-yellow-200 p-6 rounded-xl shadow-sm">
+                    <h3 class="text-sm font-black uppercase tracking-tighter text-yellow-800 mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-yellow-600">lightbulb</span> Consejos Inteligentes</h3>
+                    <div class="h-64 overflow-y-auto pr-2 text-xs text-yellow-900 space-y-3 custom-scrollbar">
+                        <p><strong>1.</strong> Revisa tus suscripciones activas este mes.</p>
+                        <p><strong>2.</strong> El 30% de tus gastos son en comida rápida.</p>
+                        <p><strong>3.</strong> Ahorra el 10% de cada ingreso extra.</p>
+                        <p><strong>4.</strong> Usa transferencias para evitar comisiones de cajero.</p>
+                        <p><strong>5.</strong> Compara precios antes de compras mayores a $50.000.</p>
+                        <p><strong>6.</strong> Mantén un fondo de emergencia de al menos 3 meses.</p>
+                        <p><strong>7.</strong> Automatiza el pago de tus cuentas básicas.</p>
+                        <p><strong>8.</strong> Revisa el estado de tu tarjeta de crédito semanalmente.</p>
+                        <p><strong>9.</strong> Evita las compras impulsivas esperando 24 horas.</p>
+                        <p><strong>10.</strong> Establece un límite de gasto diario para "otros".</p>
+                        <p><strong>11.</strong> Planifica tus comidas semanales para gastar menos.</p>
+                        <p><strong>12.</strong> Aprovecha los días de descuento en supermercados.</p>
+                        <p><strong>13.</strong> Registra hasta el gasto más pequeño, como un café.</p>
+                        <p><strong>14.</strong> Divide tus ingresos en cuentas separadas por categoría.</p>
+                        <p><strong>15.</strong> Invierte en educación financiera cada mes.</p>
+                        <p><strong>16.</strong> Reduce el consumo eléctrico desconectando aparatos.</p>
+                        <p><strong>17.</strong> Usa el transporte público o camina cuando sea posible.</p>
+                        <p><strong>18.</strong> No gastes más de lo que ganas bajo ninguna circunstancia.</p>
+                        <p><strong>19.</strong> Evalúa si realmente necesitas ese nuevo gadget.</p>
+                        <p><strong>20.</strong> Los pequeños ahorros diarios suman grandes cantidades al año.</p>
+                        <p><strong>21.</strong> Revisa tus seguros y planes de telefonía anualmente.</p>
+                        <p><strong>22.</strong> Usa efectivo para salidas sociales para controlar el gasto.</p>
+                        <p><strong>23.</strong> Paga tus tarjetas de crédito en su totalidad cada mes.</p>
+                        <p><strong>24.</strong> Define metas de ahorro a corto, mediano y largo plazo.</p>
+                        <p><strong>25.</strong> El interés compuesto es tu mejor amigo si inviertes temprano.</p>
+                        <p><strong>26.</strong> No pidas préstamos para consumo no esencial.</p>
+                        <p><strong>27.</strong> Mantén tus finanzas personales separadas de las de tu negocio.</p>
+                        <p><strong>28.</strong> Analiza tus errores financieros pasados para no repetirlos.</p>
+                        <p><strong>29.</strong> Haz una lista de compras y apégate estrictamente a ella.</p>
+                        <p><strong>30.</strong> Celebra tus logros de ahorro con algo que no cueste dinero.</p>
+                    </div>
                 </div>
             </div>
 
@@ -327,4 +330,8 @@
     </div>
 </main>
 </div>
+<style>
+    .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #eab308; border-radius: 10px; }
+</style>
 </body></html>
