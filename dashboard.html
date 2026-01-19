@@ -63,6 +63,7 @@
 
     function rotarConsejos() {
         const txt = document.getElementById('texto-asistente');
+        if(!txt) return;
         const random = consejos[Math.floor(Math.random() * consejos.length)];
         txt.style.opacity = 0;
         setTimeout(() => {
@@ -77,7 +78,7 @@
             currentUser = user;
             document.getElementById('user-name-display').innerText = user.displayName || "Usuario Corporativo";
             cargarMovimientosRecientes();
-            setInterval(rotarConsejos, 10000); // Cambia cada 10 seg
+            setInterval(rotarConsejos, 10000);
             rotarConsejos();
         } else {
             window.location.href = "index.html";
@@ -175,26 +176,34 @@
             </div>
         </div>
         <nav class="space-y-1">
-            <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20">
+            <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 transition-all">
                 <span class="material-symbols-outlined text-[20px]">dashboard</span>
                 <span class="text-sm font-medium">Panel</span>
             </a>
-            <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl">
+            <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
                 <span class="material-symbols-outlined text-[20px]">swap_horiz</span>
                 <span class="text-sm font-medium">Movimientos</span>
             </a>
-            <a href="analisis.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl">
+            <a href="analisis.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
                 <span class="material-symbols-outlined text-[20px]">analytics</span>
                 <span class="text-sm font-medium">Análisis</span>
             </a>
-            <a href="reportes.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl">
+            <a href="metas.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
+                <span class="material-symbols-outlined text-[20px]">track_changes</span>
+                <span class="text-sm font-medium">Metas</span>
+            </a>
+            <a href="reportes.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
                 <span class="material-symbols-outlined text-[20px]">description</span>
                 <span class="text-sm font-medium">Reportes</span>
+            </a>
+            <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
+                <span class="material-symbols-outlined text-[20px]">settings</span>
+                <span class="text-sm font-medium">Configuración</span>
             </a>
         </nav>
     </div>
     <div class="mt-auto">
-        <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl">
+        <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors">
             <span class="material-symbols-outlined text-[20px]">logout</span>
             <span class="text-sm font-medium">Cerrar Sesión</span>
         </a>
@@ -211,10 +220,10 @@
     </div>
     <div class="flex items-center gap-4">
         <div class="text-right">
-            <p id="user-name-display" class="text-sm font-semibold text-slate-700 dark:text-slate-200">Cargando...</p>
-            <p class="text-[11px] text-slate-500 font-medium">Cuenta Corporativa</p>
+            <p id="user-name-display" class="text-sm font-semibold text-slate-700 dark:text-slate-200 tracking-tight">Cargando...</p>
+            <p class="text-[11px] text-slate-500 font-medium uppercase tracking-widest">Cuenta Corporativa</p>
         </div>
-        <div class="size-10 rounded-full bg-slate-200 flex items-center justify-center font-bold text-primary border-2 border-primary/20">QA</div>
+        <div class="size-10 rounded-full bg-slate-200 flex items-center justify-center font-bold text-primary border-2 border-primary/20 tracking-tighter text-xs">QA</div>
     </div>
 </header>
 
@@ -245,7 +254,7 @@
             </p>
         </div>
         <div class="flex gap-3 shrink-0">
-            <button class="px-6 py-2.5 bg-primary text-white font-bold rounded-lg">Ver Consejos</button>
+            <button class="px-6 py-2.5 bg-primary text-white font-bold rounded-lg hover:bg-primary/90 transition-all">Ver Consejos</button>
         </div>
     </div>
 
@@ -258,14 +267,14 @@
                 <form onsubmit="registrarOperacion(event)" class="space-y-4">
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Concepto</label>
-                        <input id="op-concepto" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm" type="text" placeholder="Ej. AWS Cloud"/>
+                        <input id="op-concepto" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm" type="text" placeholder="Ej. Pago Proveedores"/>
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Tipo</label>
-                            <select id="op-tipo" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm">
-                                <option value="ingreso">Ingreso</option>
-                                <option value="egreso">Egreso</option>
+                            <select id="op-tipo" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold">
+                                <option value="ingreso">Ingreso (+)</option>
+                                <option value="egreso">Egreso (-)</option>
                             </select>
                         </div>
                         <div>
@@ -277,13 +286,13 @@
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Categoría</label>
                             <select id="op-categoria" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm">
-                                <option>Software</option><option>Marketing</option><option>Ventas</option><option>Insumos</option>
+                                <option>Ventas</option><option>Servicios</option><option>Sueldos</option><option>Inversiones</option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Sub Categoria</label>
                             <select id="op-subcategoria" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm">
-                                <option>General</option><option>Servicios</option><option>Bonos</option>
+                                <option>General</option><option>Marketing</option><option>Insumos</option>
                             </select>
                         </div>
                     </div>
@@ -291,7 +300,7 @@
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Pago</label>
                             <select id="op-pago" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm">
-                                <option>Transferencia</option><option>Tarjeta</option><option>Efectivo</option>
+                                <option>Transferencia</option><option>Efectivo</option><option>Tarjeta</option>
                             </select>
                         </div>
                         <div>
@@ -301,7 +310,7 @@
                             </select>
                         </div>
                     </div>
-                    <button type="submit" class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 rounded-lg shadow-lg">Registrar Operación</button>
+                    <button type="submit" class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 rounded-lg shadow-lg uppercase text-xs tracking-widest transition-all">Registrar Operación</button>
                 </form>
             </div>
         </div>
