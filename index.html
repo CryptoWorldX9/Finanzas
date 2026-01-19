@@ -3,291 +3,55 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>QuantyA Pro | Sistema Integral v2.4.1</title>
-    
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Noto+Serif:wght@400;700&display=swap" rel="stylesheet"/>
+    <title>QuantyA - Iniciar Sesión</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-
-    <script id="tailwind-config">
+    <script>
         tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        "primary": "#2563eb",
-                        "dark-navy": "#0f172a",
-                        "background-light": "#f1f2f4",
-                        "background-dark": "#111827",
-                        "sidebar-light": "#ffffff",
-                        "sidebar-dark": "#1a1d24",
-                        "corporate-gray": "#f0f2f4",
-                    },
-                    fontFamily: { "display": ["Manrope", "sans-serif"], "serif": ["Noto Serif", "serif"] }
-                }
-            }
+            theme: { extend: { colors: { "primary": "#286ceb" }, fontFamily: { "display": ["Manrope"] } } }
         }
     </script>
-    
-    <style type="text/tailwindcss">
-        @layer components {
-            .page-section { @apply hidden; }
-            .page-section.active { @apply block; }
-            .nav-item-active { @apply bg-primary/10 text-primary border-r-4 border-primary font-bold; }
-            .a4-page { width: 210mm; min-height: 297mm; padding: 20mm; margin: 0 auto; background: white; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-            .glass-effect { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        }
-        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-    </style>
 </head>
-
-<body class="bg-background-light dark:bg-background-dark font-display text-[#111318] dark:text-[#f0f2f4] antialiased overflow-hidden">
-
-    <div id="auth-screen" class="flex min-h-screen w-full relative bg-white transition-all duration-500">
-        <div class="hidden lg:flex lg:w-1/2 relative flex-col justify-between p-12 overflow-hidden bg-dark-navy">
-            <div class="absolute inset-0 z-0 bg-cover bg-center opacity-60 transition-transform duration-700 hover:scale-105" style='background-image: linear-gradient(rgba(17, 19, 24, 0.6), rgba(17, 19, 24, 0.85)), url("https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&q=80");'></div>
-            <div class="relative z-10 flex items-center gap-2 text-white">
-                <span class="material-symbols-outlined text-3xl">account_balance_wallet</span>
-                <span class="text-xl font-bold tracking-tight">QuantyA</span>
+<body class="bg-white font-display text-[#111318] antialiased">
+    <div class="flex min-h-screen">
+        <div class="hidden lg:flex lg:w-1/2 relative flex-col justify-between p-12 bg-[#0f172a] text-white">
+            <div class="relative z-10 flex items-center gap-2">
+                <span class="material-symbols-outlined text-3xl text-primary font-bold">account_balance_wallet</span>
+                <span class="text-xl font-extrabold tracking-tight">QuantyA</span>
             </div>
-            <div class="relative z-10 max-w-lg mb-12">
-                <h2 class="text-white text-5xl font-extrabold leading-tight mb-6">Más Control. <br/><span class="text-primary">Menos preocupación.</span></h2>
-                <p class="text-gray-300 text-lg font-light">La próxima generación de gestión financiera corporativa diseñada para operaciones modernas.</p>
-                <div class="mt-8 flex gap-4">
-                    <div class="glass-effect rounded-lg p-4 flex flex-col"><span class="text-white font-bold text-xl">99.9%</span><span class="text-gray-400 text-[10px] tracking-widest uppercase">Disponibilidad</span></div>
-                    <div class="glass-effect rounded-lg p-4 flex flex-col"><span class="text-white font-bold text-xl">256-bit</span><span class="text-gray-400 text-[10px] tracking-widest uppercase">Seguridad</span></div>
-                </div>
+            <div class="relative z-10">
+                <h2 class="text-5xl font-extrabold leading-tight mb-6">Más Control. <br/><span class="text-primary">Menos preocupación.</span></h2>
+                <p class="text-slate-400 text-lg">Tu sistema inteligente de gestión financiera corporativa.</p>
             </div>
-            <div class="relative z-10 text-gray-400 text-xs">© 2024 QuantyA Systems Inc. Todos los derechos reservados.</div>
+            <div class="relative z-10 text-sm text-slate-500">© 2024 QuantyA Systems Inc.</div>
         </div>
-        <div class="w-full lg:w-1/2 flex items-center justify-center p-8 sm:p-24 bg-white dark:bg-background-dark">
-            <div class="w-full max-w-[440px] flex flex-col">
-                <div class="mb-10 text-center lg:text-left">
-                    <h1 class="text-3xl font-extrabold mb-2">Bienvenido de nuevo</h1>
-                    <p class="text-slate-500">Ingrese sus credenciales para acceder al panel.</p>
+
+        <div class="w-full lg:w-1/2 flex items-center justify-center p-8">
+            <div class="w-full max-w-md space-y-8">
+                <div class="text-center lg:text-left">
+                    <h1 class="text-3xl font-black mb-2">Bienvenido</h1>
+                    <p class="text-slate-500">Ingresa para acceder a tu panel.</p>
                 </div>
-                <form class="space-y-6" onsubmit="event.preventDefault(); login();">
+                
+                <form class="space-y-6" onsubmit="event.preventDefault(); window.location.href='dashboard.html';">
                     <div class="space-y-4">
-                        <label class="block space-y-2">
-                            <span class="text-sm font-semibold">Correo Electrónico</span>
-                            <div class="relative">
-                                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">mail</span>
-                                <input type="email" class="w-full pl-12 h-14 rounded-xl border-slate-200 focus:ring-4 focus:ring-primary/10" placeholder="nombre@empresa.com" required>
-                            </div>
-                        </label>
-                        <label class="block space-y-2">
-                            <div class="flex justify-between"><span class="text-sm font-semibold">Contraseña</span><a href="#" class="text-xs text-primary font-bold">¿Olvidaste tu contraseña?</a></div>
-                            <div class="relative">
-                                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">lock</span>
-                                <input type="password" class="w-full pl-12 h-14 rounded-xl border-slate-200 focus:ring-4 focus:ring-primary/10" placeholder="••••••••" required>
-                            </div>
-                        </label>
+                        <div>
+                            <label class="block text-sm font-bold mb-2">Correo Electrónico</label>
+                            <input type="email" placeholder="admin@quantya.com" class="w-full px-4 py-3 rounded-xl border-slate-200 focus:border-primary focus:ring-primary" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold mb-2">Contraseña</label>
+                            <input type="password" placeholder="••••••••" class="w-full px-4 py-3 rounded-xl border-slate-200 focus:border-primary focus:ring-primary" required>
+                        </div>
                     </div>
-                    <button type="submit" class="w-full bg-primary text-white h-14 rounded-xl font-bold shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all active:scale-95">Iniciar Sesión al Panel</button>
-                    <div class="relative py-4">
-                        <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-slate-100"></div></div>
-                        <div class="relative flex justify-center text-xs uppercase text-slate-400"><span class="bg-white px-2">O continuar con</span></div>
-                    </div>
-                    <button type="button" class="w-full border border-slate-200 h-12 rounded-xl flex items-center justify-center gap-3 font-bold text-sm hover:bg-slate-50 transition-colors">
-                        <img src="https://www.svgrepo.com/show/355037/google.svg" class="size-5" alt=""> Iniciar sesión con Google SSO
+                    
+                    <button type="submit" class="w-full bg-primary text-white py-4 rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] transition-all">
+                        Iniciar Sesión
                     </button>
                 </form>
             </div>
         </div>
     </div>
-
-    <div id="main-app" class="hidden h-screen w-full flex overflow-hidden">
-        
-        <aside class="w-64 bg-sidebar-light dark:bg-sidebar-dark border-r border-slate-200 dark:border-slate-800 flex flex-col shrink-0 z-50">
-            <div class="p-8 flex items-center gap-3 text-primary">
-                <span class="material-symbols-outlined text-3xl font-bold">account_balance_wallet</span>
-                <h2 class="text-xl font-extrabold tracking-tighter text-slate-900 dark:text-white">QuantyA</h2>
-            </div>
-            <nav class="flex-1 px-4 space-y-1">
-                <button onclick="navegar('panel', this)" class="nav-item nav-item-active w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all"><span class="material-symbols-outlined">dashboard</span><span class="text-sm font-bold">Panel</span></button>
-                <button onclick="navegar('movimientos', this)" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 dark:text-gray-400 hover:bg-slate-50 transition-all"><span class="material-symbols-outlined">swap_horiz</span><span class="text-sm font-bold">Movimientos</span></button>
-                <button onclick="navegar('analisis', this)" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 dark:text-gray-400 hover:bg-slate-50 transition-all"><span class="material-symbols-outlined">analytics</span><span class="text-sm font-bold">Análisis</span></button>
-                <button onclick="navegar('metas', this)" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 dark:text-gray-400 hover:bg-slate-50 transition-all"><span class="material-symbols-outlined">flag</span><span class="text-sm font-bold">Metas</span></button>
-                <button onclick="navegar('reportes', this)" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 dark:text-gray-400 hover:bg-slate-50 transition-all"><span class="material-symbols-outlined">description</span><span class="text-sm font-bold">Reportes PDF</span></button>
-                <button onclick="navegar('configuracion', this)" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 dark:text-gray-400 hover:bg-slate-50 transition-all"><span class="material-symbols-outlined">settings</span><span class="text-sm font-bold">Configuración</span></button>
-            </nav>
-            <div class="p-6 border-t border-slate-100 dark:border-slate-800">
-                <div class="flex items-center gap-3">
-                    <div class="size-10 rounded-full bg-slate-200 border border-white"></div>
-                    <div class="flex-1 overflow-hidden"><p class="text-sm font-bold truncate">Admin QuantyA</p><p class="text-[10px] text-slate-400 truncate">admin@quantya.com</p></div>
-                    <button onclick="location.reload()" class="text-slate-400 hover:text-red-500"><span class="material-symbols-outlined">logout</span></button>
-                </div>
-            </div>
-        </aside>
-
-        <main class="flex-1 flex flex-col min-w-0 bg-slate-50 dark:bg-background-dark overflow-hidden">
-            
-            <header class="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-10 flex items-center justify-between shrink-0">
-                <h2 id="header-title" class="text-lg font-extrabold text-slate-800 dark:text-white uppercase tracking-tighter">Panel de Control</h2>
-                <div class="flex items-center gap-4">
-                    <span class="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full uppercase tracking-widest">Sincronizado</span>
-                </div>
-            </header>
-
-            <div id="sections-container" class="flex-1 overflow-y-auto p-10">
-                
-                <section id="page-panel" class="page-section active space-y-8">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                            <p class="text-sm font-bold text-slate-400 uppercase mb-1">Saldo Neto</p>
-                            <p class="text-4xl font-black text-primary">$4,330.00</p>
-                            <p class="text-xs text-emerald-500 font-bold mt-2">↑ +12% este mes</p>
-                        </div>
-                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                            <p class="text-sm font-bold text-slate-400 uppercase mb-1">Ingresos</p>
-                            <p class="text-4xl font-black text-emerald-600">$12,000.00</p>
-                        </div>
-                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                            <p class="text-sm font-bold text-slate-400 uppercase mb-1">Egresos</p>
-                            <p class="text-4xl font-black text-red-500">$7,670.00</p>
-                        </div>
-                    </div>
-                </section>
-
-                <section id="page-metas" class="page-section space-y-8">
-                    <div class="flex justify-between items-center">
-                        <h3 class="text-2xl font-black tracking-tight">Metas de Ahorro</h3>
-                        <button class="bg-primary text-white px-6 py-2 rounded-xl font-bold text-sm">+ Nueva Meta</button>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div class="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
-                            <div class="flex justify-between mb-4">
-                                <h4 class="font-bold">Fondo de Emergencia</h4>
-                                <span class="text-primary font-black">75%</span>
-                            </div>
-                            <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
-                                <div class="bg-primary h-full transition-all" style="width: 75%"></div>
-                            </div>
-                            <p class="text-xs text-slate-400 mt-4">Meta: $10,000 | Actual: $7,500</p>
-                        </div>
-                    </div>
-                </section>
-
-                <section id="page-reportes" class="page-section">
-                    <div class="max-w-4xl mx-auto flex flex-col items-center gap-8">
-                        <div class="w-full flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                            <span class="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><span class="material-symbols-outlined text-sm">visibility</span> Previsualización A4</span>
-                            <button onclick="window.print()" class="bg-primary text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 text-sm">
-                                <span class="material-symbols-outlined text-lg">download</span> Descargar Reporte PDF
-                            </button>
-                        </div>
-                        <article class="a4-page relative flex flex-col">
-                            <header class="flex justify-between border-b-2 border-slate-900 pb-8 mb-8">
-                                <div class="flex items-center gap-4 text-primary">
-                                    <span class="material-symbols-outlined text-4xl font-bold">account_balance_wallet</span>
-                                    <div><h1 class="text-2xl font-black text-slate-900">QuantyA</h1><p class="text-[9px] font-black text-slate-400 tracking-[0.3em] uppercase">Financial Intelligent System</p></div>
-                                </div>
-                                <div class="text-right">
-                                    <h2 class="font-serif text-3xl font-bold text-slate-900 leading-none">REPORTE FINANCIERO<br><span class="text-primary/70">OCTUBRE 2023</span></h2>
-                                    <p class="text-[10px] text-slate-400 font-bold mt-2 uppercase">Confidencial - Uso Corporativo</p>
-                                </div>
-                            </header>
-                            <div class="flex-1 space-y-10">
-                                <div class="grid grid-cols-2 gap-10">
-                                    <div class="space-y-4">
-                                        <h3 class="text-xs font-black text-primary border-l-4 border-primary pl-2 uppercase tracking-widest">Resumen Ejecutivo</h3>
-                                        <p class="text-[11px] leading-relaxed text-slate-600 text-justify">Optimización estratégica de costes reflejada en los márgenes operativos. La liquidez proyectada permite reinversión en I+D para el próximo trimestre.</p>
-                                    </div>
-                                    <div class="bg-slate-50 p-6 rounded border border-slate-100 flex justify-between items-center">
-                                        <div><p class="text-[9px] font-black text-slate-400 uppercase mb-1">Ingresos Brutos</p><p class="text-2xl font-black">$142,500.00</p></div>
-                                        <div class="text-emerald-500 font-bold text-xs">↑ 12.4%</div>
-                                    </div>
-                                </div>
-                                <table class="w-full text-left border-collapse">
-                                    <thead><tr class="bg-slate-900 text-white text-[9px] uppercase font-bold tracking-widest"><th class="p-3">Fecha</th><th class="p-3">Concepto</th><th class="p-3 text-right">Monto</th></tr></thead>
-                                    <tbody class="text-[10px] divide-y divide-slate-100 border-b border-slate-100">
-                                        <tr><td class="p-3 text-slate-400 font-bold">01/10/2023</td><td class="p-3 text-slate-700">AWS Infrastructure - Cloud Services</td><td class="p-3 text-right font-black">$4,250.00</td></tr>
-                                        <tr><td class="p-3 text-slate-400 font-bold">15/10/2023</td><td class="p-3 text-slate-700">Pago Nómina Mensual IT & Devs</td><td class="p-3 text-right font-black">$45,000.00</td></tr>
-                                        <tr class="bg-emerald-50/50"><td class="p-3 text-slate-400 font-bold">20/10/2023</td><td class="p-3 font-bold text-emerald-700">Cobro Factura #A-2023 Alpha Corp</td><td class="p-3 text-right font-black text-emerald-600">+$12,400.00</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <footer class="mt-auto pt-8 border-t border-slate-100 flex justify-between items-center text-[9px] text-slate-400 font-bold">
-                                <span>DOCUMENTO AUTENTICADO • QUANTYA B.I.</span>
-                                <span>PÁGINA 1 DE 1</span>
-                            </footer>
-                        </article>
-                    </div>
-                </section>
-
-                <section id="page-configuracion" class="page-section space-y-10">
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                        <div class="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
-                            <h3 class="text-xl font-bold flex items-center gap-2"><span class="material-symbols-outlined text-primary">settings_applications</span> Parámetros Globales</h3>
-                            <div class="space-y-4">
-                                <label class="block space-y-2"><span class="text-sm font-semibold">Moneda Predeterminada</span>
-                                    <select class="w-full rounded-xl border-slate-200 h-12 text-sm"><option>Dólar Estadounidense (USD)</option><option>Euro (EUR)</option></select>
-                                </label>
-                                <label class="block space-y-2"><span class="text-sm font-semibold">Zona Horaria</span>
-                                    <select class="w-full rounded-xl border-slate-200 h-12 text-sm"><option>(UTC-05:00) Bogotá, Lima, Quito</option></select>
-                                </label>
-                            </div>
-                        </div>
-                        <div class="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
-                            <h3 class="text-xl font-bold flex items-center gap-2"><span class="material-symbols-outlined text-primary">palette</span> Personalización</h3>
-                            <div class="space-y-6">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-sm font-semibold">Modo Oscuro Automático</span>
-                                    <div class="w-12 h-6 bg-slate-200 rounded-full relative"><div class="absolute right-1 top-1 size-4 bg-white rounded-full shadow-sm"></div></div>
-                                </div>
-                                <div>
-                                    <span class="text-sm font-semibold block mb-3">Color Primario de Marca</span>
-                                    <div class="flex gap-4">
-                                        <div class="size-8 rounded-full bg-primary ring-2 ring-offset-2 ring-primary"></div>
-                                        <div class="size-8 rounded-full bg-emerald-500"></div>
-                                        <div class="size-8 rounded-full bg-amber-500"></div>
-                                        <div class="size-8 rounded-full bg-red-500"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-            </div>
-        </main>
-    </div>
-
-    <script>
-        // Lógica de navegación SPA
-        function navegar(idPagina, btn) {
-            // Ocultar todas las secciones
-            document.querySelectorAll('.page-section').forEach(sec => sec.classList.remove('active'));
-            // Mostrar la seleccionada
-            const target = document.getElementById('page-' + idPagina);
-            if(target) target.classList.add('active');
-            
-            // Actualizar Título del Header
-            document.getElementById('header-title').innerText = btn.innerText;
-
-            // Actualizar estilo del botón en el menú
-            document.querySelectorAll('.nav-item').forEach(b => {
-                b.classList.remove('nav-item-active');
-                b.classList.add('text-slate-500', 'dark:text-gray-400');
-            });
-            btn.classList.add('nav-item-active');
-            btn.classList.remove('text-slate-500', 'dark:text-gray-400');
-        }
-
-        // Lógica de Login
-        function login() {
-            const auth = document.getElementById('auth-screen');
-            const app = document.getElementById('main-app');
-            
-            auth.classList.add('opacity-0', 'scale-95');
-            setTimeout(() => {
-                auth.classList.add('hidden');
-                app.classList.remove('hidden');
-                app.classList.add('animate-in', 'fade-in', 'zoom-in', 'duration-500');
-            }, 500);
-        }
-    </script>
 </body>
 </html>
