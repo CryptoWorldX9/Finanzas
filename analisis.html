@@ -38,11 +38,66 @@
     });
 
     function iniciarSincronizacion(uid) {
+        // Sincronizar Movimientos (Gráfico)
         onValue(ref(db, `usuarios/${uid}/movimientos`), (snapshot) => {
             const movimientos = [];
             snapshot.forEach(child => { movimientos.push(child.val()); });
             actualizarAnalisis(movimientos);
         });
+
+        // NUEVO: Sincronizar Metas (Lado Derecho)
+        onValue(ref(db, `usuarios/${uid}/metas`), (snapshot) => {
+            const metas = [];
+            snapshot.forEach(child => { 
+                metas.push({ id: child.key, ...child.val() }); 
+            });
+            renderizarMetas(metas);
+        });
+    }
+
+    function renderizarMetas(metas) {
+        const contenedor = document.getElementById('contenedor-metas-dinamicas');
+        if (metas.length === 0) {
+            contenedor.innerHTML = '<p class="text-center text-slate-400 py-10 text-sm">No tienes metas activas</p>';
+            return;
+        }
+
+        contenedor.innerHTML = metas.map(meta => {
+            const porcentaje = Math.min(Math.round((meta.monto_actual / meta.monto_objetivo) * 100), 100);
+            
+            // Lógica de iconos y colores según nombre o tipo
+            let icon = "savings";
+            let colorClass = "bg-primary/10 text-primary";
+            let barColor = "bg-primary";
+
+            if (meta.nombre.toLowerCase().includes("emergencia")) { icon = "emergency"; colorClass = "bg-red-100 text-red-600"; barColor = "bg-red-600"; }
+            else if (meta.nombre.toLowerCase().includes("viaje")) { icon = "flight"; colorClass = "bg-orange-100 text-orange-600"; barColor = "bg-orange-600"; }
+            else if (meta.nombre.toLowerCase().includes("auto")) { icon = "directions_car"; colorClass = "bg-blue-100 text-blue-600"; barColor = "bg-blue-600"; }
+
+            return `
+                <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-100 dark:border-slate-700 hover:border-primary/50 transition-all group">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="size-12 ${colorClass} rounded-xl flex items-center justify-center">
+                                <span class="material-symbols-outlined">${icon}</span>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-base">${meta.nombre}</h4>
+                                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">$${new Intl.NumberFormat('es-CL').format(meta.monto_objetivo)} Meta</p>
+                            </div>
+                        </div>
+                        <span class="font-black text-lg text-slate-800 dark:text-white">${porcentaje}%</span>
+                    </div>
+                    <div class="w-full h-3 bg-slate-100 dark:bg-slate-700 rounded-full mb-4 overflow-hidden">
+                        <div class="h-full ${barColor} transition-all duration-1000" style="width: ${porcentaje}%"></div>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <p class="text-sm font-bold text-slate-600 dark:text-slate-300">$${new Intl.NumberFormat('es-CL').format(meta.monto_actual)}</p>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase">Faltan $${new Intl.NumberFormat('es-CL').format(meta.monto_objetivo - meta.monto_actual)}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
     }
 
     function actualizarAnalisis(datos) {
@@ -103,28 +158,22 @@
             </div>
             <nav class="space-y-1">
                 <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
-                    <span class="material-symbols-outlined">dashboard</span>
-                    <span class="font-semibold text-sm">Panel</span>
+                    <span class="material-symbols-outlined">dashboard</span> <span class="font-semibold text-sm">Panel</span>
                 </a>
                 <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
-                    <span class="material-symbols-outlined">swap_horiz</span>
-                    <span class="font-semibold text-sm">Movimientos</span>
+                    <span class="material-symbols-outlined">swap_horiz</span> <span class="font-semibold text-sm">Movimientos</span>
                 </a>
                 <a href="analisis.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 transition-all">
-                    <span class="material-symbols-outlined font-fill">analytics</span>
-                    <span class="font-bold text-sm">Análisis</span>
+                    <span class="material-symbols-outlined font-fill">analytics</span> <span class="font-bold text-sm">Análisis</span>
                 </a>
                 <a href="metas.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
-                    <span class="material-symbols-outlined">track_changes</span>
-                    <span class="font-semibold text-sm">Metas</span>
+                    <span class="material-symbols-outlined">track_changes</span> <span class="font-semibold text-sm">Metas</span>
                 </a>
                 <a href="reportes.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
-                    <span class="material-symbols-outlined">description</span>
-                    <span class="font-semibold text-sm">Reportes</span>
+                    <span class="material-symbols-outlined">description</span> <span class="font-semibold text-sm">Reportes</span>
                 </a>
                 <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
-                    <span class="material-symbols-outlined">settings</span>
-                    <span class="font-semibold text-sm">Configuración</span>
+                    <span class="material-symbols-outlined">settings</span> <span class="font-semibold text-sm">Configuración</span>
                 </a>
             </nav>
         </div>
@@ -137,8 +186,7 @@
                 </div>
             </div>
             <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors w-full">
-                <span class="material-symbols-outlined">logout</span>
-                <span class="font-semibold text-sm">Cerrar Sesión</span>
+                <span class="material-symbols-outlined">logout</span> <span class="font-semibold text-sm">Cerrar Sesión</span>
             </a>
         </div>
     </aside>
@@ -147,21 +195,17 @@
         <header class="sticky top-0 z-10 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md px-10 py-6 flex justify-between items-center border-b border-transparent">
             <div>
                 <h2 class="text-3xl font-black tracking-tight">Análisis Operativo</h2>
-                <p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Control de Ingresos vs Gastos</p>
+                <p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Análisis y Metas de Ahorro</p>
             </div>
-            <div class="flex items-center gap-4">
-                <button class="bg-primary text-white px-6 h-10 rounded-xl font-bold text-sm shadow-lg shadow-primary/20 flex items-center gap-2">
-                    <span class="material-symbols-outlined text-sm">download</span> Exportar Informe
-                </button>
-            </div>
+            <button class="bg-primary text-white px-6 h-10 rounded-xl font-bold text-sm shadow-lg shadow-primary/20 flex items-center gap-2 hover:scale-105 transition-transform">
+                <span class="material-symbols-outlined text-sm">download</span> Exportar
+            </button>
         </header>
 
-        <div class="px-10 pb-10 flex gap-8">
+        <div class="px-10 pb-10 flex gap-8 mt-6">
             <section class="flex-[1.2] space-y-6 min-w-0">
                 <div class="bg-white dark:bg-slate-800 rounded-xl p-8 shadow-sm border border-slate-100 dark:border-slate-700">
-                    <div class="flex justify-between items-end mb-8">
-                        <h3 class="text-xl font-bold tracking-tight">Distribución: Ingresos vs Gastos</h3>
-                    </div>
+                    <h3 class="text-xl font-bold tracking-tight mb-8">Flujo de Caja Real</h3>
                     <div class="flex items-center gap-12">
                         <div class="relative size-64 flex items-center justify-center shrink-0">
                             <canvas id="graficoDistribucion"></canvas>
@@ -171,52 +215,20 @@
                             </div>
                         </div>
                         <div id="lista-categorias-gastos" class="flex-1 space-y-4">
-                            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Cargando...</p>
-                        </div>
+                            </div>
                     </div>
-                </div>
-
-                <div class="bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-sm border border-slate-100 dark:border-slate-700">
-                    <div class="p-6 border-b border-slate-50 dark:border-slate-700">
-                        <h3 class="text-lg font-bold">Resumen de Rendimiento</h3>
-                    </div>
-                    <table class="w-full text-left text-sm">
-                        <thead class="bg-slate-50 dark:bg-slate-800/50">
-                            <tr>
-                                <th class="px-6 py-4 text-xs font-black uppercase text-slate-400 tracking-widest">Concepto</th>
-                                <th class="px-6 py-4 text-xs font-black uppercase text-slate-400 tracking-widest text-right">Monto</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-50 dark:divide-slate-700">
-                            <tr>
-                                <td class="px-6 py-4 font-semibold">Flujo de Caja Real</td>
-                                <td class="px-6 py-4 text-right font-black">Sincronizado</td>
-                            </tr>
-                        </tbody>
-                    </table>
                 </div>
             </section>
 
             <section class="flex-1 space-y-6">
                 <div class="flex justify-between items-center">
                     <h3 class="text-xl font-bold tracking-tight">Metas de Ahorro</h3>
-                    <button class="size-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-primary hover:text-white transition-all flex items-center justify-center">
+                    <a href="metas.html" class="size-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-primary hover:text-white transition-all flex items-center justify-center">
                         <span class="material-symbols-outlined">add</span>
-                    </button>
+                    </a>
                 </div>
-                <div class="grid grid-cols-1 gap-5">
-                    <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-100 dark:border-slate-700">
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="flex items-center gap-3">
-                                <div class="size-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary"><span class="material-symbols-outlined">emergency</span></div>
-                                <div><h4 class="font-bold text-base">Fondo de Emergencia</h4></div>
-                            </div>
-                            <span class="text-primary font-black text-lg">Activo</span>
-                        </div>
-                        <div class="w-full h-3 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                            <div class="h-full bg-primary" style="width: 82%"></div>
-                        </div>
-                    </div>
+                <div id="contenedor-metas-dinamicas" class="grid grid-cols-1 gap-5">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest text-center py-10">Conectando con Firebase...</p>
                 </div>
             </section>
         </div>
