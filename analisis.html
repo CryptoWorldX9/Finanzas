@@ -2,7 +2,7 @@
 <html class="light" lang="es"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Análisis con Navegación Unificada - QuantyA</title>
+<title>Análisis y Metas - QuantyA</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
@@ -46,208 +46,140 @@
     }
 
     function actualizarAnalisis(datos) {
-        let ingresos = 0;
-        let gastos = 0;
-        let listaGastos = [];
-
+        let ingresos = 0, gastos = 0, listaGastos = [];
         datos.forEach(m => {
             const esIngreso = m.tipo.toLowerCase().includes('ingreso') || m.tipo.toLowerCase().includes('venta');
-            if (esIngreso) {
-                ingresos += m.monto;
-            } else {
-                gastos += m.monto;
-                listaGastos.push(m);
-            }
+            if (esIngreso) ingresos += m.monto;
+            else { gastos += m.monto; listaGastos.push(m); }
         });
 
         const saldo = ingresos - gastos;
-        
-        // 1. Actualizar Centro del Gráfico (Saldo)
         const montoCentro = document.getElementById('centro-monto');
         montoCentro.innerText = `$${new Intl.NumberFormat('es-CL').format(Math.abs(saldo))}`;
         montoCentro.className = `text-3xl font-black ${saldo >= 0 ? 'text-emerald-500' : 'text-red-500'}`;
 
-        // 2. Control Exhaustivo: Gastos más altos (Top 4)
         const topGastos = listaGastos.sort((a, b) => b.monto - a.monto).slice(0, 4);
         const contenedorLista = document.getElementById('lista-categorias-gastos');
         contenedorLista.innerHTML = topGastos.map((g, index) => {
             const colors = ['#176282', '#4db3da', '#94a3b8', '#cbd5e1'];
-            return `
-                <div class="flex items-center justify-between group">
-                    <div class="flex items-center gap-3">
-                        <span class="size-3 rounded-full" style="background-color: ${colors[index]}"></span>
-                        <span class="text-sm font-semibold truncate w-32">${g.concepto}</span>
-                    </div>
-                    <span class="text-sm font-bold text-red-500">$${new Intl.NumberFormat('es-CL').format(g.monto)}</span>
-                </div>
-            `;
-        }).join('');
+            return `<div class="flex items-center justify-between"><div class="flex items-center gap-3"><span class="size-3 rounded-full" style="background-color: ${colors[index]}"></span><span class="text-sm font-semibold truncate w-32">${g.concepto}</span></div><span class="text-sm font-bold text-red-500">$${new Intl.NumberFormat('es-CL').format(g.monto)}</span></div>`;
+        }).join('') || '<p class="text-xs text-slate-400">Sin gastos este mes</p>';
 
-        // 3. Renderizar Gráfico (Verde Ingresos vs Rojo Gastos)
         const ctx = document.getElementById('graficoDistribucion').getContext('2d');
         if (miGrafico) miGrafico.destroy();
-        
         miGrafico = new Chart(ctx, {
             type: 'doughnut',
-            data: {
-                labels: ['Ingresos', 'Gastos'],
-                datasets: [{
-                    data: [ingresos, gastos],
-                    backgroundColor: ['#10b981', '#ef4444'],
-                    hoverOffset: 4,
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                cutout: '80%',
-                plugins: { legend: { display: false } },
-                responsive: true,
-                maintainAspectRatio: false
-            }
+            data: { labels: ['Ingresos', 'Gastos'], datasets: [{ data: [ingresos, gastos], backgroundColor: ['#10b981', '#ef4444'], borderWidth: 0 }] },
+            options: { cutout: '80%', plugins: { legend: { display: false } }, responsive: true, maintainAspectRatio: false }
         });
     }
 </script>
 
 <script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        "primary": "#176282",
-                        "background-light": "#f9fafb",
-                        "background-dark": "#181d25",
-                    },
-                    fontFamily: { "display": ["Inter", "sans-serif"] },
-                    borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
-                },
-            },
+    tailwind.config = {
+        darkMode: "class",
+        theme: {
+            extend: {
+                colors: { "primary": "#176282", "background-light": "#f9fafb", "background-dark": "#181d25" },
+                fontFamily: { "display": ["Inter", "sans-serif"] }
+            }
         }
-    </script>
-<style type="text/tailwindcss">
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #dce2e5; border-radius: 10px; }
-        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #374151; }
-    </style>
+    }
+</script>
 </head>
 <body class="bg-background-light dark:bg-background-dark font-display text-[#121617] dark:text-white transition-colors duration-200">
 <div class="flex h-screen overflow-hidden">
-<aside class="w-72 bg-[#0f172a] text-white flex flex-col shrink-0 border-r border-slate-800 p-6">
-    <div class="space-y-8">
-        <div class="flex items-center gap-3 px-2">
-            <div class="size-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
-                <span class="material-symbols-outlined text-2xl">account_balance_wallet</span>
+    <aside class="w-72 bg-[#0f172a] text-white flex flex-col shrink-0 border-r border-slate-800 p-6">
+        <div class="space-y-8 flex-1">
+            <div class="flex items-center gap-3 px-2">
+                <div class="size-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
+                    <span class="material-symbols-outlined text-2xl">account_balance_wallet</span>
+                </div>
+                <div>
+                    <h1 class="text-xl font-black tracking-tight leading-none">QuantyA</h1>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Gestión Financiera</p>
+                </div>
             </div>
-            <div>
-                <h1 class="text-xl font-black tracking-tight leading-none">QuantyA</h1>
-                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Gestión Financiera</p>
-            </div>
-        </div>
-        <nav class="space-y-1">
-            <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
-                <span class="material-symbols-outlined">dashboard</span>
-                <span class="font-semibold text-sm">Panel</span>
-            </a>
-            <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
-                <span class="material-symbols-outlined">swap_horiz</span>
-                <span class="font-semibold text-sm">Movimientos</span>
-            </a>
-            <a href="analisis.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 transition-all">
-                <span class="material-symbols-outlined font-fill">analytics</span>
-                <span class="font-bold text-sm">Análisis</span>
-            </a>
+            <nav class="space-y-1">
+                <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
+                    <span class="material-symbols-outlined">dashboard</span>
+                    <span class="font-semibold text-sm">Panel</span>
+                </a>
+                <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
+                    <span class="material-symbols-outlined">swap_horiz</span>
+                    <span class="font-semibold text-sm">Movimientos</span>
+                </a>
+                <a href="analisis.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 transition-all">
+                    <span class="material-symbols-outlined font-fill">analytics</span>
+                    <span class="font-bold text-sm">Análisis</span>
+                </a>
+                <a href="metas.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
+                    <span class="material-symbols-outlined">track_changes</span>
+                    <span class="font-semibold text-sm">Metas</span>
+                </a>
+                <a href="reportes.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
+                    <span class="material-symbols-outlined">description</span>
+                    <span class="font-semibold text-sm">Reportes</span>
+                </a>
+                <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
+                    <span class="material-symbols-outlined">settings</span>
+                    <span class="font-semibold text-sm">Configuración</span>
+                </a>
             </nav>
-    </div>
-    <div class="mt-auto pt-6 border-t border-slate-800">
-        <div class="bg-slate-800/50 p-4 rounded-2xl flex items-center gap-3 mb-2">
-            <div class="size-10 rounded-full bg-primary flex items-center justify-center font-bold text-xs">QA</div>
-            <div class="flex-1 overflow-hidden">
-                <p id="user-name-display" class="text-sm font-bold truncate text-white">Cargando...</p>
-                <p class="text-[10px] text-slate-500 uppercase font-bold">Plan Premium</p>
-            </div>
         </div>
-    </div>
-</aside>
-
-<main class="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
-<header class="sticky top-0 z-10 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md px-10 py-6 flex justify-between items-center border-b border-transparent">
-<div>
-<h2 class="text-3xl font-black tracking-tight">Análisis Operativo</h2>
-<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Control exhaustivo de ingresos y gastos</p>
-</div>
-<div class="flex items-center gap-4">
-    <button class="bg-primary text-white px-6 h-10 rounded-xl font-bold text-sm hover:opacity-90 transition-all shadow-lg shadow-primary/20 flex items-center gap-2">
-        <span class="material-symbols-outlined text-sm">download</span> Exportar Informe
-    </button>
-</div>
-</header>
-
-<div class="px-10 pb-10 flex gap-8">
-<section class="flex-[1.2] space-y-6 min-w-0">
-<div class="bg-white dark:bg-slate-800 rounded-xl p-8 shadow-sm border border-slate-100 dark:border-slate-700">
-<div class="flex justify-between items-end mb-8">
-<h3 class="text-xl font-bold tracking-tight">Distribución: Ingresos vs Gastos</h3>
-<div class="flex gap-4 border-b border-slate-100 dark:border-slate-700 text-[10px] font-black uppercase tracking-widest text-slate-400">
-    <span class="pb-2 text-primary border-b-2 border-primary">Filtro Real</span>
-</div>
-</div>
-<div class="flex items-center gap-12">
-<div class="relative size-64 flex items-center justify-center shrink-0">
-    <canvas id="graficoDistribucion"></canvas>
-    <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">SALDO</span>
-        <span id="centro-monto" class="text-3xl font-black text-slate-800 dark:text-white">$0</span>
-    </div>
-</div>
-<div id="lista-categorias-gastos" class="flex-1 space-y-4">
-    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Cargando gastos más altos...</p>
-</div>
-</div>
-</div>
-
-<div class="bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-sm border border-slate-100 dark:border-slate-700">
-    <div class="p-6 border-b border-slate-50 dark:border-slate-700">
-    <h3 class="text-lg font-bold tracking-tight">Resumen de Rendimiento</h3>
-    </div>
-    <table class="w-full text-left text-sm">
-    <thead class="bg-slate-50 dark:bg-slate-800/50">
-        <tr>
-            <th class="px-6 py-4 text-xs font-black uppercase text-slate-400 tracking-widest">Concepto</th>
-            <th class="px-6 py-4 text-xs font-black uppercase text-slate-400 tracking-widest text-right">Monto</th>
-        </tr>
-    </thead>
-    <tbody class="divide-y divide-slate-50 dark:divide-slate-700">
-        <tr>
-            <td class="px-6 py-4 font-semibold text-sm">Flujo de Caja Mensual</td>
-            <td class="px-6 py-4 text-right font-black">Sincronizado</td>
-        </tr>
-    </tbody>
-    </table>
-</div>
-</section>
-
-<section class="flex-1 space-y-6">
-<div class="flex justify-between items-center">
-<h3 class="text-xl font-bold tracking-tight">Metas de Ahorro</h3>
-<button class="size-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-primary hover:text-white transition-all flex items-center justify-center group">
-<span class="material-symbols-outlined">add</span>
-</button>
-</div>
-<div class="grid grid-cols-1 gap-5">
-    <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-100 dark:border-slate-700 group">
-        <div class="flex items-center justify-between mb-4">
-            <div class="flex items-center gap-3">
-                <div class="size-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary"><span class="material-symbols-outlined">emergency</span></div>
-                <div><h4 class="font-bold text-base">Fondo de Emergencia</h4></div>
+        <div class="pt-6 border-t border-slate-800">
+            <div class="bg-slate-800/50 p-4 rounded-2xl flex items-center gap-3 mb-2">
+                <div class="size-10 rounded-full bg-primary flex items-center justify-center font-bold text-xs text-white">QA</div>
+                <div class="flex-1 overflow-hidden">
+                    <p id="user-name-display" class="text-sm font-bold truncate text-white">Cargando...</p>
+                    <p class="text-[10px] text-slate-500 uppercase font-bold">Plan Premium</p>
+                </div>
             </div>
-            <span class="text-primary font-black text-lg">Activo</span>
+            <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors w-full">
+                <span class="material-symbols-outlined">logout</span>
+                <span class="font-semibold text-sm">Cerrar Sesión</span>
+            </a>
         </div>
-        <div class="w-full h-3 bg-slate-100 dark:bg-slate-700 rounded-full mb-4 overflow-hidden"><div class="h-full bg-primary" style="width: 82%"></div></div>
-    </div>
-</div>
-</section>
-</div>
-</main>
+    </aside>
+
+    <main class="flex-1 overflow-y-auto flex flex-col">
+        <header class="sticky top-0 z-10 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md px-10 py-6 flex justify-between items-center border-b border-slate-200 dark:border-slate-800">
+            <div>
+                <h2 class="text-3xl font-black tracking-tight">Análisis Operativo</h2>
+                <p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Control de Ingresos vs Gastos</p>
+            </div>
+            <button class="bg-primary text-white px-6 h-10 rounded-xl font-bold text-sm shadow-lg shadow-primary/20 flex items-center gap-2">
+                <span class="material-symbols-outlined text-sm">download</span> Exportar
+            </button>
+        </header>
+
+        <div class="px-10 pb-10 mt-6 flex gap-8">
+            <section class="flex-[1.2] space-y-6">
+                <div class="bg-white dark:bg-slate-800 rounded-xl p-8 shadow-sm border border-slate-100 dark:border-slate-700">
+                    <h3 class="text-xl font-bold mb-8">Flujo de Caja Real</h3>
+                    <div class="flex items-center gap-12">
+                        <div class="relative size-64 flex items-center justify-center">
+                            <canvas id="graficoDistribucion"></canvas>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">SALDO</span>
+                                <span id="centro-monto" class="text-3xl font-black">$0</span>
+                            </div>
+                        </div>
+                        <div id="lista-categorias-gastos" class="flex-1 space-y-4">
+                            </div>
+                    </div>
+                </div>
+            </section>
+            <section class="flex-1 space-y-6">
+                <h3 class="text-xl font-bold">Metas Activas</h3>
+                <div class="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-100 dark:border-slate-700">
+                    <p class="text-sm font-semibold text-slate-500 mb-2">Progreso General</p>
+                    <div class="w-full h-3 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                        <div class="h-full bg-primary" style="width: 65%"></div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
 </div>
 </body></html>
