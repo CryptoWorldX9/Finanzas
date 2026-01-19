@@ -8,7 +8,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -34,6 +34,7 @@
     let miGrafico = null;
     let todosLosMovimientos = [];
     let filtroActual = 90;
+    let metasActuales = [];
 
     Chart.register(ChartDataLabels);
 
@@ -52,11 +53,9 @@
         });
 
         onValue(ref(db, `usuarios/${uid}/metas`), (snapshot) => {
-            const metas = [];
-            snapshot.forEach(child => { 
-                metas.push({ id: child.key, ...child.val() }); 
-            });
-            renderizarMetas(metas);
+            metasActuales = [];
+            snapshot.forEach(child => { metasActuales.push({ id: child.key, ...child.val() }); });
+            renderizarMetas(metasActuales);
         });
     }
 
@@ -103,16 +102,7 @@
         const contenedorLista = document.getElementById('lista-categorias-gastos');
         contenedorLista.innerHTML = topGastos.map(g => {
             const style = getIconByConcepto(g.concepto);
-            return `
-                <div class="flex items-center justify-between p-2">
-                    <div class="flex items-center gap-3">
-                        <div class="size-9 rounded-lg flex items-center justify-center ${style.col}">
-                            <span class="material-symbols-outlined text-xl">${style.ico}</span>
-                        </div>
-                        <span class="text-sm font-bold truncate w-32 text-slate-700 dark:text-slate-200">${g.concepto}</span>
-                    </div>
-                    <span class="text-sm font-black text-red-500">$${new Intl.NumberFormat('es-CL').format(g.monto)}</span>
-                </div>`;
+            return `<div class="flex items-center justify-between p-2"><div class="flex items-center gap-3"><div class="size-9 rounded-lg flex items-center justify-center ${style.col}"><span class="material-symbols-outlined text-xl">${style.ico}</span></div><span class="text-sm font-bold truncate w-32 text-slate-700 dark:text-slate-200">${g.concepto}</span></div><span class="text-sm font-black text-red-500">$${new Intl.NumberFormat('es-CL').format(g.monto)}</span></div>`;
         }).join('');
 
         const ctx = document.getElementById('graficoDistribucion').getContext('2d');
@@ -147,19 +137,11 @@
             <div class="grid grid-cols-2 gap-4 p-6">
                 <div class="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
                     <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Tasa de Ahorro</p>
-                    <p class="text-xl font-black ${ingresos > 0 && (ingresos-gastos)>0 ? 'text-emerald-500' : 'text-orange-500'}">${ingresos > 0 ? (((ingresos-gastos)/ingresos)*100).toFixed(1) : 0}%</p>
-                </div>
-                <div class="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
-                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Ratio de Gastos</p>
-                    <p class="text-xl font-black ${gastos > ingresos ? 'text-red-500' : 'text-emerald-500'}">${ingresos > 0 ? ((gastos/ingresos)*100).toFixed(1) : 0}%</p>
+                    <p id="tasa-ahorro-val" class="text-xl font-black ${ingresos > 0 && (ingresos-gastos)>0 ? 'text-emerald-500' : 'text-orange-500'}">${ingresos > 0 ? (((ingresos-gastos)/ingresos)*100).toFixed(1) : 0}%</p>
                 </div>
                 <div class="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
                     <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Saldo Neto</p>
-                    <p class="text-xl font-black text-primary">$${new Intl.NumberFormat('es-CL').format(saldo)}</p>
-                </div>
-                <div class="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
-                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Salud</p>
-                    <p class="text-xl font-black ${saldo > 0 ? 'text-emerald-500' : 'text-red-500'}">${saldo > 0 ? 'Óptima' : 'Crítica'}</p>
+                    <p id="saldo-neto-val" class="text-xl font-black text-primary">$${new Intl.NumberFormat('es-CL').format(saldo)}</p>
                 </div>
             </div>`;
     }
@@ -170,78 +152,82 @@
             contenedor.innerHTML = '<p class="text-center text-slate-400 py-10 font-bold text-sm">No hay metas activas</p>';
             return;
         }
-
         contenedor.innerHTML = metas.map(meta => {
             const actual = Number(meta.ahorrado) || 0;
             const objetivo = Number(meta.objetivo) || 1;
             const porcentaje = Math.min(Math.round((actual / objetivo) * 100), 100);
-            
-            let icon = "savings", colorBase = "emerald-500";
-            const n = meta.nombre.toLowerCase();
-            if (n.includes('vacac') || n.includes('viaje')) { icon = 'flight'; colorBase = 'blue-500'; }
-            else if (n.includes('deuda') || n.includes('pago')) { icon = 'payments'; colorBase = 'red-500'; }
-            else if (n.includes('casa')) { icon = 'home'; colorBase = 'orange-500'; }
-
-            return `
-                <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-100 dark:border-slate-700 transition-all hover:shadow-md">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="flex items-center gap-3">
-                            <div class="size-12 bg-slate-100 dark:bg-slate-700 rounded-xl flex items-center justify-center" style="color: ${colorBase === 'emerald-500' ? '#10b981' : colorBase === 'blue-500' ? '#3b82f6' : '#ef4444'}">
-                                <span class="material-symbols-outlined text-2xl" style="color: inherit">${icon}</span>
-                            </div>
-                            <div>
-                                <h4 class="font-bold text-base text-slate-800 dark:text-white">${meta.nombre}</h4>
-                                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Meta: $${new Intl.NumberFormat('es-CL').format(objetivo)}</p>
-                            </div>
-                        </div>
-                        <span class="font-black text-lg" style="color: ${colorBase === 'emerald-500' ? '#10b981' : colorBase === 'blue-500' ? '#3b82f6' : '#ef4444'}">${porcentaje}%</span>
-                    </div>
-                    <div class="w-full h-3 bg-slate-100 dark:bg-slate-700 rounded-full mb-4 overflow-hidden">
-                        <div class="h-full transition-all duration-1000" style="width: ${porcentaje}%; background-color: ${colorBase === 'emerald-500' ? '#10b981' : colorBase === 'blue-500' ? '#3b82f6' : '#ef4444'}"></div>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <p class="text-[9px] text-slate-400 font-bold uppercase">Ahorrado</p>
-                            <p class="text-sm font-black text-slate-800 dark:text-white">$${new Intl.NumberFormat('es-CL').format(actual)}</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-[9px] text-slate-400 font-bold uppercase">Restante</p>
-                            <p class="text-sm font-black text-slate-800 dark:text-white">$${new Intl.NumberFormat('es-CL').format(Math.max(0, objetivo - actual))}</p>
-                        </div>
-                    </div>
-                </div>`;
+            return `<div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-100 dark:border-slate-700"><div class="flex items-center justify-between mb-4"><div class="flex items-center gap-3"><div class="size-12 bg-slate-100 dark:bg-slate-700 rounded-xl flex items-center justify-center text-primary"><span class="material-symbols-outlined text-2xl">track_changes</span></div><div><h4 class="font-bold text-base text-slate-800 dark:text-white">${meta.nombre}</h4><p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Meta: $${new Intl.NumberFormat('es-CL').format(objetivo)}</p></div></div><span class="font-black text-lg text-primary">${porcentaje}%</span></div><div class="w-full h-3 bg-slate-100 dark:bg-slate-700 rounded-full mb-4 overflow-hidden"><div class="h-full bg-primary transition-all duration-1000" style="width: ${porcentaje}%"></div></div><div class="flex justify-between items-center"><div><p class="text-[9px] text-slate-400 font-bold uppercase">Ahorrado</p><p class="text-sm font-black text-slate-800 dark:text-white">$${new Intl.NumberFormat('es-CL').format(actual)}</p></div><div class="text-right"><p class="text-[9px] text-slate-400 font-bold uppercase">Faltante</p><p class="text-sm font-black text-slate-800 dark:text-white">$${new Intl.NumberFormat('es-CL').format(Math.max(0, objetivo - actual))}</p></div></div></div>`;
         }).join('');
     }
 
-    // FUNCIÓN PARA GENERAR EL PDF (AÑADIDA)
-    window.generarReportePDF = async () => {
+    // GENERADOR PDF CORPORATIVO ULTRA-RÁPIDO (SIN IMÁGENES PESADAS)
+    window.generarReportePDF = () => {
         const { jsPDF } = window.jspdf;
-        const btn = document.getElementById('btn-pdf-trigger');
-        const originalContent = btn.innerHTML;
+        const doc = new jsPDF();
+        const userName = document.getElementById('user-name-display').innerText;
+        const saldoNeto = document.getElementById('centro-monto').innerText;
         
-        btn.innerHTML = '<span class="animate-spin material-symbols-outlined text-sm">sync</span> Generando...';
+        // Estilo Corporativo
+        doc.setFillColor(23, 98, 130); // Color Primary
+        doc.rect(0, 0, 210, 40, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(22);
+        doc.setFont("helvetica", "bold");
+        doc.text("QUANTYA FINANCIAL REPORT", 15, 25);
         
-        try {
-            const element = document.getElementById('pdf-capture-area');
-            const canvas = await html2canvas(element, {
-                scale: 2,
-                useCORS: true,
-                backgroundColor: null
-            });
-            
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const imgProps = pdf.getImageProperties(imgData);
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-            
-            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-            pdf.save(`QuantyA_Reporte_${new Date().toLocaleDateString()}.pdf`);
-        } catch (error) {
-            console.error("Error al generar PDF:", error);
-        } finally {
-            btn.innerHTML = originalContent;
-        }
+        doc.setTextColor(100, 100, 100);
+        doc.setFontSize(10);
+        doc.text(`Consultor: ${userName} | Fecha: ${new Date().toLocaleDateString()}`, 15, 50);
+
+        // Resumen Ejecutivo
+        doc.setTextColor(23, 98, 130);
+        doc.setFontSize(14);
+        doc.text("Resumen de Flujo de Caja", 15, 65);
+        
+        doc.autoTable({
+            startY: 70,
+            head: [['Concepto', 'Valor']],
+            body: [
+                ['Saldo Neto Actual', saldoNeto],
+                ['Tasa de Ahorro', document.getElementById('tasa-ahorro-val').innerText],
+                ['Periodo Analizado', filtroActual + ' días']
+            ],
+            theme: 'striped',
+            headStyles: { fillColor: [23, 98, 130] }
+        });
+
+        // Gráfico y Datos (Generados como tabla para mayor claridad corporativa)
+        doc.text("Desglose de Gastos Principales", 15, doc.lastAutoTable.finalY + 15);
+        const listaRows = [];
+        document.querySelectorAll('#lista-categorias-gastos > div').forEach(el => {
+            const nombre = el.querySelector('span:nth-child(2)').innerText;
+            const monto = el.querySelector('span.text-red-500').innerText;
+            listaRows.push([nombre, monto]);
+        });
+
+        doc.autoTable({
+            startY: doc.lastAutoTable.finalY + 20,
+            head: [['Categoría / Concepto', 'Monto de Gasto']],
+            body: listaRows,
+            headStyles: { fillColor: [239, 68, 68] } // Rojo para gastos
+        });
+
+        // Metas Estratégicas
+        doc.text("Estado de Metas Estratégicas", 15, doc.lastAutoTable.finalY + 15);
+        const metasRows = metasActuales.map(m => [
+            m.nombre, 
+            `$${new Intl.NumberFormat('es-CL').format(m.objetivo)}`, 
+            `${Math.min(Math.round((m.ahorrado/m.objetivo)*100), 100)}%`
+        ]);
+
+        doc.autoTable({
+            startY: doc.lastAutoTable.finalY + 20,
+            head: [['Meta', 'Objetivo Total', 'Progreso']],
+            body: metasRows,
+            headStyles: { fillColor: [16, 185, 129] } // Verde para metas
+        });
+
+        doc.save(`QuantyA_Analisis_${userName}.pdf`);
     };
 </script>
 
@@ -259,25 +245,17 @@
 </head>
 <body class="bg-background-light dark:bg-background-dark font-display text-[#121617] dark:text-white transition-colors duration-200">
 <div class="flex h-screen overflow-hidden">
-    
     <aside class="w-72 bg-[#0f172a] text-white flex flex-col shrink-0 border-r border-slate-800 p-6">
         <div class="space-y-8 flex-1">
             <div class="flex items-center gap-3 px-2">
-                <div class="size-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
-                    <span class="material-symbols-outlined text-2xl">account_balance_wallet</span>
-                </div>
-                <div>
-                    <h1 class="text-xl font-black tracking-tight leading-none">QuantyA</h1>
-                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Gestión Financiera</p>
-                </div>
+                <div class="size-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20"><span class="material-symbols-outlined text-2xl">account_balance_wallet</span></div>
+                <div><h1 class="text-xl font-black tracking-tight leading-none">QuantyA</h1><p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Gestión Financiera</p></div>
             </div>
             <nav class="space-y-1">
                 <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">dashboard</span> <span class="font-semibold text-sm">Panel</span></a>
                 <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">swap_horiz</span> <span class="font-semibold text-sm">Movimientos</span></a>
                 <a href="analisis.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 transition-all"><span class="material-symbols-outlined font-fill">analytics</span> <span class="font-bold text-sm">Análisis</span></a>
                 <a href="metas.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">track_changes</span> <span class="font-semibold text-sm">Metas</span></a>
-                <a href="reportes.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">description</span> <span class="font-semibold text-sm">Reportes</span></a>
-                <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">settings</span> <span class="font-semibold text-sm">Configuración</span></a>
             </nav>
         </div>
         <div class="pt-6 border-t border-slate-800">
@@ -291,16 +269,13 @@
 
     <main class="flex-1 overflow-y-auto flex flex-col">
         <header class="sticky top-0 z-10 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md px-10 py-6 flex justify-between items-center">
-            <div>
-                <h2 class="text-3xl font-black tracking-tight">Análisis Operativo</h2>
-                <p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Panel Estratégico QuantyA</p>
-            </div>
-            <button id="btn-pdf-trigger" onclick="generarReportePDF()" class="bg-primary text-white px-6 h-10 rounded-xl font-bold text-sm shadow-lg shadow-primary/20 flex items-center gap-2 hover:scale-105 transition-all">
-                <span class="material-symbols-outlined text-sm">download</span> Generar PDF
+            <div><h2 class="text-3xl font-black tracking-tight">Análisis Operativo</h2><p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Panel Estratégico QuantyA</p></div>
+            <button onclick="generarReportePDF()" class="bg-primary text-white px-6 h-10 rounded-xl font-bold text-sm shadow-lg shadow-primary/20 flex items-center gap-2 hover:scale-105 transition-all">
+                <span class="material-symbols-outlined text-sm">download</span> Generar Informe Corporativo
             </button>
         </header>
 
-        <div id="pdf-capture-area" class="px-10 pb-10 flex gap-8 mt-6">
+        <div class="px-10 pb-10 flex gap-8 mt-6">
             <section class="flex-[1.2] space-y-6">
                 <div class="bg-white dark:bg-slate-800 rounded-xl p-8 shadow-sm border border-slate-100 dark:border-slate-700">
                     <div class="flex justify-between items-center mb-8">
@@ -322,22 +297,13 @@
                         <div id="lista-categorias-gastos" class="flex-1 space-y-2"></div>
                     </div>
                 </div>
-
                 <div class="bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-sm border border-slate-100 dark:border-slate-700">
-                    <div class="p-6 border-b border-slate-50 dark:border-slate-700 flex justify-between items-center">
-                        <h3 class="text-lg font-bold tracking-tight">Resumen de Rendimiento</h3>
-                    </div>
                     <div id="resumen-rendimiento-dinamico"></div>
                 </div>
             </section>
 
             <section class="flex-1 space-y-6">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-xl font-bold tracking-tight">Metas Activas</h3>
-                    <a href="metas.html" class="size-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-primary hover:text-white transition-all flex items-center justify-center">
-                        <span class="material-symbols-outlined">add</span>
-                    </a>
-                </div>
+                <div class="flex justify-between items-center"><h3 class="text-xl font-bold tracking-tight">Metas Activas</h3></div>
                 <div id="contenedor-metas-dinamicas" class="grid grid-cols-1 gap-5"></div>
             </section>
         </div>
