@@ -2,16 +2,16 @@
 <html class="light" lang="es"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>QuantyA - Panel de Control Profesional</title>
+<title>Análisis con Navegación Unificada - QuantyA</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getDatabase, ref, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCO6WXu9iZsyEUmNNxrE4oWToLYY8wl-y4",
@@ -26,87 +26,65 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getDatabase(app);
-    let currentUser = null;
-    let editNodeId = null; 
-    let miGrafico = null; // Instancia del gráfico
-
-    const consejos = [
-        "Revisa tus suscripciones activas este mes.", "Ahorra el 10% de cada ingreso extra.",
-        "Compara precios antes de compras mayores.", "Mantén un fondo de emergencia.",
-        "Registra hasta el gasto más pequeño.", "El interés compuesto es tu mejor amigo."
-    ];
-
-    function iniciarCarruselSugerencias() {
-        const textEl = document.getElementById('sugerencia-texto');
-        let i = 0;
-        setInterval(() => {
-            textEl.style.opacity = 0;
-            setTimeout(() => {
-                i = (i + 1) % consejos.length;
-                textEl.innerText = consejos[i];
-                textEl.style.opacity = 1;
-            }, 500);
-        }, 10000);
-    }
+    let miGrafico = null;
 
     onAuthStateChanged(auth, (user) => {
         if (user) {
-            currentUser = user;
             document.getElementById('user-name-display').innerText = user.displayName || "Usuario";
-            iniciarSincronizacionRealtime();
-            iniciarCarruselSugerencias();
-        } else { window.location.href = "index.html"; }
+            iniciarSincronizacion(user.uid);
+        } else {
+            window.location.href = "index.html";
+        }
     });
 
-    function iniciarSincronizacionRealtime() {
-        onValue(ref(db, `usuarios/${currentUser.uid}/listas`), (snapshot) => {
-            if (snapshot.exists()) llenarTodosLosSelects(snapshot.val());
-        });
-
-        onValue(ref(db, `usuarios/${currentUser.uid}/movimientos`), (snapshot) => {
-            const dataFull = [];
-            snapshot.forEach((child) => { dataFull.push({ id: child.key, ...child.val() }); });
-            dataFull.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-            renderizarTodo(dataFull);
-            actualizarGraficoAnalisis(dataFull);
+    function iniciarSincronizacion(uid) {
+        onValue(ref(db, `usuarios/${uid}/movimientos`), (snapshot) => {
+            const movimientos = [];
+            snapshot.forEach(child => { movimientos.push(child.val()); });
+            actualizarAnalisis(movimientos);
         });
     }
 
-    function actualizarGraficoAnalisis(datos) {
-        let ingresos = 0, gastos = 0;
+    function actualizarAnalisis(datos) {
+        let ingresos = 0;
+        let gastos = 0;
         let listaGastos = [];
 
         datos.forEach(m => {
             const esIngreso = m.tipo.toLowerCase().includes('ingreso') || m.tipo.toLowerCase().includes('venta');
-            if(esIngreso) ingresos += m.monto;
-            else {
+            if (esIngreso) {
+                ingresos += m.monto;
+            } else {
                 gastos += m.monto;
                 listaGastos.push(m);
             }
         });
 
         const saldo = ingresos - gastos;
-        const totalFlujo = ingresos + gastos;
-        const pIngresos = totalFlujo > 0 ? (ingresos / totalFlujo) * 100 : 50;
-        const pGastos = totalFlujo > 0 ? (gastos / totalFlujo) * 100 : 50;
+        
+        // 1. Actualizar Centro del Gráfico (Saldo)
+        const montoCentro = document.getElementById('centro-monto');
+        montoCentro.innerText = `$${new Intl.NumberFormat('es-CL').format(Math.abs(saldo))}`;
+        montoCentro.className = `text-3xl font-black ${saldo >= 0 ? 'text-emerald-500' : 'text-red-500'}`;
 
-        // Actualizar UI del centro del gráfico
-        const displaySaldoElem = document.getElementById('chart-center-monto');
-        displaySaldoElem.innerText = `$${new Intl.NumberFormat('es-CL').format(saldo)}`;
-        displaySaldoElem.className = `text-2xl font-black ${saldo >= 0 ? 'text-emerald-500' : 'text-red-500'}`;
+        // 2. Control Exhaustivo: Gastos más altos (Top 4)
+        const topGastos = listaGastos.sort((a, b) => b.monto - a.monto).slice(0, 4);
+        const contenedorLista = document.getElementById('lista-categorias-gastos');
+        contenedorLista.innerHTML = topGastos.map((g, index) => {
+            const colors = ['#176282', '#4db3da', '#94a3b8', '#cbd5e1'];
+            return `
+                <div class="flex items-center justify-between group">
+                    <div class="flex items-center gap-3">
+                        <span class="size-3 rounded-full" style="background-color: ${colors[index]}"></span>
+                        <span class="text-sm font-semibold truncate w-32">${g.concepto}</span>
+                    </div>
+                    <span class="text-sm font-bold text-red-500">$${new Intl.NumberFormat('es-CL').format(g.monto)}</span>
+                </div>
+            `;
+        }).join('');
 
-        // Top 3 Gastos (Control Exhaustivo)
-        const topGastos = listaGastos.sort((a,b) => b.monto - a.monto).slice(0, 3);
-        const containerTop = document.getElementById('top-gastos-list');
-        containerTop.innerHTML = topGastos.map(g => `
-            <div class="flex justify-between items-center text-[11px] border-b border-slate-100 dark:border-slate-800 py-2">
-                <span class="font-medium truncate w-24">${g.concepto}</span>
-                <span class="font-bold text-red-500">$${new Intl.NumberFormat('es-CL').format(g.monto)}</span>
-            </div>
-        `).join('') || '<p class="text-[10px] text-slate-400">Sin gastos registrados</p>';
-
-        // Renderizado del Gráfico
-        const ctx = document.getElementById('chartAnalisis').getContext('2d');
+        // 3. Renderizar Gráfico (Verde Ingresos vs Rojo Gastos)
+        const ctx = document.getElementById('graficoDistribucion').getContext('2d');
         if (miGrafico) miGrafico.destroy();
         
         miGrafico = new Chart(ctx, {
@@ -114,10 +92,10 @@
             data: {
                 labels: ['Ingresos', 'Gastos'],
                 datasets: [{
-                    data: [pIngresos, pGastos],
+                    data: [ingresos, gastos],
                     backgroundColor: ['#10b981', '#ef4444'],
-                    borderWidth: 0,
-                    hoverOffset: 4
+                    hoverOffset: 4,
+                    borderWidth: 0
                 }]
             },
             options: {
@@ -128,164 +106,148 @@
             }
         });
     }
-
-    // Funciones de utilidad (Selects, Registro, Tabla se mantienen igual para no romper diseño)
-    function llenarTodosLosSelects(listas) {
-        const selects = { 'op-tipo': listas.tipo, 'op-categoria': listas.categoria, 'op-subcategoria': listas.sub_categoria, 'op-pago': listas.pago, 'op-recurrente': listas.recurrente };
-        Object.entries(selects).forEach(([id, data]) => {
-            const select = document.getElementById(id);
-            if (!select || !data) return;
-            select.innerHTML = Object.keys(data).map(k => `<option value="${data[k].nombre}">${data[k].nombre}</option>`).join('');
-        });
-    }
-
-    function renderizarTodo(datos) {
-        const container = document.getElementById('recent-moves-body');
-        container.innerHTML = datos.slice(0, 5).map(data => {
-            const isIngreso = data.tipo.toLowerCase().includes('ingreso') || data.tipo.toLowerCase().includes('venta');
-            return `
-                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                    <td class="px-6 py-4 text-sm text-slate-500">${data.fecha}</td>
-                    <td class="px-6 py-4 text-sm font-semibold">${data.concepto}</td>
-                    <td class="px-6 py-4 text-sm"><span class="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-[10px] font-bold uppercase">${data.categoria}</span></td>
-                    <td class="px-6 py-4 text-sm font-bold text-right ${isIngreso ? 'text-emerald-500' : 'text-red-500'}">
-                        ${isIngreso ? '+' : '-'} $${new Intl.NumberFormat('es-CL').format(data.monto)}
-                    </td>
-                    <td class="px-6 py-4 text-right">
-                        <button onclick="eliminarMovimiento('${data.id}')" class="text-slate-400 hover:text-red-500"><span class="material-symbols-outlined text-lg">delete</span></button>
-                    </td>
-                </tr>`;
-        }).join('');
-
-        let tI = 0, tG = 0;
-        datos.forEach(m => {
-            if(m.tipo.toLowerCase().includes('ingreso') || m.tipo.toLowerCase().includes('venta')) tI += m.monto;
-            else tG += m.monto;
-        });
-        document.getElementById('display-ingresos').innerText = `$ ${new Intl.NumberFormat('es-CL').format(tI)}`;
-        document.getElementById('display-gastos').innerText = `$ ${new Intl.NumberFormat('es-CL').format(tG)}`;
-        document.getElementById('display-saldo').innerText = `$ ${new Intl.NumberFormat('es-CL').format(tI - tG)}`;
-    }
-
-    window.formatMoneyInput = (input) => {
-        let val = input.value.replace(/\D/g, "");
-        if (val) input.value = new Intl.NumberFormat('es-CL').format(val);
-    };
-
-    window.registrarOperacion = async (e) => {
-        e.preventDefault();
-        const montoRaw = document.getElementById('op-monto').value.replace(/\./g, "");
-        const data = {
-            concepto: document.getElementById('op-concepto').value, tipo: document.getElementById('op-tipo').value,
-            categoria: document.getElementById('op-categoria').value, subcategoria: document.getElementById('op-subcategoria').value,
-            pago: document.getElementById('op-pago').value, recurrente: document.getElementById('op-recurrente').value,
-            fecha: document.getElementById('op-fecha').value, monto: parseInt(montoRaw), timestamp: Date.now()
-        };
-        await push(ref(db, `usuarios/${currentUser.uid}/movimientos`), data);
-        e.target.reset();
-    };
-
-    window.eliminarMovimiento = async (id) => { if(confirm("¿Eliminar?")) await remove(ref(db, `usuarios/${currentUser.uid}/movimientos/${id}`)); };
 </script>
 
 <script id="tailwind-config">
-    tailwind.config = {
-        darkMode: "class",
-        theme: { extend: { colors: { "primary": "#176282", "background-light": "#f8f9fa" }, fontFamily: { "display": ["Inter", "sans-serif"] } } }
-    }
-</script>
-<style> #sugerencia-texto { transition: opacity 0.5s ease-in-out; } </style>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#176282",
+                        "background-light": "#f9fafb",
+                        "background-dark": "#181d25",
+                    },
+                    fontFamily: { "display": ["Inter", "sans-serif"] },
+                    borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #dce2e5; border-radius: 10px; }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #374151; }
+    </style>
 </head>
-<body class="bg-background-light dark:bg-[#111827] font-display text-slate-900 dark:text-slate-100">
-<div class="flex min-h-screen">
-    <aside class="w-64 bg-[#0f172a] text-white flex flex-col fixed h-full z-50 p-6">
-        <div class="space-y-8 flex-1">
-            <div class="flex items-center gap-3 px-2">
-                <div class="size-10 bg-primary rounded-lg flex items-center justify-center text-white"><span class="material-symbols-outlined">account_balance_wallet</span></div>
-                <div><h1 class="text-xl font-bold tracking-tight">QuantyA</h1></div>
+<body class="bg-background-light dark:bg-background-dark font-display text-[#121617] dark:text-white transition-colors duration-200">
+<div class="flex h-screen overflow-hidden">
+<aside class="w-72 bg-[#0f172a] text-white flex flex-col shrink-0 border-r border-slate-800 p-6">
+    <div class="space-y-8">
+        <div class="flex items-center gap-3 px-2">
+            <div class="size-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
+                <span class="material-symbols-outlined text-2xl">account_balance_wallet</span>
             </div>
-            <nav class="space-y-1">
-                <a href="#" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl"><span class="material-symbols-outlined">dashboard</span><span class="text-sm font-medium">Panel</span></a>
+            <div>
+                <h1 class="text-xl font-black tracking-tight leading-none">QuantyA</h1>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Gestión Financiera</p>
+            </div>
+        </div>
+        <nav class="space-y-1">
+            <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
+                <span class="material-symbols-outlined">dashboard</span>
+                <span class="font-semibold text-sm">Panel</span>
+            </a>
+            <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
+                <span class="material-symbols-outlined">swap_horiz</span>
+                <span class="font-semibold text-sm">Movimientos</span>
+            </a>
+            <a href="analisis.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 transition-all">
+                <span class="material-symbols-outlined font-fill">analytics</span>
+                <span class="font-bold text-sm">Análisis</span>
+            </a>
             </nav>
-        </div>
-    </aside>
-
-    <main class="ml-64 flex-1 flex flex-col">
-        <header class="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-8 flex items-center justify-between sticky top-0 z-40">
-            <div class="text-sm font-bold text-primary">DASHBOARD OPERATIVO</div>
-            <div id="user-name-display" class="text-sm font-semibold">Cargando...</div>
-        </header>
-
-        <div class="p-8 space-y-6 max-w-[1440px] mx-auto w-full">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-                <div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <p class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Ingresos</p>
-                    <p id="display-ingresos" class="text-2xl font-bold text-emerald-500">$ 0</p>
-                </div>
-                <div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <p class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Gastos</p>
-                    <p id="display-gastos" class="text-2xl font-bold text-red-500">$ 0</p>
-                </div>
-                <div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <p class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Saldo Neto</p>
-                    <p id="display-saldo" class="text-2xl font-bold text-primary">$ 0</p>
-                </div>
-            </div>
-
-            <div class="bg-primary/5 border border-primary/20 p-4 rounded-xl flex items-center gap-4">
-                <div class="size-10 bg-primary text-white rounded-lg flex items-center justify-center shrink-0"><span class="material-symbols-outlined">psychology</span></div>
-                <div><p id="sugerencia-texto" class="text-sm font-semibold text-primary">Cargando consejos...</p></div>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div class="lg:col-span-1 space-y-6">
-                    <div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 shadow-sm">
-                        <h2 class="text-lg font-bold mb-4">Nueva Operación</h2>
-                        <form id="form-operacion" onsubmit="registrarOperacion(event)" class="space-y-4">
-                            <input id="op-concepto" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm" placeholder="Concepto" required/>
-                            <div class="grid grid-cols-2 gap-4">
-                                <select id="op-tipo" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm font-bold"></select>
-                                <input id="op-monto" oninput="formatMoneyInput(this)" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm font-bold" placeholder="Monto" required/>
-                            </div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <select id="op-categoria" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm"></select>
-                                <input id="op-fecha" type="date" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm" required/>
-                            </div>
-                            <select id="op-subcategoria" class="hidden"></select><select id="op-pago" class="hidden"></select><select id="op-recurrente" class="hidden"></select>
-                            <button type="submit" class="w-full bg-primary text-white font-bold py-3 rounded-lg text-[10px] uppercase tracking-widest">Registrar</button>
-                        </form>
-                    </div>
-
-                    <div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 shadow-sm">
-                        <h2 class="text-sm font-black uppercase tracking-widest text-slate-400 mb-4">Análisis de Flujo</h2>
-                        <div class="relative h-48">
-                            <canvas id="chartAnalisis"></canvas>
-                            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                <span class="text-[10px] font-black uppercase text-slate-400 tracking-tighter">SALDO</span>
-                                <span id="chart-center-monto" class="text-2xl font-black text-emerald-500">$0</span>
-                            </div>
-                        </div>
-                        <div class="mt-4 space-y-2">
-                            <p class="text-[10px] font-bold text-slate-400 uppercase">Gastos más altos:</p>
-                            <div id="top-gastos-list"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="lg:col-span-2">
-                    <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                        <table class="w-full text-left text-sm">
-                            <thead class="bg-slate-50 dark:bg-slate-800/50">
-                                <tr class="text-[10px] font-black text-slate-500 uppercase">
-                                    <th class="px-6 py-4">Fecha</th><th class="px-6 py-4">Descripción</th><th class="px-6 py-4">Categoría</th><th class="px-6 py-4 text-right">Monto</th><th class="px-6 py-4 text-right">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="recent-moves-body" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
-                        </table>
-                    </div>
-                </div>
+    </div>
+    <div class="mt-auto pt-6 border-t border-slate-800">
+        <div class="bg-slate-800/50 p-4 rounded-2xl flex items-center gap-3 mb-2">
+            <div class="size-10 rounded-full bg-primary flex items-center justify-center font-bold text-xs">QA</div>
+            <div class="flex-1 overflow-hidden">
+                <p id="user-name-display" class="text-sm font-bold truncate text-white">Cargando...</p>
+                <p class="text-[10px] text-slate-500 uppercase font-bold">Plan Premium</p>
             </div>
         </div>
-    </main>
+    </div>
+</aside>
+
+<main class="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
+<header class="sticky top-0 z-10 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md px-10 py-6 flex justify-between items-center border-b border-transparent">
+<div>
+<h2 class="text-3xl font-black tracking-tight">Análisis Operativo</h2>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Control exhaustivo de ingresos y gastos</p>
+</div>
+<div class="flex items-center gap-4">
+    <button class="bg-primary text-white px-6 h-10 rounded-xl font-bold text-sm hover:opacity-90 transition-all shadow-lg shadow-primary/20 flex items-center gap-2">
+        <span class="material-symbols-outlined text-sm">download</span> Exportar Informe
+    </button>
+</div>
+</header>
+
+<div class="px-10 pb-10 flex gap-8">
+<section class="flex-[1.2] space-y-6 min-w-0">
+<div class="bg-white dark:bg-slate-800 rounded-xl p-8 shadow-sm border border-slate-100 dark:border-slate-700">
+<div class="flex justify-between items-end mb-8">
+<h3 class="text-xl font-bold tracking-tight">Distribución: Ingresos vs Gastos</h3>
+<div class="flex gap-4 border-b border-slate-100 dark:border-slate-700 text-[10px] font-black uppercase tracking-widest text-slate-400">
+    <span class="pb-2 text-primary border-b-2 border-primary">Filtro Real</span>
+</div>
+</div>
+<div class="flex items-center gap-12">
+<div class="relative size-64 flex items-center justify-center shrink-0">
+    <canvas id="graficoDistribucion"></canvas>
+    <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">SALDO</span>
+        <span id="centro-monto" class="text-3xl font-black text-slate-800 dark:text-white">$0</span>
+    </div>
+</div>
+<div id="lista-categorias-gastos" class="flex-1 space-y-4">
+    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Cargando gastos más altos...</p>
+</div>
+</div>
+</div>
+
+<div class="bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-sm border border-slate-100 dark:border-slate-700">
+    <div class="p-6 border-b border-slate-50 dark:border-slate-700">
+    <h3 class="text-lg font-bold tracking-tight">Resumen de Rendimiento</h3>
+    </div>
+    <table class="w-full text-left text-sm">
+    <thead class="bg-slate-50 dark:bg-slate-800/50">
+        <tr>
+            <th class="px-6 py-4 text-xs font-black uppercase text-slate-400 tracking-widest">Concepto</th>
+            <th class="px-6 py-4 text-xs font-black uppercase text-slate-400 tracking-widest text-right">Monto</th>
+        </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-50 dark:divide-slate-700">
+        <tr>
+            <td class="px-6 py-4 font-semibold text-sm">Flujo de Caja Mensual</td>
+            <td class="px-6 py-4 text-right font-black">Sincronizado</td>
+        </tr>
+    </tbody>
+    </table>
+</div>
+</section>
+
+<section class="flex-1 space-y-6">
+<div class="flex justify-between items-center">
+<h3 class="text-xl font-bold tracking-tight">Metas de Ahorro</h3>
+<button class="size-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-primary hover:text-white transition-all flex items-center justify-center group">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+<div class="grid grid-cols-1 gap-5">
+    <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-100 dark:border-slate-700 group">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+                <div class="size-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary"><span class="material-symbols-outlined">emergency</span></div>
+                <div><h4 class="font-bold text-base">Fondo de Emergencia</h4></div>
+            </div>
+            <span class="text-primary font-black text-lg">Activo</span>
+        </div>
+        <div class="w-full h-3 bg-slate-100 dark:bg-slate-700 rounded-full mb-4 overflow-hidden"><div class="h-full bg-primary" style="width: 82%"></div></div>
+    </div>
+</div>
+</section>
+</div>
+</main>
 </div>
 </body></html>
