@@ -27,6 +27,7 @@
     const db = getDatabase(app);
     let currentUser = null;
     let editNodeId = null; 
+    let cacheListas = {}; // Caché para evitar lentitud
 
     const consejos = [
         "Registra cada gasto, por pequeño que sea, para identificar fugas de dinero.",
@@ -77,7 +78,7 @@
             currentUser = user;
             document.getElementById('user-name-display').innerText = user.displayName || "Usuario Corporativo";
             cargarMovimientosRecientes();
-            sincronizarListasDesplegables(); // Nueva función de sincronización
+            sincronizarListasDesplegables();
             setInterval(rotarConsejos, 10000);
             rotarConsejos();
         } else {
@@ -85,17 +86,27 @@
         }
     });
 
-    // Función para sincronizar los selectores con las Listas Maestras
+    // SISTEMA DE SINCRONIZACIÓN FLUIDA (Optimizado)
     function sincronizarListasDesplegables() {
         const listasRef = ref(db, `usuarios/${currentUser.uid}/listas`);
         onValue(listasRef, (snapshot) => {
             if (snapshot.exists()) {
                 const listas = snapshot.val();
-                llenarSelect('op-tipo', listas.tipo);
-                llenarSelect('op-categoria', listas.categoria);
-                llenarSelect('op-subcategoria', listas.sub_categoria);
-                llenarSelect('op-pago', listas.pago);
-                llenarSelect('op-recurrente', listas.recurrente);
+                
+                // Solo actualiza el DOM si la data realmente cambió (evita lag)
+                const listasStr = JSON.stringify(listas);
+                if (listasStr !== JSON.stringify(cacheListas)) {
+                    cacheListas = JSON.parse(listasStr);
+                    
+                    // Ejecuta en el próximo frame disponible para máxima fluidez
+                    requestAnimationFrame(() => {
+                        llenarSelect('op-tipo', listas.tipo);
+                        llenarSelect('op-categoria', listas.categoria);
+                        llenarSelect('op-subcategoria', listas.sub_categoria);
+                        llenarSelect('op-pago', listas.pago);
+                        llenarSelect('op-recurrente', listas.recurrente);
+                    });
+                }
             }
         });
     }
@@ -104,19 +115,24 @@
         const select = document.getElementById(elementId);
         if (!select || !datos) return;
         
-        // Guardamos el valor seleccionado actualmente para no perderlo al actualizar
         const currentVal = select.value;
-        select.innerHTML = '';
+        const fragment = document.createDocumentFragment();
         
         Object.keys(datos).forEach(key => {
             const option = document.createElement('option');
             option.value = datos[key].nombre;
             option.textContent = datos[key].nombre;
-            select.appendChild(option);
+            fragment.appendChild(option);
         });
 
-        // Restaurar valor si aún existe en las nuevas opciones
-        if (currentVal) select.value = currentVal;
+        select.innerHTML = '';
+        select.appendChild(fragment);
+
+        // Restaurar selección previa para que no salte el cursor
+        if (currentVal) {
+            const existe = Array.from(select.options).some(opt => opt.value === currentVal);
+            if (existe) select.value = currentVal;
+        }
     }
 
     window.formatMoneyInput = (input) => {
@@ -192,9 +208,8 @@
             snapshot.forEach((child) => {
                 const data = child.val();
                 const id = child.key;
-                const isIngreso = data.tipo.toLowerCase() === 'ingreso' || data.tipo === 'Entrada' || data.tipo === 'Venta'; 
-                // Nota: La lógica de color depende de cómo nombres tus 'Tipos' en la lista maestra. 
-                // Si usas 'Ingreso' y 'Egreso' como nombres, funcionará bien.
+                const tipoLower = data.tipo.toLowerCase();
+                const isIngreso = tipoLower.includes('ingreso') || tipoLower.includes('venta') || tipoLower.includes('entrada');
                 
                 if(isIngreso) tIngresos += data.monto; else tGastos += data.monto;
 
@@ -240,6 +255,7 @@
 <style type="text/tailwindcss">
     body { font-family: 'Inter', sans-serif; }
     #texto-asistente { transition: opacity 0.5s ease; }
+    select { cursor: pointer; }
 </style>
 </head>
 <body class="bg-background-light dark:bg-[#111827] font-display text-slate-900 dark:text-slate-100">
@@ -336,7 +352,9 @@
             <h3 class="text-lg font-bold text-primary">Asistente Financiero</h3>
             <p id="texto-asistente" class="text-slate-600 dark:text-slate-400 font-medium italic">Cargando consejo...</p>
         </div>
-        <div class="flex gap-3 shrink-0"><button class="px-6 py-2.5 bg-primary text-white font-bold rounded-lg hover:bg-primary/90 transition-all">Ver Consejos</button></div>
+        <div class="flex gap-3 shrink-0">
+            <button class="px-6 py-2.5 bg-primary text-white font-bold rounded-lg hover:bg-primary/90 transition-all">Ver Consejos</button>
+        </div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -355,8 +373,7 @@
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Tipo</label>
-                            <select id="op-tipo" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold">
-                                </select>
+                            <select id="op-tipo" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold"></select>
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Monto (CLP)</label>
@@ -366,25 +383,21 @@
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Categoría</label>
-                            <select id="op-categoria" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm">
-                                </select>
+                            <select id="op-categoria" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm"></select>
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Sub Categoria</label>
-                            <select id="op-subcategoria" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm">
-                                </select>
+                            <select id="op-subcategoria" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm"></select>
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Pago</label>
-                            <select id="op-pago" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm">
-                                </select>
+                            <select id="op-pago" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm"></select>
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Recurrente</label>
-                            <select id="op-recurrente" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm">
-                                </select>
+                            <select id="op-recurrente" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm"></select>
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-3 pt-2">
