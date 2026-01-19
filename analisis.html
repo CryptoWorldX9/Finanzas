@@ -51,22 +51,70 @@
         });
     }
 
+    function renderizarMetas(metas) {
+        const contenedor = document.getElementById('contenedor-metas-dinamicas');
+        if (metas.length === 0) {
+            contenedor.innerHTML = '<p class="text-center text-slate-400 py-10 text-sm font-bold">No hay metas activas</p>';
+            return;
+        }
+
+        contenedor.innerHTML = metas.map(meta => {
+            // CORRECCIÓN DE NaN: Forzamos a que sean números
+            const actual = Number(meta.monto_actual) || 0;
+            const objetivo = Number(meta.monto_objetivo) || 0;
+            const porcentaje = objetivo > 0 ? Math.min(Math.round((actual / objetivo) * 100), 100) : 0;
+            
+            // Lógica de iconos según nombre
+            let icon = "savings";
+            let colorBase = "primary";
+            if (meta.nombre.toLowerCase().includes("emergencia")) { icon = "emergency"; colorBase = "red-500"; }
+            else if (meta.nombre.toLowerCase().includes("viaje") || meta.nombre.toLowerCase().includes("vacaciones")) { icon = "flight"; colorBase = "orange-500"; }
+
+            return `
+                <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-100 dark:border-slate-700 transition-all">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="size-12 bg-${colorBase}/10 rounded-xl flex items-center justify-center text-${colorBase}">
+                                <span class="material-symbols-outlined">${icon}</span>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-base text-slate-800 dark:text-white">${meta.nombre}</h4>
+                                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Meta: $${new Intl.NumberFormat('es-CL').format(objetivo)}</p>
+                            </div>
+                        </div>
+                        <span class="text-${colorBase} font-black text-lg">${porcentaje}%</span>
+                    </div>
+                    <div class="w-full h-3 bg-slate-100 dark:bg-slate-700 rounded-full mb-4 overflow-hidden">
+                        <div class="h-full bg-${colorBase} transition-all duration-1000" style="width: ${porcentaje}%"></div>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Ahorrado</p>
+                            <p class="text-sm font-black text-slate-700 dark:text-white">$${new Intl.NumberFormat('es-CL').format(actual)}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Restante</p>
+                            <p class="text-sm font-black text-slate-700 dark:text-white">$${new Intl.NumberFormat('es-CL').format(Math.max(0, objetivo - actual))}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
     function actualizarAnalisis(datos) {
         let ingresos = 0, gastos = 0, listaGastos = [];
         datos.forEach(m => {
             const esIngreso = m.tipo.toLowerCase().includes('ingreso') || m.tipo.toLowerCase().includes('venta');
-            if (esIngreso) ingresos += m.monto;
-            else { gastos += m.monto; listaGastos.push(m); }
+            if (esIngreso) ingresos += Number(m.monto);
+            else { gastos += Number(m.monto); listaGastos.push(m); }
         });
 
         const saldo = ingresos - gastos;
-        
-        // 1. Centro del Gráfico
         const montoCentro = document.getElementById('centro-monto');
         montoCentro.innerText = `$${new Intl.NumberFormat('es-CL').format(Math.abs(saldo))}`;
         montoCentro.className = `text-3xl font-black ${saldo >= 0 ? 'text-emerald-500' : 'text-red-500'}`;
 
-        // 2. Gastos más altos
         const topGastos = listaGastos.sort((a, b) => b.monto - a.monto).slice(0, 4);
         const contenedorLista = document.getElementById('lista-categorias-gastos');
         contenedorLista.innerHTML = topGastos.map((g, index) => {
@@ -74,7 +122,6 @@
             return `<div class="flex items-center justify-between"><div class="flex items-center gap-3"><span class="size-3 rounded-full" style="background-color: ${colors[index]}"></span><span class="text-sm font-semibold truncate w-32">${g.concepto}</span></div><span class="text-sm font-bold text-red-500">$${new Intl.NumberFormat('es-CL').format(g.monto)}</span></div>`;
         }).join('') || '<p class="text-xs text-slate-400">Sin gastos este mes</p>';
 
-        // 3. Gráfico Chart.js
         const ctx = document.getElementById('graficoDistribucion').getContext('2d');
         if (miGrafico) miGrafico.destroy();
         miGrafico = new Chart(ctx, {
@@ -83,7 +130,7 @@
             options: { cutout: '80%', plugins: { legend: { display: false } }, responsive: true, maintainAspectRatio: false }
         });
 
-        // 4. NUEVO: Resumen de Rendimiento (KPIs)
+        // KPIs de Rendimiento
         const tasaAhorro = ingresos > 0 ? ((ingresos - gastos) / ingresos) * 100 : 0;
         const ratioGastos = ingresos > 0 ? (gastos / ingresos) * 100 : 0;
         
@@ -92,56 +139,20 @@
                 <div class="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
                     <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Tasa de Ahorro</p>
                     <p class="text-xl font-black ${tasaAhorro > 15 ? 'text-emerald-500' : 'text-orange-500'}">${tasaAhorro.toFixed(1)}%</p>
-                    <p class="text-[9px] text-slate-500 font-medium">ingresos no gastados</p>
                 </div>
                 <div class="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
                     <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Ratio de Gastos</p>
                     <p class="text-xl font-black ${ratioGastos > 85 ? 'text-red-500' : 'text-emerald-500'}">${ratioGastos.toFixed(1)}%</p>
-                    <p class="text-[9px] text-slate-500 font-medium">consumo de ingresos</p>
                 </div>
                 <div class="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
                     <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Saldo Neto</p>
                     <p class="text-xl font-black text-primary">$${new Intl.NumberFormat('es-CL').format(saldo)}</p>
-                    <p class="text-[9px] text-slate-500 font-medium">balance mensual</p>
                 </div>
                 <div class="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
-                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Salud Financiera</p>
-                    <p class="text-xl font-black ${saldo > 0 ? 'text-emerald-500' : 'text-red-500'}">${saldo > 0 ? 'Óptima' : 'En Crítico'}</p>
-                    <p class="text-[9px] text-slate-500 font-medium">estado actual</p>
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Salud</p>
+                    <p class="text-xl font-black ${saldo > 0 ? 'text-emerald-500' : 'text-red-500'}">${saldo > 0 ? 'Óptima' : 'Crítica'}</p>
                 </div>
-            </div>
-        `;
-    }
-
-    function renderizarMetas(metas) {
-        const contenedor = document.getElementById('contenedor-metas-dinamicas');
-        if (metas.length === 0) {
-            contenedor.innerHTML = '<p class="text-center text-slate-400 py-10 text-sm font-bold">No hay metas activas</p>';
-            return;
-        }
-        contenedor.innerHTML = metas.map(meta => {
-            const porcentaje = Math.min(Math.round((meta.monto_actual / meta.monto_objetivo) * 100), 100);
-            let icon = "savings", barColor = "bg-primary";
-            if (meta.nombre.toLowerCase().includes("emergencia")) { icon = "emergency"; barColor = "bg-red-500"; }
-            else if (meta.nombre.toLowerCase().includes("viaje")) { icon = "flight"; barColor = "bg-orange-500"; }
-            
-            return `
-                <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-100 dark:border-slate-700">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="flex items-center gap-3">
-                            <div class="size-10 bg-slate-100 dark:bg-slate-700 rounded-lg flex items-center justify-center text-slate-600 dark:text-white">
-                                <span class="material-symbols-outlined text-xl">${icon}</span>
-                            </div>
-                            <div><h4 class="font-bold text-sm">${meta.nombre}</h4><p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">$${new Intl.NumberFormat('es-CL').format(meta.monto_objetivo)}</p></div>
-                        </div>
-                        <span class="font-black text-sm text-primary">${porcentaje}%</span>
-                    </div>
-                    <div class="w-full h-2 bg-slate-100 dark:bg-slate-700 rounded-full mb-3 overflow-hidden">
-                        <div class="h-full ${barColor} transition-all duration-700" style="width: ${porcentaje}%"></div>
-                    </div>
-                    <div class="flex justify-between items-center"><span class="text-xs font-bold">$${new Intl.NumberFormat('es-CL').format(meta.monto_actual)}</span><span class="text-[9px] font-black text-slate-400 uppercase">Ahorrado</span></div>
-                </div>`;
-        }).join('');
+            </div>`;
     }
 </script>
 
@@ -210,7 +221,7 @@
         <header class="sticky top-0 z-10 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md px-10 py-6 flex justify-between items-center border-b border-transparent">
             <div>
                 <h2 class="text-3xl font-black tracking-tight">Análisis Operativo</h2>
-                <p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Control de Ingresos, Gastos y Metas</p>
+                <p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Visualización de Metas y Rendimiento</p>
             </div>
             <button class="bg-primary text-white px-6 h-10 rounded-xl font-bold text-sm shadow-lg shadow-primary/20 flex items-center gap-2">
                 <span class="material-symbols-outlined text-sm">download</span> Exportar
@@ -229,18 +240,16 @@
                                 <span id="centro-monto" class="text-3xl font-black">$0</span>
                             </div>
                         </div>
-                        <div id="lista-categorias-gastos" class="flex-1 space-y-4">
-                            </div>
+                        <div id="lista-categorias-gastos" class="flex-1 space-y-4"></div>
                     </div>
                 </div>
 
                 <div class="bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-sm border border-slate-100 dark:border-slate-700">
                     <div class="p-6 border-b border-slate-50 dark:border-slate-700 flex justify-between items-center">
                         <h3 class="text-lg font-bold tracking-tight">Resumen de Rendimiento</h3>
-                        <span class="text-[10px] bg-primary/10 text-primary px-2 py-1 rounded-full font-bold uppercase">Mes Actual</span>
+                        <span class="text-[10px] bg-primary/10 text-primary px-2 py-1 rounded-full font-bold uppercase">KPIs Reales</span>
                     </div>
-                    <div id="resumen-rendimiento-dinamico">
-                        </div>
+                    <div id="resumen-rendimiento-dinamico"></div>
                 </div>
             </section>
 
@@ -248,7 +257,7 @@
                 <div class="flex justify-between items-center">
                     <h3 class="text-xl font-bold tracking-tight">Metas Activas</h3>
                     <a href="metas.html" class="size-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-primary hover:text-white transition-all flex items-center justify-center">
-                        <span class="material-symbols-outlined">add</span>
+                        <span class="material-symbols-outlined">open_in_new</span>
                     </a>
                 </div>
                 <div id="contenedor-metas-dinamicas" class="grid grid-cols-1 gap-5">
