@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html class="light" lang="es">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>QuantyA - Centro de Reportes</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { "primary": "#286ceb" }, fontFamily: { "display": ["Manrope"] } } }
+        }
+    </script>
+</head>
+<body class="bg-[#f1f2f4] font-display text-[#111318] antialiased">
+<div class="flex h-screen overflow-hidden">
+    
+    <aside class="w-64 bg-white border-r border-[#e5e7eb] flex flex-col shrink-0">
+        <div class="p-6 flex items-center gap-3">
+            <span class="material-symbols-outlined text-3xl text-primary font-bold">account_balance_wallet</span>
+            <h2 class="text-xl font-extrabold tracking-tight">QuantyA</h2>
+        </div>
+        <nav class="flex-1 px-4 space-y-1">
+            <a href="dashboard.html" class="flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:bg-gray-50 rounded-lg">
+                <span class="material-symbols-outlined">dashboard</span> Panel
+            </a>
+            <a href="movimientos.html" class="flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:bg-gray-50 rounded-lg">
+                <span class="material-symbols-outlined">sync_alt</span> Movimientos
+            </a>
+            <a href="analisis.html" class="flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:bg-gray-50 rounded-lg">
+                <span class="material-symbols-outlined">analytics</span> Análisis
+            </a>
+            <a href="metas.html" class="flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:bg-gray-50 rounded-lg">
+                <span class="material-symbols-outlined">flag</span> Metas
+            </a>
+            <a href="reportes.html" class="flex items-center gap-3 px-3 py-2.5 text-sm font-bold bg-primary/10 text-primary border-r-4 border-primary rounded-lg">
+                <span class="material-symbols-outlined">description</span> Reportes
+            </a>
+            <a href="configuracion.html" class="flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:bg-gray-50 rounded-lg">
+                <span class="material-symbols-outlined">settings</span> Configuración
+            </a>
+        </nav>
+        <div class="p-4 border-t border-slate-100">
+            <a href="index.html" class="flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-red-500 hover:bg-red-50 rounded-lg">
+                <span class="material-symbols-outlined">logout</span> Cerrar Sesión
+            </a>
+        </div>
+    </aside>
+
+    <main class="flex-1 overflow-y-auto">
+        <header class="h-16 bg-white border-b border-slate-200 px-8 flex items-center justify-between sticky top-0 z-10">
+            <h2 class="font-black text-lg uppercase tracking-tight">Centro de Reportes</h2>
+            <div class="flex gap-3">
+                <a href="imprimir_reporte.html" class="bg-primary text-white px-5 py-2 rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-blue-700">
+                    <span class="material-symbols-outlined text-sm">picture_as_pdf</span> Generar PDF Maestro
+                </a>
+            </div>
+        </header>
+
+        <div class="p-8">
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm">
+                <div class="p-6 border-b border-slate-100">
+                    <h3 class="font-bold">Historial de Reportes Generados</h3>
+                </div>
+                <div class="divide-y divide-slate-100">
+                    <div class="p-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                        <div class="flex items-center gap-4">
+                            <div class="p-3 bg-red-50 text-red-500 rounded-xl">
+                                <span class="material-symbols-outlined">description</span>
+                            </div>
+                            <div>
+                                <p class="font-bold text-sm">Estado Financiero - Enero 2026</p>
+                                <p class="text-[10px] text-slate-400 font-bold uppercase">Generado el: 18/01/2026</p>
+                            </div>
+                        </div>
+                        <button class="text-slate-400 hover:text-primary transition-colors">
+                            <span class="material-symbols-outlined">download</span>
+                        </button>
+                    </div>
+
+                    <div class="p-6 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                        <div class="flex items-center gap-4">
+                            <div class="p-3 bg-blue-50 text-blue-500 rounded-xl">
+                                <span class="material-symbols-outlined">table_chart</span>
+                            </div>
+                            <div>
+                                <p class="font-bold text-sm">Balance de Gastos - Q4 2025</p>
+                                <p class="text-[10px] text-slate-400 font-bold uppercase">Generado el: 31/12/2025</p>
+                            </div>
+                        </div>
+                        <button class="text-slate-400 hover:text-primary transition-colors">
+                            <span class="material-symbols-outlined">download</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>
