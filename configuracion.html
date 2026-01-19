@@ -27,7 +27,7 @@
     const db = getDatabase(app);
     let currentUser = null;
 
-    // Listas requeridas para el Panel
+    // Estandarización de Listas para sincronizar con Panel
     const LISTAS_REQUERIDAS = [
         { id: 'tipo', nombre: 'Tipo' },
         { id: 'monto', nombre: 'Monto' },
@@ -37,6 +37,9 @@
         { id: 'recurrente', nombre: 'Recurrente' }
     ];
 
+    const selectMoneda = document.getElementById('conf-moneda');
+    const selectZona = document.getElementById('conf-zona');
+    const checkDarkMode = document.getElementById('conf-darkmode');
     const containerMaestro = document.getElementById('master-lists-container');
 
     onAuthStateChanged(auth, (user) => {
@@ -49,18 +52,22 @@
     });
 
     function iniciarSincronizacionRealtime() {
-        // Sincronización de Preferencias y Tema
+        // Cargar Preferencias Globales
         onValue(ref(db, `usuarios/${currentUser.uid}/configuracion`), (snapshot) => {
             if (snapshot.exists()) {
                 const data = snapshot.val();
-                if(data.darkMode !== undefined) aplicarModoVisual(data.darkMode);
-                // Aquí podrías cargar moneda y zona horaria si los necesitas
+                if(data.moneda) selectMoneda.value = data.moneda;
+                if(data.zonaHoraria) selectZona.value = data.zonaHoraria;
+                if(data.darkMode !== undefined) {
+                    checkDarkMode.checked = data.darkMode;
+                    aplicarModoVisual(data.darkMode);
+                }
             }
         });
 
-        // Sincronización de Listas Maestras
+        // Cargar Listas Maestras
         onValue(ref(db, `usuarios/${currentUser.uid}/listas`), (snapshot) => {
-            renderizarListasEstandar(snapshot.val() || {});
+            renderizarListas(snapshot.val() || {});
         });
     }
 
@@ -74,25 +81,22 @@
         }
     }
 
-    function renderizarListasEstandar(dataFirebase) {
+    function renderizarListas(dataFirebase) {
         containerMaestro.innerHTML = '';
-
         LISTAS_REQUERIDAS.forEach(lista => {
             const divCol = document.createElement('div');
             divCol.className = "space-y-4";
-            
             divCol.innerHTML = `
                 <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex justify-between items-center">
                     ${lista.nombre}
                 </h4>
                 <div id="list-${lista.id}" class="flex flex-wrap gap-2"></div>
             `;
-
             containerMaestro.appendChild(divCol);
+            
             const listContainer = divCol.querySelector(`#list-${lista.id}`);
-
-            // Renderizar items existentes en Firebase para esta lista
             const items = dataFirebase[lista.id];
+            
             if (items) {
                 Object.keys(items).forEach(itemId => {
                     const span = document.createElement('span');
@@ -102,7 +106,6 @@
                 });
             }
 
-            // Botón + Añadir
             const btnAdd = document.createElement('button');
             btnAdd.className = "px-3 py-1.5 border border-dashed border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-500 hover:border-primary hover:text-primary transition-colors";
             btnAdd.innerHTML = "+ Añadir";
@@ -112,30 +115,27 @@
     }
 
     window.agregarDatoALista = async (listaId, listaNombre) => {
-        const nombre = prompt(`Añadir nueva opción a "${listaNombre}":`);
+        const nombre = prompt(`Nueva opción para ${listaNombre}:`);
         if (nombre && nombre.trim() !== "") {
-            await push(ref(db, `usuarios/${currentUser.uid}/listas/${listaId}`), { 
-                nombre: nombre.trim(),
-                createdAt: Date.now()
-            });
+            await push(ref(db, `usuarios/${currentUser.uid}/listas/${listaId}`), { nombre: nombre.trim() });
         }
     };
 
     window.eliminarItem = async (listaId, itemId) => {
-        if(confirm("¿Eliminar esta opción? Se quitará de todos los menús desplegables.")) {
+        if(confirm("¿Eliminar esta opción?")) {
             await remove(ref(db, `usuarios/${currentUser.uid}/listas/${listaId}/${itemId}`));
         }
     };
 
     window.guardarCambiosGlobales = async () => {
         const updates = {
-            moneda: document.getElementById('conf-moneda').value,
-            zonaHoraria: document.getElementById('conf-zona').value,
-            darkMode: document.getElementById('conf-darkmode').checked,
+            moneda: selectMoneda.value,
+            zonaHoraria: selectZona.value,
+            darkMode: checkDarkMode.checked,
             lastUpdated: Date.now()
         };
         await update(ref(db, `usuarios/${currentUser.uid}/configuracion`), updates);
-        alert("Configuración global guardada correctamente.");
+        alert("Configuración global actualizada.");
     };
 
 </script>
@@ -213,7 +213,7 @@
 <main class="ml-64 flex-1 flex flex-col">
     <header class="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-8 flex items-center justify-between sticky top-0 z-40">
         <h2 class="text-lg font-bold text-slate-800 dark:text-white">Configuración del Sistema</h2>
-        <button id="btn-save-all" onclick="guardarCambiosGlobales()" class="bg-primary hover:bg-primary/90 text-white text-xs font-bold px-6 py-2.5 rounded-xl transition-all shadow-lg shadow-primary/20">
+        <button onclick="guardarCambiosGlobales()" class="bg-primary hover:bg-primary/90 text-white text-xs font-bold px-6 py-2.5 rounded-xl transition-all shadow-lg shadow-primary/20">
             Aplicar Cambios Globales
         </button>
     </header>
@@ -229,16 +229,27 @@
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-500 uppercase">Moneda Predeterminada</label>
                         <select id="conf-moneda" class="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:ring-primary">
+                            <option value="CLP">Peso Chileno (CLP)</option>
                             <option value="USD">Dólar Estadounidense (USD)</option>
-                            <option value="MXN">Peso Mexicano (MXN)</option>
                             <option value="EUR">Euro (EUR)</option>
+                            <option value="MXN">Peso Mexicano (MXN)</option>
+                            <option value="ARS">Peso Argentino (ARS)</option>
+                            <option value="COP">Peso Colombiano (COP)</option>
+                            <option value="BRL">Real Brasileño (BRL)</option>
+                            <option value="PEN">Sol Peruano (PEN)</option>
+                            <option value="GBP">Libra Esterlina (GBP)</option>
                         </select>
                     </div>
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-500 uppercase">Zona Horaria</label>
                         <select id="conf-zona" class="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:ring-primary">
-                            <option value="GMT-5">(UTC-05:00) Bogota, Lima, Quito</option>
-                            <option value="GMT-6">(UTC-06:00) Central America</option>
+                            <option value="America/Santiago">(UTC-04:00) Santiago de Chile</option>
+                            <option value="America/Bogota">(UTC-05:00) Bogotá, Lima, Quito</option>
+                            <option value="America/Mexico_City">(UTC-06:00) Ciudad de México</option>
+                            <option value="America/Argentina/Buenos_Aires">(UTC-03:00) Buenos Aires</option>
+                            <option value="America/New_York">(UTC-05:00) Nueva York</option>
+                            <option value="Europe/Madrid">(UTC+01:00) Madrid, París, Roma</option>
+                            <option value="UTC">(UTC+00:00) Tiempo Universal Coordinado</option>
                         </select>
                     </div>
                 </div>
@@ -252,8 +263,8 @@
                 <div class="space-y-6">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-sm font-semibold">Modo Oscuro Automático</p>
-                            <p class="text-xs text-slate-500">Sincronizar con el sistema operativo</p>
+                            <p class="text-sm font-semibold">Modo Oscuro</p>
+                            <p class="text-xs text-slate-500">Cambiar apariencia del sistema</p>
                         </div>
                         <label class="relative inline-flex items-center cursor-pointer">
                             <input id="conf-darkmode" type="checkbox" class="sr-only peer">
@@ -278,9 +289,7 @@
                         <span class="material-symbols-outlined text-primary">list_alt</span>
                         <h3 class="font-bold text-xl">Gestión de Listas Maestras</h3>
                     </div>
-                    <p class="text-xs text-slate-500 italic">Sincronizado con formularios del Panel</p>
                 </div>
-                
                 <div id="master-lists-container" class="grid grid-cols-1 md:grid-cols-3 gap-12">
                     </div>
             </section>
