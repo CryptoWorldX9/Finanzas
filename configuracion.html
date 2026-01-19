@@ -10,7 +10,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getDatabase, ref, get, set, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { getDatabase, ref, get, set, update, onValue, push, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCO6WXu9iZsyEUmNNxrE4oWToLYY8wl-y4",
@@ -31,30 +31,44 @@
     const selectMoneda = document.getElementById('conf-moneda');
     const selectZona = document.getElementById('conf-zona');
     const checkDarkMode = document.getElementById('conf-darkmode');
-    const btnGuardar = document.getElementById('btn-save-all');
+    
+    // Contenedores de Listas
+    const containerCategorias = document.getElementById('list-categorias');
+    const containerMetodos = document.getElementById('list-metodos');
+    const containerProveedores = document.getElementById('list-proveedores');
 
     onAuthStateChanged(auth, (user) => {
         if (user) {
             currentUser = user;
-            cargarConfiguracion();
+            iniciarSincronizacionRealtime();
         } else {
             window.location.href = "index.html";
         }
     });
 
-    async function cargarConfiguracion() {
-        const confRef = ref(db, `usuarios/${currentUser.uid}/configuracion`);
-        const snapshot = await get(confRef);
+    function iniciarSincronizacionRealtime() {
+        const configRef = ref(db, `usuarios/${currentUser.uid}/configuracion`);
         
-        if (snapshot.exists()) {
-            const data = snapshot.val();
-            if(data.moneda) selectMoneda.value = data.moneda;
-            if(data.zonaHoraria) selectZona.value = data.zonaHoraria;
-            if(data.darkMode !== undefined) {
-                checkDarkMode.checked = data.darkMode;
-                aplicarModoVisual(data.darkMode);
+        // Sincronización de Preferencias y Tema
+        onValue(configRef, (snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                if(data.moneda) selectMoneda.value = data.moneda;
+                if(data.zonaHoraria) selectZona.value = data.zonaHoraria;
+                if(data.darkMode !== undefined) {
+                    checkDarkMode.checked = data.darkMode;
+                    aplicarModoVisual(data.darkMode);
+                }
             }
-        }
+        });
+
+        // Sincronización de Listas Maestras
+        const listas = ['categorias', 'metodos', 'proveedores'];
+        listas.forEach(lista => {
+            onValue(ref(db, `usuarios/${currentUser.uid}/listas/${lista}`), (snapshot) => {
+                renderizarLista(lista, snapshot.val());
+            });
+        });
     }
 
     function aplicarModoVisual(isDark) {
@@ -67,25 +81,66 @@
         }
     }
 
+    // --- Lógica de Listas Maestras ---
+    function renderizarLista(tipo, data) {
+        const containers = {
+            'categorias': containerCategorias,
+            'metodos': containerMetodos,
+            'proveedores': containerProveedores
+        };
+        const container = containers[tipo];
+        container.innerHTML = '';
+
+        if (data) {
+            Object.keys(data).forEach(key => {
+                const item = data[key];
+                const span = document.createElement('span');
+                // Estilo condicional para proveedores (verde)
+                const colorClass = tipo === 'proveedores' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600' : 'bg-slate-100 dark:bg-slate-800';
+                
+                span.className = `px-3 py-1.5 ${colorClass} rounded-lg text-xs font-medium flex items-center gap-2`;
+                span.innerHTML = `${item.nombre} <button onclick="eliminarItem('${tipo}', '${key}')" class="hover:text-red-500">×</button>`;
+                container.appendChild(span);
+            });
+        }
+
+        // Botón Añadir (Se mantiene al final)
+        const btnAdd = document.createElement('button');
+        btnAdd.className = "px-3 py-1.5 border border-dashed border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-500 hover:border-primary hover:text-primary transition-colors";
+        btnAdd.innerHTML = "+ Añadir";
+        btnAdd.onclick = () => agregarItem(tipo);
+        container.appendChild(btnAdd);
+    }
+
+    window.agregarItem = async (tipo) => {
+        const nombre = prompt(`Nombre del nuevo item para ${tipo}:`);
+        if (nombre && nombre.trim() !== "") {
+            const listRef = ref(db, `usuarios/${currentUser.uid}/listas/${tipo}`);
+            await push(listRef, { nombre: nombre.trim() });
+        }
+    };
+
+    window.eliminarItem = async (tipo, id) => {
+        if(confirm("¿Estás seguro de eliminar este elemento?")) {
+            await remove(ref(db, `usuarios/${currentUser.uid}/listas/${tipo}/${id}`));
+        }
+    };
+
+    // Guardar Parámetros Globales
     window.guardarCambiosGlobales = async () => {
         if(!currentUser) return;
-        
         const updates = {
             moneda: selectMoneda.value,
             zonaHoraria: selectZona.value,
             darkMode: checkDarkMode.checked,
             lastUpdated: Date.now()
         };
-
         try {
             await update(ref(db, `usuarios/${currentUser.uid}/configuracion`), updates);
-            aplicarModoVisual(updates.darkMode);
-            alert("Configuración actualizada correctamente");
-        } catch (error) {
-            console.error(error);
-            alert("Error al guardar los cambios");
-        }
+            alert("Configuración global actualizada");
+        } catch (error) { alert("Error al guardar"); }
     };
+
 </script>
 
 <script id="tailwind-config">
@@ -188,7 +243,6 @@
                             <option value="USD">Dólar Estadounidense (USD)</option>
                             <option value="MXN">Peso Mexicano (MXN)</option>
                             <option value="EUR">Euro (EUR)</option>
-                            <option value="CLP">Peso Chileno (CLP)</option>
                         </select>
                     </div>
                     <div class="space-y-1.5">
@@ -196,7 +250,6 @@
                         <select id="conf-zona" class="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:ring-primary">
                             <option value="GMT-5">(UTC-05:00) Bogota, Lima, Quito</option>
                             <option value="GMT-6">(UTC-06:00) Central America</option>
-                            <option value="GMT-3">(UTC-03:00) Santiago, Buenos Aires</option>
                         </select>
                     </div>
                 </div>
@@ -236,58 +289,31 @@
                         <span class="material-symbols-outlined text-primary">list_alt</span>
                         <h3 class="font-bold text-xl">Gestión de Listas Maestras</h3>
                     </div>
-                    <button class="text-primary text-sm font-bold flex items-center gap-1">
-                        <span class="material-symbols-outlined text-sm">add_circle</span> Nueva Lista
-                    </button>
                 </div>
                 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
                     <div class="space-y-4">
                         <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex justify-between items-center">
                             Categorías de Gastos
-                            <span class="material-symbols-outlined text-slate-400 text-sm cursor-pointer">edit</span>
                         </h4>
-                        <div class="flex flex-wrap gap-2">
-                            <span class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-medium flex items-center gap-2">
-                                Operativos <button class="hover:text-red-500">×</button>
-                            </span>
-                            <span class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-medium flex items-center gap-2">
-                                Marketing <button class="hover:text-red-500">×</button>
-                            </span>
-                            <button class="px-3 py-1.5 border border-dashed border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-500 hover:border-primary hover:text-primary transition-colors">
-                                + Añadir
-                            </button>
-                        </div>
+                        <div id="list-categorias" class="flex flex-wrap gap-2">
+                            </div>
                     </div>
 
                     <div class="space-y-4">
                         <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex justify-between items-center">
                             Métodos de Pago
-                            <span class="material-symbols-outlined text-slate-400 text-sm cursor-pointer">edit</span>
                         </h4>
-                        <div class="flex flex-wrap gap-2">
-                            <span class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-medium flex items-center gap-2">
-                                Transferencia <button class="hover:text-red-500">×</button>
-                            </span>
-                            <span class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-medium flex items-center gap-2">
-                                T. Crédito <button class="hover:text-red-500">×</button>
-                            </span>
-                        </div>
+                        <div id="list-metodos" class="flex flex-wrap gap-2">
+                            </div>
                     </div>
 
                     <div class="space-y-4">
                         <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex justify-between items-center">
                             Proveedores Globales
-                            <span class="material-symbols-outlined text-slate-400 text-sm cursor-pointer">edit</span>
                         </h4>
-                        <div class="flex flex-wrap gap-2">
-                            <span class="px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 rounded-lg text-xs font-medium flex items-center gap-2">
-                                AWS <button class="hover:text-red-500">×</button>
-                            </span>
-                            <span class="px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 rounded-lg text-xs font-medium flex items-center gap-2">
-                                Google <button class="hover:text-red-500">×</button>
-                            </span>
-                        </div>
+                        <div id="list-proveedores" class="flex flex-wrap gap-2">
+                            </div>
                     </div>
                 </div>
             </section>
