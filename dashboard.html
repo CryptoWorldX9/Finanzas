@@ -27,25 +27,70 @@
     const db = getDatabase(app);
     let currentUser = null;
 
-    // Control de Sesión y Carga de Datos
+    // Lógica del Asistente (30 Consejos)
+    const consejos = [
+        "Registra cada gasto, por pequeño que sea, para identificar fugas de dinero.",
+        "Aplica la regla 50/30/20: 50% necesidades, 30% deseos, 20% ahorro.",
+        "Antes de una compra grande, espera 48 horas para evitar impulsos.",
+        "Automatiza tu ahorro: programa una transferencia apenas recibas tu sueldo.",
+        "Compara precios antes de comprar; el mismo producto puede variar un 20%.",
+        "Elimina las suscripciones que no has usado en los últimos 30 días.",
+        "Evita las compras 'hormiga' como café diario o snacks fuera de casa.",
+        "Paga el total de tu tarjeta de crédito para evitar intereses abusivos.",
+        "Crea un fondo de emergencia que cubra de 3 a 6 meses de tus gastos.",
+        "Invierte en tu educación financiera: el mejor activo eres tú mismo.",
+        "Usa la técnica de los sobres para presupuestar tus gastos en efectivo.",
+        "Planifica tus comidas de la semana para ahorrar en el supermercado.",
+        "Revisa tus facturas de servicios: podrías estar pagando seguros innecesarios.",
+        "Compra marcas blancas en el súper; la calidad suele ser casi idéntica.",
+        "No ahorres lo que queda después de gastar, gasta lo que queda tras ahorrar.",
+        "Evita pedir préstamos para gastos de consumo o vacaciones.",
+        "Aprovecha los descuentos de temporada para compras planificadas.",
+        "Mantén tus neumáticos inflados; ahorra hasta un 3% de combustible.",
+        "Apaga luces y desenchufa aparatos que no estés utilizando.",
+        "Si sales a comer, aprovecha los menús del día o promociones bancarias.",
+        "Define metas financieras claras a corto, mediano y largo plazo.",
+        "Renegocia tus deudas con el banco para bajar la tasa de interés.",
+        "Busca fuentes de ingresos extra usando tus habilidades actuales.",
+        "Usa efectivo para compras pequeñas; el cerebro siente más el gasto.",
+        "No gastes dinero que aún no has ganado (bonos o comisiones futuras).",
+        "Enseña finanzas a tu familia; el ahorro es un esfuerzo de equipo.",
+        "Revisa tu reporte comercial al menos una vez al año.",
+        "Invierte en mantenimiento preventivo para evitar reparaciones costosas.",
+        "Camina o usa bicicleta para distancias cortas y ahorra transporte.",
+        "Pregúntate: ¿Realmente lo necesito o solo lo quiero?"
+    ];
+
+    function rotarConsejos() {
+        const txt = document.getElementById('texto-asistente');
+        const random = consejos[Math.floor(Math.random() * consejos.length)];
+        txt.style.opacity = 0;
+        setTimeout(() => {
+            txt.innerText = random;
+            txt.style.opacity = 1;
+        }, 500);
+    }
+
+    // Control de Sesión
     onAuthStateChanged(auth, (user) => {
         if (user) {
             currentUser = user;
-            document.getElementById('user-name-display').innerText = user.displayName || "Usuario";
+            document.getElementById('user-name-display').innerText = user.displayName || "Usuario Corporativo";
             cargarMovimientosRecientes();
+            setInterval(rotarConsejos, 10000); // Cambia cada 10 seg
+            rotarConsejos();
         } else {
             window.location.href = "index.html";
         }
     });
 
-    // Formateador CLP para inputs (Separador de miles punto)
+    // Formateador CLP
     window.formatMoneyInput = (input) => {
         let value = input.value.replace(/\D/g, "");
         if (value === "") return;
         input.value = new Intl.NumberFormat('es-CL').format(value);
     };
 
-    // Registrar Operación
     window.registrarOperacion = async (event) => {
         event.preventDefault();
         const concepto = document.getElementById('op-concepto').value;
@@ -56,83 +101,65 @@
         const pago = document.getElementById('op-pago').value;
         const recurrente = document.getElementById('op-recurrente').value;
 
-        if(!concepto || !montoRaw) return alert("Por favor complete los campos");
+        if(!concepto || !montoRaw) return alert("Completa los campos");
 
         const nuevaOp = {
             concepto, tipo, categoria, subcategoria, pago, recurrente,
             monto: parseInt(montoRaw),
-            fecha: new Date().toLocaleDateString('es-CL', { day: '2-digit', month: 'short', year: 'numeric' }),
+            fecha: new Date().toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }),
             timestamp: Date.now()
         };
 
-        try {
-            await push(ref(db, `usuarios/${currentUser.uid}/movimientos`), nuevaOp);
-            event.target.reset();
-            alert("Operación registrada con éxito");
-        } catch (error) {
-            alert("Error al guardar: " + error.message);
-        }
+        await push(ref(db, `usuarios/${currentUser.uid}/movimientos`), nuevaOp);
+        event.target.reset();
     };
 
-    // Cargar Movimientos Recientes
     function cargarMovimientosRecientes() {
         const movRef = query(ref(db, `usuarios/${currentUser.uid}/movimientos`), limitToLast(5));
         onValue(movRef, (snapshot) => {
             const container = document.getElementById('recent-moves-body');
             container.innerHTML = '';
-            let totalIngresos = 0;
-            let totalGastos = 0;
+            let tIngresos = 0, tGastos = 0;
 
             snapshot.forEach((child) => {
                 const data = child.val();
                 const isIngreso = data.tipo === 'ingreso';
-                const color = isIngreso ? 'text-emerald-custom' : 'text-red-500';
-                const signo = isIngreso ? '+' : '-';
-                
-                if(isIngreso) totalIngresos += data.monto; else totalGastos += data.monto;
+                if(isIngreso) tIngresos += data.monto; else tGastos += data.monto;
 
                 container.insertAdjacentHTML('afterbegin', `
                     <tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                         <td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">${data.fecha}</td>
                         <td class="px-6 py-4 text-sm font-semibold">${data.concepto}</td>
-                        <td class="px-6 py-4 text-sm"><span class="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-[10px] font-bold uppercase">${data.categoria}</span></td>
+                        <td class="px-6 py-4 text-sm"><span class="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wide">${data.categoria}</span></td>
                         <td class="px-6 py-4"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-custom/10 text-emerald-custom">Pagado</span></td>
-                        <td class="px-6 py-4 text-sm font-bold text-right ${color}">${signo} $${new Intl.NumberFormat('es-CL').format(data.monto)}</td>
-                        <td class="px-6 py-4 text-right"></td>
+                        <td class="px-6 py-4 text-sm font-bold text-right ${isIngreso ? 'text-emerald-custom' : 'text-red-500'}">${isIngreso ? '+' : '-'} $${new Intl.NumberFormat('es-CL').format(data.monto)}</td>
+                        <td class="px-6 py-4"></td>
                     </tr>
                 `);
             });
 
-            // Actualizar Widgets Superiores
-            document.getElementById('display-ingresos').innerText = `$ ${new Intl.NumberFormat('es-CL').format(totalIngresos)}`;
-            document.getElementById('display-gastos').innerText = `$ ${new Intl.NumberFormat('es-CL').format(totalGastos)}`;
-            document.getElementById('display-saldo').innerText = `$ ${new Intl.NumberFormat('es-CL').format(totalIngresos - totalGastos)}`;
+            document.getElementById('display-ingresos').innerText = `$ ${new Intl.NumberFormat('es-CL').format(tIngresos)}`;
+            document.getElementById('display-gastos').innerText = `$ ${new Intl.NumberFormat('es-CL').format(tGastos)}`;
+            document.getElementById('display-saldo').innerText = `$ ${new Intl.NumberFormat('es-CL').format(tIngresos - tGastos)}`;
         });
     }
 </script>
 
 <script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        "primary": "#176282",
-                        "navy-900": "#0f172a",
-                        "slate-custom": "#64748b",
-                        "emerald-custom": "#10b981",
-                        "background-light": "#f8f9fa"
-                    },
-                    fontFamily: { "display": ["Inter", "sans-serif"] },
-                    borderRadius: { "DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px" },
-                },
+    tailwind.config = {
+        darkMode: "class",
+        theme: {
+            extend: {
+                colors: { "primary": "#176282", "navy-900": "#0f172a", "emerald-custom": "#10b981", "background-light": "#f8f9fa" },
+                fontFamily: { "display": ["Inter", "sans-serif"] },
             },
-        }
-    </script>
+        },
+    }
+</script>
 <style type="text/tailwindcss">
-        body { font-family: 'Inter', sans-serif; }
-        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-    </style>
+    body { font-family: 'Inter', sans-serif; }
+    #texto-asistente { transition: opacity 0.5s ease; }
+</style>
 </head>
 <body class="bg-background-light dark:bg-[#111827] font-display text-slate-900 dark:text-slate-100">
 <div class="flex min-h-screen">
@@ -143,40 +170,31 @@
                 <span class="material-symbols-outlined text-2xl">account_balance_wallet</span>
             </div>
             <div>
-                <h1 class="text-xl font-bold tracking-tight leading-none">QuantyA</h1>
+                <h1 class="text-xl font-bold tracking-tight">QuantyA</h1>
                 <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Gestión Financiera</p>
             </div>
         </div>
         <nav class="space-y-1">
-            <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 transition-all">
+            <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20">
                 <span class="material-symbols-outlined text-[20px]">dashboard</span>
                 <span class="text-sm font-medium">Panel</span>
             </a>
-            <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
+            <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl">
                 <span class="material-symbols-outlined text-[20px]">swap_horiz</span>
                 <span class="text-sm font-medium">Movimientos</span>
             </a>
-            <a href="analisis.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
+            <a href="analisis.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl">
                 <span class="material-symbols-outlined text-[20px]">analytics</span>
                 <span class="text-sm font-medium">Análisis</span>
             </a>
-            <a href="metas.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
-                <span class="material-symbols-outlined text-[20px]">track_changes</span>
-                <span class="text-sm font-medium">Metas</span>
-            </a>
-            <a href="reportes.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
+            <a href="reportes.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl">
                 <span class="material-symbols-outlined text-[20px]">description</span>
                 <span class="text-sm font-medium">Reportes</span>
             </a>
-            <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
-                <span class="material-symbols-outlined text-[20px]">settings</span>
-                <span class="text-sm font-medium">Configuración</span>
-            </a>
         </nav>
     </div>
-    
-    <div class="mt-auto space-y-4">
-        <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors">
+    <div class="mt-auto">
+        <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl">
             <span class="material-symbols-outlined text-[20px]">logout</span>
             <span class="text-sm font-medium">Cerrar Sesión</span>
         </a>
@@ -185,136 +203,123 @@
 
 <main class="ml-64 flex-1 flex flex-col">
 <header class="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-8 flex items-center justify-between sticky top-0 z-40">
-<div class="flex items-center gap-4 flex-1">
-<div class="relative w-64">
-<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl">search</span>
-<input class="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-lg text-sm focus:ring-2 focus:ring-primary" placeholder="Buscar..." type="text"/>
-</div>
-</div>
-<div class="flex items-center gap-4">
-<div class="flex items-center gap-3">
-<div class="text-right">
-<p id="user-name-display" class="text-sm font-semibold text-slate-700 dark:text-slate-200 tracking-tight">Cargando...</p>
-<p class="text-[11px] text-slate-500 font-medium uppercase tracking-widest">Cuenta Corporativa</p>
-</div>
-<div class="size-10 rounded-full bg-slate-200 flex items-center justify-center font-bold text-primary border-2 border-primary/20 tracking-tighter text-xs">QA</div>
-</div>
-</div>
+    <div class="flex items-center gap-4 flex-1">
+        <div class="relative w-64">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl">search</span>
+            <input class="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-lg text-sm" placeholder="Buscar..." type="text"/>
+        </div>
+    </div>
+    <div class="flex items-center gap-4">
+        <div class="text-right">
+            <p id="user-name-display" class="text-sm font-semibold text-slate-700 dark:text-slate-200">Cargando...</p>
+            <p class="text-[11px] text-slate-500 font-medium">Cuenta Corporativa</p>
+        </div>
+        <div class="size-10 rounded-full bg-slate-200 flex items-center justify-center font-bold text-primary border-2 border-primary/20">QA</div>
+    </div>
 </header>
 
 <div class="p-8 space-y-8 max-w-[1440px] mx-auto w-full">
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-<p class="text-sm font-medium text-slate-500 mb-2">Ingresos Totales</p>
-<p id="display-ingresos" class="text-3xl font-bold tracking-tight text-emerald-custom">$ 0</p>
-</div>
-<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-<p class="text-sm font-medium text-slate-500 mb-2">Gastos Totales</p>
-<p id="display-gastos" class="text-3xl font-bold tracking-tight text-red-500">$ 0</p>
-</div>
-<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-<p class="text-sm font-medium text-slate-500 mb-2">Saldo Neto</p>
-<p id="display-saldo" class="text-3xl font-bold tracking-tight text-primary">$ 0</p>
-</div>
-</div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <p class="text-sm font-medium text-slate-500 mb-2">Ingresos Totales</p>
+            <p id="display-ingresos" class="text-3xl font-bold text-emerald-custom">$ 0</p>
+        </div>
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <p class="text-sm font-medium text-slate-500 mb-2">Gastos Totales</p>
+            <p id="display-gastos" class="text-3xl font-bold text-red-500">$ 0</p>
+        </div>
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+            <p class="text-sm font-medium text-slate-500 mb-2">Saldo Neto</p>
+            <p id="display-saldo" class="text-3xl font-bold text-primary">$ 0</p>
+        </div>
+    </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-<div class="lg:col-span-1 space-y-4">
-<h2 class="text-xl font-bold flex items-center gap-2 text-slate-700 dark:text-slate-200">
-<span class="material-symbols-outlined text-primary">add_circle</span> Nueva Operación
-</h2>
-<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-<form onsubmit="registrarOperacion(event)" class="space-y-4">
-<div>
-<label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Concepto</label>
-<input id="op-concepto" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary text-sm" placeholder="Descripción de la operación" type="text"/>
-</div>
-<div class="grid grid-cols-2 gap-4">
-<div>
-<label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Tipo</label>
-<select id="op-tipo" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary text-sm font-bold">
-<option value="ingreso">Ingreso (+)</option>
-<option value="egreso">Egreso (-)</option>
-</select>
-</div>
-<div>
-<label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Monto (CLP)</label>
-<div class="relative">
-<span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
-<input id="op-monto" oninput="formatMoneyInput(this)" class="w-full pl-7 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary text-sm font-bold" placeholder="0" type="text"/>
-</div>
-</div>
-</div>
-<div class="grid grid-cols-2 gap-4">
-<div>
-<label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Categoría</label>
-<select id="op-categoria" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary text-sm">
-<option>Operaciones</option>
-<option>Sueldos</option>
-<option>Marketing</option>
-<option>Ventas</option>
-<option>Inversiones</option>
-</select>
-</div>
-<div>
-<label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Sub Categoria</label>
-<select id="op-subcategoria" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary text-sm">
-<option>General</option>
-<option>Servicios</option>
-<option>Insumos</option>
-<option>Bonos</option>
-</select>
-</div>
-</div>
-<div class="grid grid-cols-2 gap-4">
-<div>
-<label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Pago</label>
-<select id="op-pago" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary text-sm">
-<option>Transferencia</option>
-<option>Efectivo</option>
-<option>Tarjeta</option>
-<option>Pendiente</option>
-</select>
-</div>
-<div>
-<label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Recurrente</label>
-<select id="op-recurrente" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary text-sm">
-<option>No</option>
-<option>Mensual</option>
-<option>Anual</option>
-</select>
-</div>
-</div>
-<button type="submit" class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 rounded-lg mt-2 transition-all shadow-lg shadow-primary/20 uppercase text-xs tracking-widest">
-Registrar Operación
-</button>
-</form>
-</div>
-</div>
+    <div class="bg-primary/5 border border-primary/20 rounded-xl p-6 flex flex-col md:flex-row items-center gap-6">
+        <div class="size-14 bg-primary text-white rounded-full flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-3xl">lightbulb</span>
+        </div>
+        <div class="flex-1">
+            <h3 class="text-lg font-bold text-primary">Asistente Financiero</h3>
+            <p id="texto-asistente" class="text-slate-600 dark:text-slate-400 font-medium italic">
+                Cargando consejo financiero para ti...
+            </p>
+        </div>
+        <div class="flex gap-3 shrink-0">
+            <button class="px-6 py-2.5 bg-primary text-white font-bold rounded-lg">Ver Consejos</button>
+        </div>
+    </div>
 
-<div class="lg:col-span-2 space-y-4">
-<div class="flex items-center justify-between">
-<h2 class="text-xl font-bold text-slate-700 dark:text-slate-200">Movimientos Recientes</h2>
-<a href="movimientos.html" class="text-primary text-sm font-bold flex items-center gap-1 hover:underline">Ver todo el historial</a>
-</div>
-<div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden text-slate-100">
-<table class="w-full text-left border-collapse">
-<thead>
-<tr class="bg-slate-50 dark:bg-slate-800/50">
-<th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Fecha</th>
-<th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Descripción</th>
-<th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Categoría</th>
-<th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Estado</th>
-<th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Monto</th>
-<th class="px-6 py-4"></th>
-</tr>
-</thead>
-<tbody id="recent-moves-body" class="divide-y divide-slate-100 dark:divide-slate-800">
-</tbody>
-</table>
-</div>
-</div>
-</div>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="lg:col-span-1 space-y-4">
+            <h2 class="text-xl font-bold flex items-center gap-2 text-slate-700 dark:text-slate-200">
+                <span class="material-symbols-outlined text-primary">add_circle</span> Nueva Operación
+            </h2>
+            <div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                <form onsubmit="registrarOperacion(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Concepto</label>
+                        <input id="op-concepto" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm" type="text" placeholder="Ej. AWS Cloud"/>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Tipo</label>
+                            <select id="op-tipo" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm">
+                                <option value="ingreso">Ingreso</option>
+                                <option value="egreso">Egreso</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Monto (CLP)</label>
+                            <input id="op-monto" oninput="formatMoneyInput(this)" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold" type="text" placeholder="0"/>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Categoría</label>
+                            <select id="op-categoria" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm">
+                                <option>Software</option><option>Marketing</option><option>Ventas</option><option>Insumos</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Sub Categoria</label>
+                            <select id="op-subcategoria" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm">
+                                <option>General</option><option>Servicios</option><option>Bonos</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Pago</label>
+                            <select id="op-pago" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm">
+                                <option>Transferencia</option><option>Tarjeta</option><option>Efectivo</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Recurrente</label>
+                            <select id="op-recurrente" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm">
+                                <option>No</option><option>Mensual</option><option>Anual</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 rounded-lg shadow-lg">Registrar Operación</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="lg:col-span-2 space-y-4">
+            <h2 class="text-xl font-bold text-slate-700 dark:text-slate-200">Movimientos Recientes</h2>
+            <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50 dark:bg-slate-800/50">
+                        <tr class="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                            <th class="px-6 py-4">Fecha</th><th class="px-6 py-4">Descripción</th><th class="px-6 py-4">Categoría</th><th class="px-6 py-4 text-right">Monto</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recent-moves-body" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 </main>
 </div>
