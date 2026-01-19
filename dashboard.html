@@ -2,7 +2,7 @@
 <html class="light" lang="es"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Panel de Control Profesional QuantyA</title>
+<title>Panel Principal QuantyA (Indexado)</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
@@ -14,6 +14,7 @@
                     colors: {
                         "primary": "#176282",
                         "navy-900": "#0f172a",
+                        "navy-800": "#1e293b",
                         "slate-custom": "#64748b",
                         "emerald-custom": "#10b981",
                         "background-light": "#f8f9fa"
@@ -96,14 +97,14 @@
 <div class="flex items-center gap-4 flex-1">
 <div class="relative w-64">
 <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl">search</span>
-<input class="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-lg text-sm focus:ring-2 focus:ring-primary" placeholder="Buscar transacciones..." type="text"/>
+<input class="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-lg text-sm focus:ring-2 focus:ring-primary" placeholder="Buscar..." type="text"/>
 </div>
 <div class="flex items-center gap-2 px-3 py-1.5 bg-emerald-custom/10 text-emerald-custom rounded-full text-[11px] font-bold">
 <span class="relative flex h-2 w-2">
 <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-custom opacity-75"></span>
 <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-custom"></span>
 </span>
-                    Sincronizado con Firebase
+                    Firebase: misfinanzaspro-d2f3f
                 </div>
 </div>
 <div class="flex items-center gap-4">
@@ -115,7 +116,7 @@
 <div class="flex items-center gap-3">
 <div class="text-right">
 <p class="text-sm font-semibold">Alex Rivera</p>
-<p class="text-[11px] text-slate-500 font-medium">Cuenta Corporativa</p>
+<p class="text-[11px] text-slate-500 font-medium">ID: QuantyA-024</p>
 </div>
 <div class="size-10 rounded-full bg-cover bg-center border-2 border-primary/20" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBR1NR-OAwz0AkS6NGJyTnSuzIAf5-wgbkj44QXJ4l2nnsTxf_vhG1fH--ZKutQWsVRiopfCLwhNm0GgwZSI4F0OJjMJ7z9FwtCR4hVlssSRF04bf_1DPCR_wEEI71B0RQt8W9RJ1qUxRChsWahZ8Jp1-E2BUaI5_6jTSxTY_klKxNrULdEQnyqeiruJYFddif5srZ5QSLbN_5F7dIsm8lPdlmR_GW6kKntk0-iaVhZXAOly0bkbj3Op6dkGkHZz9c9h58Mf3XDvw");'></div>
 </div>
@@ -151,7 +152,7 @@
 <div class="flex justify-between items-start mb-4">
 <p class="text-sm font-medium text-slate-500">Saldo Neto</p>
 <span class="flex items-center text-primary text-xs font-bold bg-primary/10 px-2 py-1 rounded">
-<span class="material-symbols-outlined text-xs mr-1">analytics</span> Estable
+<span class="material-symbols-outlined text-xs mr-1">account_balance</span> Real-time
                         </span>
 </div>
 <p class="text-3xl font-bold tracking-tight">4.330,00 €</p>
@@ -162,17 +163,17 @@
 </div>
 <div class="bg-primary/5 border border-primary/20 rounded-xl p-6 flex flex-col md:flex-row items-center gap-6">
 <div class="size-14 bg-primary text-white rounded-full flex items-center justify-center shrink-0">
-<span class="material-symbols-outlined text-3xl">lightbulb</span>
+<span class="material-symbols-outlined text-3xl">psychology</span>
 </div>
-<div class="flex-1">
-<h3 class="text-lg font-bold text-primary">Asistente Financiero</h3>
+<div class="flex-1 text-center md:text-left">
+<h3 class="text-lg font-bold text-primary">Asistente Financiero QuantyA</h3>
 <p class="text-slate-600 dark:text-slate-400">
-                        ¡Buen día, Alex! Basado en tu actividad reciente, has ahorrado un 12% más que el mes pasado. ¿Te gustaría ver consejos personalizados para optimizar tus gastos fijos actuales?
+                        ¡Buen día, Alex! He analizado tus movimientos recientes de Firestore. Has optimizado tus gastos operativos en un 12%. ¿Deseas ver una proyección para el cierre de trimestre?
                     </p>
 </div>
 <div class="flex gap-3 shrink-0">
-<button class="px-6 py-2.5 bg-primary text-white font-bold rounded-lg hover:bg-primary/90 transition-all">Ver Consejos</button>
-<button class="px-6 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold rounded-lg hover:bg-slate-50 transition-all">Descartar</button>
+<button class="px-6 py-2.5 bg-primary text-white font-bold rounded-lg hover:bg-primary/90 transition-all">Ver Análisis</button>
+<button class="px-6 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-bold rounded-lg hover:bg-slate-50 transition-all">Ignorar</button>
 </div>
 </div>
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -183,49 +184,49 @@
                     </h2>
 <div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
 <div>
-<label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Concepto</label>
-<input class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary text-sm" placeholder="Ej. Suscripción AWS" type="text"/>
+<label class="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">Concepto</label>
+<input class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary text-sm" placeholder="Ej. Pago Proveedor Cloud" type="text"/>
 </div>
 <div class="grid grid-cols-2 gap-4">
 <div>
-<label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Monto</label>
+<label class="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">Monto</label>
 <div class="relative">
 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">€</span>
 <input class="w-full pl-7 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary text-sm" placeholder="0.00" type="number"/>
 </div>
 </div>
 <div>
-<label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Categoría</label>
-<select class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary text-sm">
-<option>Software</option>
-<option>Marketing</option>
-<option>Salarios</option>
-<option>Suministros</option>
+<label class="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">Tipo</label>
+<select class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary text-sm font-medium">
+<option value="egreso">Egreso</option>
+<option value="ingreso">Ingreso</option>
 </select>
 </div>
 </div>
 <div>
-<label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Fecha</label>
+<label class="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">Categoría</label>
+<select class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary text-sm">
+<option>Infraestructura IT</option>
+<option>Recursos Humanos</option>
+<option>Marketing Digital</option>
+<option>Logística</option>
+</select>
+</div>
+<div>
+<label class="block text-xs font-bold text-slate-500 uppercase mb-1.5 tracking-wider">Fecha de Ejecución</label>
 <input class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary text-sm" type="date"/>
 </div>
-<div>
-<label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Cuenta</label>
-<select class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-primary text-sm">
-<option>Corriente Principal</option>
-<option>Fondo de Reserva</option>
-<option>Caja Chica Operativa</option>
-</select>
-</div>
-<button class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 rounded-lg mt-2 transition-all shadow-lg shadow-primary/20">
-                            Registrar Operación
+<button class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 rounded-lg mt-2 transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-xl">save</span>
+                            Guardar en Firestore
                         </button>
 </div>
 </div>
 <div class="lg:col-span-2 space-y-4">
 <div class="flex items-center justify-between">
-<h2 class="text-xl font-bold">Movimientos Recientes</h2>
+<h2 class="text-xl font-bold">Últimos Movimientos</h2>
 <button class="text-primary text-sm font-bold flex items-center gap-1 hover:underline">
-                            Ver todo el historial <span class="material-symbols-outlined text-sm">arrow_forward</span>
+                            Ver historial completo <span class="material-symbols-outlined text-sm">arrow_forward</span>
 </button>
 </div>
 <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
@@ -233,64 +234,45 @@
 <thead>
 <tr class="bg-slate-50 dark:bg-slate-800/50">
 <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Fecha</th>
-<th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Descripción</th>
+<th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Concepto</th>
 <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Categoría</th>
 <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Estado</th>
 <th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Monto</th>
-<th class="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider"></th>
 </tr>
 </thead>
 <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
 <tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">24 Oct, 2023</td>
-<td class="px-6 py-4 text-sm font-semibold">Dividendo SaaS Q3</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">28 Oct, 2023</td>
+<td class="px-6 py-4 text-sm font-semibold">Ingreso por Facturación A20</td>
 <td class="px-6 py-4 text-sm">
-<span class="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wide">Inversiones</span>
+<span class="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wide">Ventas</span>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-custom/10 text-emerald-custom tracking-wide">Completado</span>
+</td>
+<td class="px-6 py-4 text-sm font-bold text-right text-emerald-custom">+5.420,00 €</td>
+</tr>
+<tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">26 Oct, 2023</td>
+<td class="px-6 py-4 text-sm font-semibold">Nóminas Octubre</td>
+<td class="px-6 py-4 text-sm">
+<span class="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wide">HR</span>
 </td>
 <td class="px-6 py-4">
 <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-custom/10 text-emerald-custom tracking-wide">Pagado</span>
 </td>
-<td class="px-6 py-4 text-sm font-bold text-right text-emerald-custom">+2.400,00 €</td>
-<td class="px-6 py-4 text-right">
-<div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-<button class="material-symbols-outlined text-slate-400 hover:text-primary transition-colors text-lg">edit</button>
-<button class="material-symbols-outlined text-slate-400 hover:text-primary transition-colors text-lg">description</button>
-</div>
-</td>
+<td class="px-6 py-4 text-sm font-bold text-right text-red-500">-2.300,00 €</td>
 </tr>
 <tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">22 Oct, 2023</td>
-<td class="px-6 py-4 text-sm font-semibold">Alquiler Oficina</td>
-<td class="px-6 py-4 text-sm">
-<span class="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wide">Operaciones</span>
-</td>
-<td class="px-6 py-4">
-<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-custom/10 text-emerald-custom tracking-wide">Pagado</span>
-</td>
-<td class="px-6 py-4 text-sm font-bold text-right text-red-500">-1.250,00 €</td>
-<td class="px-6 py-4 text-right">
-<div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-<button class="material-symbols-outlined text-slate-400 hover:text-primary transition-colors text-lg">edit</button>
-<button class="material-symbols-outlined text-slate-400 hover:text-primary transition-colors text-lg">description</button>
-</div>
-</td>
-</tr>
-<tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">20 Oct, 2023</td>
-<td class="px-6 py-4 text-sm font-semibold">Adobe Creative Cloud</td>
+<td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">25 Oct, 2023</td>
+<td class="px-6 py-4 text-sm font-semibold">AWS Services Billing</td>
 <td class="px-6 py-4 text-sm">
 <span class="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wide">Software</span>
 </td>
 <td class="px-6 py-4">
-<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-slate-200 text-slate-600 tracking-wide">Pendiente</span>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-amber-500/10 text-amber-600 tracking-wide">Procesando</span>
 </td>
-<td class="px-6 py-4 text-sm font-bold text-right text-red-500">-52,99 €</td>
-<td class="px-6 py-4 text-right">
-<div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-<button class="material-symbols-outlined text-slate-400 hover:text-primary transition-colors text-lg">edit</button>
-<button class="material-symbols-outlined text-slate-400 hover:text-primary transition-colors text-lg">description</button>
-</div>
-</td>
+<td class="px-6 py-4 text-sm font-bold text-right text-red-500">-145,50 €</td>
 </tr>
 </tbody>
 </table>
