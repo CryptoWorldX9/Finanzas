@@ -27,9 +27,16 @@
     const db = getDatabase(app);
     let currentUser = null;
 
-    const selectMoneda = document.getElementById('conf-moneda');
-    const selectZona = document.getElementById('conf-zona');
-    const checkDarkMode = document.getElementById('conf-darkmode');
+    // Listas requeridas para el Panel
+    const LISTAS_REQUERIDAS = [
+        { id: 'tipo', nombre: 'Tipo' },
+        { id: 'monto', nombre: 'Monto' },
+        { id: 'categoria', nombre: 'Categoría' },
+        { id: 'sub_categoria', nombre: 'Sub Categoría' },
+        { id: 'pago', nombre: 'Pago' },
+        { id: 'recurrente', nombre: 'Recurrente' }
+    ];
+
     const containerMaestro = document.getElementById('master-lists-container');
 
     onAuthStateChanged(auth, (user) => {
@@ -42,22 +49,18 @@
     });
 
     function iniciarSincronizacionRealtime() {
-        // Configuración Global
+        // Sincronización de Preferencias y Tema
         onValue(ref(db, `usuarios/${currentUser.uid}/configuracion`), (snapshot) => {
             if (snapshot.exists()) {
                 const data = snapshot.val();
-                if(data.moneda) selectMoneda.value = data.moneda;
-                if(data.zonaHoraria) selectZona.value = data.zonaHoraria;
-                if(data.darkMode !== undefined) {
-                    checkDarkMode.checked = data.darkMode;
-                    aplicarModoVisual(data.darkMode);
-                }
+                if(data.darkMode !== undefined) aplicarModoVisual(data.darkMode);
+                // Aquí podrías cargar moneda y zona horaria si los necesitas
             }
         });
 
-        // Sincronización de TODAS las listas dinámicamente
+        // Sincronización de Listas Maestras
         onValue(ref(db, `usuarios/${currentUser.uid}/listas`), (snapshot) => {
-            renderizarTodasLasListas(snapshot.val());
+            renderizarListasEstandar(snapshot.val() || {});
         });
     }
 
@@ -71,89 +74,70 @@
         }
     }
 
-    function renderizarTodasLasListas(todasLasListas) {
+    function renderizarListasEstandar(dataFirebase) {
         containerMaestro.innerHTML = '';
-        if (!todasLasListas) return;
 
-        Object.keys(todasLasListas).forEach(nombreLista => {
-            const items = todasLasListas[nombreLista];
-            
+        LISTAS_REQUERIDAS.forEach(lista => {
             const divCol = document.createElement('div');
             divCol.className = "space-y-4";
             
-            // Header de la columna
             divCol.innerHTML = `
-                <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex justify-between items-center capitalize">
-                    ${nombreLista.replace(/_/g, ' ')}
-                    <button onclick="eliminarTipoLista('${nombreLista}')" class="material-symbols-outlined text-slate-400 text-sm hover:text-red-500">delete</button>
+                <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex justify-between items-center">
+                    ${lista.nombre}
                 </h4>
-                <div id="list-${nombreLista}" class="flex flex-wrap gap-2"></div>
+                <div id="list-${lista.id}" class="flex flex-wrap gap-2"></div>
             `;
 
             containerMaestro.appendChild(divCol);
-            const listContainer = divCol.querySelector(`#list-${nombreLista}`);
+            const listContainer = divCol.querySelector(`#list-${lista.id}`);
 
-            // Renderizar items de esta lista específica
-            if (items && typeof items === 'object') {
+            // Renderizar items existentes en Firebase para esta lista
+            const items = dataFirebase[lista.id];
+            if (items) {
                 Object.keys(items).forEach(itemId => {
-                    const itemData = items[itemId];
                     const span = document.createElement('span');
                     span.className = "px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-medium flex items-center gap-2";
-                    span.innerHTML = `${itemData.nombre} <button onclick="eliminarItem('${nombreLista}', '${itemId}')" class="hover:text-red-500">×</button>`;
+                    span.innerHTML = `${items[itemId].nombre} <button onclick="eliminarItem('${lista.id}', '${itemId}')" class="hover:text-red-500">×</button>`;
                     listContainer.appendChild(span);
                 });
             }
 
-            // Botón + Añadir datos a esta lista
+            // Botón + Añadir
             const btnAdd = document.createElement('button');
             btnAdd.className = "px-3 py-1.5 border border-dashed border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-500 hover:border-primary hover:text-primary transition-colors";
             btnAdd.innerHTML = "+ Añadir";
-            btnAdd.onclick = () => agregarDatoALista(nombreLista);
+            btnAdd.onclick = () => agregarDatoALista(lista.id, lista.nombre);
             listContainer.appendChild(btnAdd);
         });
     }
 
-    // Acción: Crear un nuevo tipo de lista (ej: Subcategorías)
-    window.crearNuevoTipoLista = async () => {
-        const nombre = prompt("Nombre del nuevo tipo de lista (ej: Subcategorías, Proyectos):");
+    window.agregarDatoALista = async (listaId, listaNombre) => {
+        const nombre = prompt(`Añadir nueva opción a "${listaNombre}":`);
         if (nombre && nombre.trim() !== "") {
-            const key = nombre.trim().toLowerCase().replace(/\s+/g, '_');
-            const listRef = ref(db, `usuarios/${currentUser.uid}/listas/${key}`);
-            // Creamos un item inicial para que la lista exista en la DB
-            await push(listRef, { nombre: "Ejemplo" });
+            await push(ref(db, `usuarios/${currentUser.uid}/listas/${listaId}`), { 
+                nombre: nombre.trim(),
+                createdAt: Date.now()
+            });
         }
     };
 
-    // Acción: Agregar dato a una lista existente
-    window.agregarDatoALista = async (tipo) => {
-        const nombre = prompt(`Añadir nuevo elemento a ${tipo}:`);
-        if (nombre && nombre.trim() !== "") {
-            await push(ref(db, `usuarios/${currentUser.uid}/listas/${tipo}`), { nombre: nombre.trim() });
-        }
-    };
-
-    window.eliminarItem = async (tipo, id) => {
-        if(confirm("¿Eliminar este elemento?")) {
-            await remove(ref(db, `usuarios/${currentUser.uid}/listas/${tipo}/${id}`));
-        }
-    };
-
-    window.eliminarTipoLista = async (tipo) => {
-        if(confirm(`¿Estás seguro de eliminar TODA la lista de "${tipo}"?`)) {
-            await remove(ref(db, `usuarios/${currentUser.uid}/listas/${tipo}`));
+    window.eliminarItem = async (listaId, itemId) => {
+        if(confirm("¿Eliminar esta opción? Se quitará de todos los menús desplegables.")) {
+            await remove(ref(db, `usuarios/${currentUser.uid}/listas/${listaId}/${itemId}`));
         }
     };
 
     window.guardarCambiosGlobales = async () => {
         const updates = {
-            moneda: selectMoneda.value,
-            zonaHoraria: selectZona.value,
-            darkMode: checkDarkMode.checked,
+            moneda: document.getElementById('conf-moneda').value,
+            zonaHoraria: document.getElementById('conf-zona').value,
+            darkMode: document.getElementById('conf-darkmode').checked,
             lastUpdated: Date.now()
         };
         await update(ref(db, `usuarios/${currentUser.uid}/configuracion`), updates);
-        alert("Cambios guardados");
+        alert("Configuración global guardada correctamente.");
     };
+
 </script>
 
 <script id="tailwind-config">
@@ -294,9 +278,7 @@
                         <span class="material-symbols-outlined text-primary">list_alt</span>
                         <h3 class="font-bold text-xl">Gestión de Listas Maestras</h3>
                     </div>
-                    <button onclick="crearNuevoTipoLista()" class="text-primary text-sm font-bold flex items-center gap-1 hover:opacity-80 transition-opacity">
-                        <span class="material-symbols-outlined text-sm">add_circle</span> Nuevo Tipo de Lista
-                    </button>
+                    <p class="text-xs text-slate-500 italic">Sincronizado con formularios del Panel</p>
                 </div>
                 
                 <div id="master-lists-container" class="grid grid-cols-1 md:grid-cols-3 gap-12">
