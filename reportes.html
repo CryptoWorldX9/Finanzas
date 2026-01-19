@@ -4,8 +4,160 @@
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>QuantyA | Reportes y Exportación</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getDatabase, ref, onValue, push, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCO6WXu9iZsyEUmNNxrE4oWToLYY8wl-y4",
+        authDomain: "misfinanzaspro-d2f3f.firebaseapp.com",
+        databaseURL: "https://misfinanzaspro-d2f3f-default-rtdb.firebaseio.com",
+        projectId: "misfinanzaspro-d2f3f",
+        storageBucket: "misfinanzaspro-d2f3f.firebasestorage.app",
+        messagingSenderId: "613366165036",
+        appId: "1:613366165036:web:bebc72b38d39ab64932b89"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+    let todosLosMovimientos = [];
+    let uidUsuario = null;
+    let tipoFiltro = 'Todos';
+
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            uidUsuario = user.uid;
+            descargarDatos();
+            escucharHistorial();
+        } else { window.location.href = "index.html"; }
+    });
+
+    function descargarDatos() {
+        onValue(ref(db, `usuarios/${uidUsuario}/movimientos`), (snapshot) => {
+            todosLosMovimientos = [];
+            snapshot.forEach(child => { todosLosMovimientos.push(child.val()); });
+        });
+    }
+
+    // Lógica de Filtros
+    window.setTipoFiltro = (tipo, btn) => {
+        tipoFiltro = tipo;
+        document.querySelectorAll('.btn-tipo').forEach(b => {
+            b.classList.remove('bg-white', 'dark:bg-slate-700', 'text-primary', 'dark:text-white', 'shadow-sm');
+            b.classList.add('text-gray-500');
+        });
+        btn.classList.add('bg-white', 'dark:bg-slate-700', 'text-primary', 'dark:text-white', 'shadow-sm');
+        btn.classList.remove('text-gray-500');
+    };
+
+    function obtenerDatosFiltrados() {
+        const inicio = new Date(document.getElementById('fechaInicio').value);
+        const fin = new Date(document.getElementById('fechaFin').value);
+        const cat = document.getElementById('filtroCategoria').value;
+
+        return todosLosMovimientos.filter(m => {
+            const fechaM = new Date(m.fecha);
+            const cumpleFecha = fechaM >= inicio && fechaM <= fin;
+            const cumpleCat = cat === "Todas las categorías" || m.categoria === cat;
+            const cumpleTipo = tipoFiltro === "Todos" || m.tipo === tipoFiltro;
+            return cumpleFecha && cumpleCat && cumpleTipo;
+        });
+    }
+
+    // EXPORTAR EXCEL
+    window.exportarExcel = async () => {
+        const datos = obtenerDatosFiltrados();
+        if(datos.length === 0) return alert("No hay datos en este rango");
+
+        const ws = XLSX.utils.json_to_sheet(datos);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Reporte QuantyA");
+        XLSX.writeFile(wb, `QuantyA_Reporte_${new Date().getTime()}.xlsx`);
+        guardarEnHistorial("Excel Corporativo", document.getElementById('fechaInicio').value);
+    };
+
+    // GENERAR PDF CORPORATIVO
+    window.exportarPDF = () => {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const datos = obtenerDatosFiltrados();
+        if(datos.length === 0) return alert("No hay datos en este rango");
+
+        // Header Corporativo
+        doc.setFillColor(23, 98, 130);
+        doc.rect(0, 0, 210, 40, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(22);
+        doc.text("QUANTYA FINANCIAL REPORT", 15, 25);
+        
+        doc.setFontSize(10);
+        doc.text(`Periodo: ${document.getElementById('fechaInicio').value} al ${document.getElementById('fechaFin').value}`, 15, 35);
+
+        // Tabla de datos nativa (rápida y profesional)
+        doc.autoTable({
+            startY: 50,
+            head: [['Fecha', 'Concepto', 'Categoría', 'Tipo', 'Monto']],
+            body: datos.map(d => [d.fecha, d.concepto, d.categoria, d.tipo, `$${d.monto}`]),
+            headStyles: { fillColor: [23, 98, 130] },
+            alternateRowStyles: { fillColor: [245, 247, 250] }
+        });
+
+        doc.save("Reporte_QuantyA.pdf");
+        guardarEnHistorial("PDF Profesional", document.getElementById('fechaInicio').value);
+    };
+
+    function guardarEnHistorial(tipo, rango) {
+        const refHistorial = ref(db, `usuarios/${uidUsuario}/historial_reportes`);
+        push(refHistorial, {
+            fechaGeneracion: new Date().toLocaleString(),
+            tipo: tipo,
+            rango: rango,
+            ref: "REP-" + Math.floor(Math.random()*1000)
+        });
+    }
+
+    function escucharHistorial() {
+        onValue(ref(db, `usuarios/${uidUsuario}/historial_reportes`), (snapshot) => {
+            const cuerpo = document.getElementById('tabla-historial');
+            cuerpo.innerHTML = "";
+            snapshot.forEach(child => {
+                const h = child.val();
+                const colorTag = h.tipo.includes('Excel') ? 'bg-excel-green/10 text-excel-green' : 'bg-pdf-red/10 text-pdf-red';
+                cuerpo.innerHTML += `
+                    <tr class="hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td class="px-8 py-5">
+                            <div class="flex flex-col">
+                                <span class="text-sm font-bold text-navy-900 dark:text-white">${h.fechaGeneracion}</span>
+                                <span class="text-[11px] text-gray-400 font-medium tracking-tight">${h.ref}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-5">
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-black ${colorTag} uppercase">
+                                ${h.tipo}
+                            </span>
+                        </td>
+                        <td class="px-6 py-5 text-sm text-gray-600 dark:text-slate-400 font-medium">${h.rango}</td>
+                        <td class="px-6 py-5 text-right">
+                            <button class="inline-flex items-center gap-2 text-primary text-sm font-bold hover:bg-primary/5 px-4 py-2 rounded-xl transition-colors">
+                                <span class="material-symbols-outlined text-[18px]">download</span> Re-descargar
+                            </button>
+                        </td>
+                    </tr>`;
+            });
+        });
+    }
+</script>
+
 <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -68,17 +220,7 @@
                 <span class="material-symbols-outlined text-[20px]">assessment</span>
                 <span class="text-sm font-bold">Reportes</span>
             </a>
-            <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
-                <span class="material-symbols-outlined text-[20px]">settings</span>
-                <span class="text-sm font-medium">Configuración</span>
-            </a>
         </nav>
-    </div>
-    <div class="mt-auto">
-        <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors">
-            <span class="material-symbols-outlined text-[20px]">logout</span>
-            <span class="text-sm font-medium">Cerrar Sesión</span>
-        </a>
     </div>
 </aside>
 
@@ -86,11 +228,7 @@
     <header class="h-16 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 px-8 flex items-center justify-between sticky top-0 z-10">
         <h2 class="text-lg font-bold text-navy-900 dark:text-white">Reportes y Exportación</h2>
         <div class="flex items-center gap-4">
-            <button class="p-2 text-gray-400 hover:text-primary transition-colors">
-                <span class="material-symbols-outlined">notifications</span>
-            </button>
-            <div class="h-8 w-[1px] bg-gray-200 dark:bg-slate-700 mx-2"></div>
-            <span class="text-sm text-gray-500 dark:text-slate-400">Última actualización: Hoy, 09:42 AM</span>
+            <span class="text-sm text-gray-500 dark:text-slate-400">Estado: Sincronizado</span>
         </div>
     </header>
 
@@ -104,23 +242,17 @@
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
-                <div class="col-span-1">
+                <div>
                     <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Fecha Inicio</label>
-                    <div class="relative">
-                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[20px]">calendar_today</span>
-                        <input class="w-full pl-10 pr-4 py-2.5 rounded-xl border-gray-200 dark:border-slate-700 dark:bg-slate-800 focus:ring-primary focus:border-primary text-sm" type="date" value="2026-01-01"/>
-                    </div>
+                    <input id="fechaInicio" class="w-full px-4 py-2.5 rounded-xl border-gray-200 dark:border-slate-700 dark:bg-slate-800 text-sm" type="date" value="2026-01-01"/>
                 </div>
-                <div class="col-span-1">
+                <div>
                     <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Fecha Fin</label>
-                    <div class="relative">
-                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[20px]">calendar_month</span>
-                        <input class="w-full pl-10 pr-4 py-2.5 rounded-xl border-gray-200 dark:border-slate-700 dark:bg-slate-800 focus:ring-primary focus:border-primary text-sm" type="date" value="2026-01-31"/>
-                    </div>
+                    <input id="fechaFin" class="w-full px-4 py-2.5 rounded-xl border-gray-200 dark:border-slate-700 dark:bg-slate-800 text-sm" type="date" value="2026-12-31"/>
                 </div>
-                <div class="col-span-1">
+                <div>
                     <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Categoría</label>
-                    <select class="w-full py-2.5 rounded-xl border-gray-200 dark:border-slate-700 dark:bg-slate-800 focus:ring-primary focus:border-primary text-sm">
+                    <select id="filtroCategoria" class="w-full py-2.5 rounded-xl border-gray-200 dark:border-slate-700 dark:bg-slate-800 text-sm">
                         <option>Todas las categorías</option>
                         <option>Vivienda</option>
                         <option>Alimentación</option>
@@ -128,42 +260,41 @@
                         <option>Servicios</option>
                     </select>
                 </div>
-                <div class="col-span-1">
-                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Tipo de Movimiento</label>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Tipo</label>
                     <div class="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-                        <button class="flex-1 text-xs font-bold py-2 bg-white dark:bg-slate-700 text-primary dark:text-white rounded-lg shadow-sm">Todos</button>
-                        <button class="flex-1 text-xs font-bold py-2 text-gray-500 hover:text-navy-900">Ingresos</button>
-                        <button class="flex-1 text-xs font-bold py-2 text-gray-500 hover:text-navy-900">Egresos</button>
+                        <button onclick="setTipoFiltro('Todos', this)" class="btn-tipo flex-1 text-xs font-bold py-2 bg-white dark:bg-slate-700 text-primary dark:text-white rounded-lg shadow-sm">Todos</button>
+                        <button onclick="setTipoFiltro('Ingreso', this)" class="btn-tipo flex-1 text-xs font-bold py-2 text-gray-500">Ingresos</button>
+                        <button onclick="setTipoFiltro('Egreso', this)" class="btn-tipo flex-1 text-xs font-bold py-2 text-gray-500">Egresos</button>
                     </div>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10">
-                <button class="flex items-center gap-6 p-6 rounded-2xl border-2 border-transparent bg-excel-green/5 hover:border-excel-green group transition-all text-left">
+                <button onclick="exportarExcel()" class="flex items-center gap-6 p-6 rounded-2xl border-2 border-transparent bg-excel-green/5 hover:border-excel-green group transition-all text-left">
                     <div class="size-16 bg-excel-green text-white rounded-xl flex items-center justify-center shadow-lg shadow-excel-green/20">
                         <span class="material-symbols-outlined text-[40px]">description</span>
                     </div>
                     <div>
                         <h4 class="text-lg font-bold text-navy-900 dark:text-white mb-1 group-hover:text-excel-green transition-colors">Exportar a Excel (.xlsx)</h4>
-                        <p class="text-sm text-gray-500 dark:text-slate-400">Hoja de cálculo detallada con tablas dinámicas listas para análisis.</p>
+                        <p class="text-sm text-gray-500 dark:text-slate-400">Hoja de cálculo detallada lista para análisis.</p>
                     </div>
                 </button>
-                <button class="flex items-center gap-6 p-6 rounded-2xl border-2 border-transparent bg-pdf-red/5 hover:border-pdf-red group transition-all text-left">
+                <button onclick="exportarPDF()" class="flex items-center gap-6 p-6 rounded-2xl border-2 border-transparent bg-pdf-red/5 hover:border-pdf-red group transition-all text-left">
                     <div class="size-16 bg-pdf-red text-white rounded-xl flex items-center justify-center shadow-lg shadow-pdf-red/20">
                         <span class="material-symbols-outlined text-[40px]">picture_as_pdf</span>
                     </div>
                     <div>
                         <h4 class="text-lg font-bold text-navy-900 dark:text-white mb-1 group-hover:text-pdf-red transition-colors">Generar Reporte PDF</h4>
-                        <p class="text-sm text-gray-500 dark:text-slate-400">Documento corporativo visual con gráficos y sumarios ejecutivos.</p>
+                        <p class="text-sm text-gray-500 dark:text-slate-400">Documento corporativo visual y profesional.</p>
                     </div>
                 </button>
             </div>
         </section>
 
         <section class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden">
-            <div class="px-8 py-6 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between">
+            <div class="px-8 py-6 border-b border-gray-100 dark:border-slate-800">
                 <h3 class="text-lg font-bold text-navy-900 dark:text-white">Historial de Reportes</h3>
-                <button class="text-primary text-sm font-bold hover:underline">Limpiar historial</button>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left">
@@ -175,54 +306,11 @@
                             <th class="px-6 py-4 text-right">Acción</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-100 dark:divide-slate-800">
-                        <tr class="hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-colors">
-                            <td class="px-8 py-5">
-                                <div class="flex flex-col">
-                                    <span class="text-sm font-bold text-navy-900 dark:text-white">Hoy, 09:12 AM</span>
-                                    <span class="text-[11px] text-gray-400 font-medium tracking-tight">Ref: #REP-2026-001</span>
-                                </div>
-                            </td>
-                            <td class="px-6 py-5">
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-black bg-excel-green/10 text-excel-green uppercase">
-                                    Excel Corporativo
-                                </span>
-                            </td>
-                            <td class="px-6 py-5 text-sm text-gray-600 dark:text-slate-400 font-medium">Enero 2026</td>
-                            <td class="px-6 py-5 text-right">
-                                <button class="inline-flex items-center gap-2 text-primary text-sm font-bold hover:bg-primary/5 px-4 py-2 rounded-xl transition-colors">
-                                    <span class="material-symbols-outlined text-[18px]">download</span> Re-descargar
-                                </button>
-                            </td>
-                        </tr>
-                        <tr class="hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-colors">
-                            <td class="px-8 py-5">
-                                <div class="flex flex-col">
-                                    <span class="text-sm font-bold text-navy-900 dark:text-white">Ayer, 04:45 PM</span>
-                                    <span class="text-[11px] text-gray-400 font-medium tracking-tight">Ref: #REP-2026-002</span>
-                                </div>
-                            </td>
-                            <td class="px-6 py-5">
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-black bg-pdf-red/10 text-pdf-red uppercase">
-                                    PDF Profesional
-                                </span>
-                            </td>
-                            <td class="px-6 py-5 text-sm text-gray-600 dark:text-slate-400 font-medium">Consolidado Q4 2025</td>
-                            <td class="px-6 py-5 text-right">
-                                <button class="inline-flex items-center gap-2 text-primary text-sm font-bold hover:bg-primary/5 px-4 py-2 rounded-xl transition-colors">
-                                    <span class="material-symbols-outlined text-[18px]">download</span> Re-descargar
-                                </button>
-                            </td>
-                        </tr>
-                    </tbody>
+                    <tbody id="tabla-historial" class="divide-y divide-gray-100 dark:divide-slate-800">
+                        </tbody>
                 </table>
             </div>
         </section>
     </div>
-
-    <footer class="p-8 text-center mt-auto">
-        <p class="text-xs text-gray-400">© 2026 QuantyA Financial Systems. Todos los reportes generados están protegidos por encriptación AES-256.</p>
-    </footer>
 </main>
-
 </body></html>
