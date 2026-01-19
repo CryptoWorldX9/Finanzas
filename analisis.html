@@ -41,19 +41,17 @@
     });
 
     function iniciarSincronizacion(uid) {
-        // Escuchar Movimientos
         onValue(ref(db, `usuarios/${uid}/movimientos`), (snapshot) => {
             todosLosMovimientos = [];
             snapshot.forEach(child => { todosLosMovimientos.push(child.val()); });
             aplicarFiltroYActualizar(filtroActual);
         });
 
-        // Escuchar Metas (Reflejado en tiempo real)
+        // ESCUCHA DE METAS CORREGIDA
         onValue(ref(db, `usuarios/${uid}/metas`), (snapshot) => {
             const metas = [];
             snapshot.forEach(child => { 
-                const data = child.val();
-                metas.push({ id: child.key, ...data }); 
+                metas.push({ id: child.key, ...child.val() }); 
             });
             renderizarMetas(metas);
         });
@@ -105,9 +103,7 @@
             return `
                 <div class="flex items-center justify-between p-2">
                     <div class="flex items-center gap-3">
-                        <div class="size-9 rounded-lg flex items-center justify-center ${style.col}">
-                            <span class="material-symbols-outlined text-xl">${style.ico}</span>
-                        </div>
+                        <div class="size-9 rounded-lg flex items-center justify-center ${style.col}"><span class="material-symbols-outlined text-xl">${style.ico}</span></div>
                         <span class="text-sm font-bold truncate w-32 text-slate-700 dark:text-slate-200">${g.concepto}</span>
                     </div>
                     <span class="text-sm font-black text-red-500">$${new Intl.NumberFormat('es-CL').format(g.monto)}</span>
@@ -123,27 +119,22 @@
                 datasets: [{
                     data: [ingresos, gastos],
                     backgroundColor: ['#10b981', '#ef4444'],
-                    hoverOffset: 10,
-                    borderWidth: 4,
-                    borderColor: 'white',
-                    borderRadius: 5
+                    hoverOffset: 10, borderWidth: 4, borderColor: 'white', borderRadius: 5
                 }]
             },
             options: {
-                cutout: '65%', // MÁS GRUESO PARA QUE EL TEXTO QUEPA
+                cutout: '65%',
                 plugins: {
                     legend: { display: false },
                     datalabels: {
-                        color: '#fff',
-                        font: { weight: '900', size: 14 },
+                        color: '#fff', font: { weight: '900', size: 14 },
                         formatter: (v, context) => {
                             const total = context.dataset.data.reduce((a, b) => a + b, 0);
                             return total > 0 ? Math.round((v / total) * 100) + '%' : '';
                         }
                     }
                 },
-                responsive: true,
-                maintainAspectRatio: false
+                responsive: true, maintainAspectRatio: false
             }
         });
 
@@ -178,13 +169,15 @@
         }
 
         contenedor.innerHTML = metas.map(meta => {
-            const actual = Number(meta.monto_actual) || 0;
-            const objetivo = Number(meta.monto_objetivo) || 1;
+            // LIMPIEZA DE DATOS: Convierte a número aunque venga como string con basura
+            const actual = Number(String(meta.monto_actual).replace(/[^0-9.-]+/g,"")) || 0;
+            const objetivo = Number(String(meta.monto_objetivo).replace(/[^0-9.-]+/g,"")) || 1;
             const porcentaje = Math.min(Math.round((actual / objetivo) * 100), 100);
             
             let icon = "savings", colorBase = "primary";
-            if (meta.nombre.toLowerCase().includes("emergencia")) { icon = "emergency"; colorBase = "red-500"; }
-            else if (meta.nombre.toLowerCase().includes("viaje") || meta.nombre.toLowerCase().includes("vaca")) { icon = "flight"; colorBase = "orange-500"; }
+            const nombre = meta.nombre.toLowerCase();
+            if (nombre.includes("emergencia")) { icon = "emergency"; colorBase = "red-500"; }
+            else if (nombre.includes("viaje") || nombre.includes("vaca")) { icon = "flight"; colorBase = "orange-500"; }
 
             return `
                 <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-100 dark:border-slate-700">
@@ -195,21 +188,21 @@
                             </div>
                             <div>
                                 <h4 class="font-bold text-base text-slate-800 dark:text-white">${meta.nombre}</h4>
-                                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest font-display">Objetivo: $${new Intl.NumberFormat('es-CL').format(objetivo)}</p>
+                                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Objetivo: $${new Intl.NumberFormat('es-CL').format(objetivo)}</p>
                             </div>
                         </div>
                         <span class="text-${colorBase} font-black text-lg">${porcentaje}%</span>
                     </div>
                     <div class="w-full h-3 bg-slate-100 dark:bg-slate-700 rounded-full mb-4 overflow-hidden">
-                        <div class="h-full bg-${colorBase} transition-all duration-1000 shadow-[0_0_10px_rgba(23,98,130,0.3)]" style="width: ${porcentaje}%"></div>
+                        <div class="h-full bg-${colorBase} transition-all duration-1000" style="width: ${porcentaje}%"></div>
                     </div>
                     <div class="flex justify-between items-center">
                         <div>
-                            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">Ahorrado</p>
+                            <p class="text-[9px] text-slate-400 font-bold uppercase">Ahorrado</p>
                             <p class="text-sm font-black text-slate-800 dark:text-white">$${new Intl.NumberFormat('es-CL').format(actual)}</p>
                         </div>
                         <div class="text-right">
-                            <p class="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">Faltante</p>
+                            <p class="text-[9px] text-slate-400 font-bold uppercase">Faltante</p>
                             <p class="text-sm font-black text-slate-800 dark:text-white">$${new Intl.NumberFormat('es-CL').format(Math.max(0, objetivo - actual))}</p>
                         </div>
                     </div>
@@ -311,9 +304,8 @@
                 </div>
 
                 <div class="bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-sm border border-slate-100 dark:border-slate-700">
-                    <div class="p-6 border-b border-slate-50 dark:border-slate-700 flex justify-between items-center">
+                    <div class="p-6 border-b border-slate-50 dark:border-slate-700">
                         <h3 class="text-lg font-bold tracking-tight">Resumen de Rendimiento</h3>
-                        <span class="text-[10px] bg-emerald-100 text-emerald-600 px-2 py-1 rounded-full font-bold">ACTUALIZADO</span>
                     </div>
                     <div id="resumen-rendimiento-dinamico"></div>
                 </div>
@@ -326,8 +318,7 @@
                         <span class="material-symbols-outlined">add</span>
                     </a>
                 </div>
-                <div id="contenedor-metas-dinamicas" class="grid grid-cols-1 gap-5">
-                    </div>
+                <div id="contenedor-metas-dinamicas" class="grid grid-cols-1 gap-5"></div>
             </section>
         </div>
     </main>
