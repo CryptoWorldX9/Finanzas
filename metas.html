@@ -38,7 +38,6 @@
         }
     });
 
-    // --- FORMATEO DE MILES EN TIEMPO REAL ---
     window.formatInputCurrency = (input) => {
         let value = input.value.replace(/\D/g, "");
         if (value === "") return;
@@ -49,7 +48,19 @@
         return parseFloat(val.toString().replace(/\./g, "")) || 0;
     }
 
-    // --- LÓGICA DE METAS ---
+    // --- LÓGICA DE ICONOS INTELIGENTES ---
+    function obtenerIconoMeta(nombre) {
+        const n = nombre.toLowerCase();
+        if (n.includes('vacac') || n.includes('viaje') || n.includes('avion')) return { ico: 'flight', col: 'bg-blue-500' };
+        if (n.includes('deuda') || n.includes('pago') || n.includes('banco')) return { ico: 'payments', col: 'bg-red-500' };
+        if (n.includes('ropa') || n.includes('compras') || n.includes('mall')) return { ico: 'checkroom', col: 'bg-pink-500' };
+        if (n.includes('casa') || n.includes('hogar') || n.includes('depto')) return { ico: 'home', col: 'bg-orange-500' };
+        if (n.includes('auto') || n.includes('carro') || n.includes('vehiculo')) return { ico: 'directions_car', col: 'bg-slate-700' };
+        if (n.includes('comida') || n.includes('restaurante')) return { ico: 'restaurant', col: 'bg-amber-500' };
+        if (n.includes('estudio') || n.includes('universidad') || n.includes('curso')) return { ico: 'school', col: 'bg-indigo-500' };
+        return { ico: 'savings', col: 'bg-emerald-500' }; // Default
+    }
+
     function cargarMetas() {
         onValue(ref(db, `usuarios/${currentUser.uid}/metas`), (snapshot) => {
             const container = document.getElementById('metas-container');
@@ -57,12 +68,8 @@
             let ahorroTotalGlobal = 0;
 
             if (snapshot.exists()) {
-                const metas = [];
                 snapshot.forEach((child) => {
-                    metas.push({ id: child.key, ...child.val() });
-                });
-
-                metas.forEach(meta => {
+                    const meta = { id: child.key, ...child.val() };
                     ahorroTotalGlobal += parseFloat(meta.ahorrado || 0);
                     renderizarMetaCard(meta);
                 });
@@ -92,17 +99,14 @@
     };
 
     window.aportarAhorro = async (id, actual) => {
-        const montoStr = prompt("¿Cuánto deseas aportar? (Ingresa el número sin puntos)");
+        const montoStr = prompt("Monto a aportar:");
         if (!montoStr || isNaN(montoStr)) return;
-
         const nuevoMonto = parseFloat(actual) + parseFloat(montoStr);
         await update(ref(db, `usuarios/${currentUser.uid}/metas/${id}`), { ahorrado: nuevoMonto });
     };
 
     window.eliminarMeta = async (id) => {
-        if(confirm("¿Seguro que deseas eliminar esta meta?")) {
-            await remove(ref(db, `usuarios/${currentUser.uid}/metas/${id}`));
-        }
+        if(confirm("¿Eliminar meta?")) await remove(ref(db, `usuarios/${currentUser.uid}/metas/${id}`));
     };
 
     window.prepararEdicionMeta = (id, nombre, obj, inicial, fecha) => {
@@ -119,71 +123,65 @@
         const container = document.getElementById('metas-container');
         const progreso = Math.min(Math.round((meta.ahorrado / meta.objetivo) * 100), 100);
         
-        // Lógica de Alerta de Tiempo (2 meses)
         const hoy = new Date();
         const fechaLimite = new Date(meta.fecha);
         const diffMeses = (fechaLimite.getFullYear() - hoy.getFullYear()) * 12 + (fechaLimite.getMonth() - hoy.getMonth());
-        
-        let statusHtml = '<span class="bg-emerald-custom/10 text-emerald-custom text-[10px] font-black px-2 py-1 rounded-full uppercase">En Tiempo</span>';
-        let borderColor = 'border-slate-200';
-        
-        // REGLA: Menos de 2 meses y falta más del 30% (progreso < 70)
-        if (progreso < 100 && diffMeses <= 2 && progreso < 70) {
-            statusHtml = '<span class="bg-red-100 text-red-600 text-[10px] font-black px-2 py-1 rounded-full uppercase">Requiere Atención</span>';
-            borderColor = 'border-red-200';
-        } else if (progreso >= 100) {
-            statusHtml = '<span class="bg-emerald-custom text-white text-[10px] font-black px-2 py-1 rounded-full uppercase">Completada</span>';
-            borderColor = 'border-2 border-emerald-custom';
+        const vencida = hoy > fechaLimite && progreso < 100;
+
+        let statusTxt = "En Tiempo", statusCol = "text-emerald-500", barCol = "bg-emerald-500", bgLabel = "bg-emerald-100";
+
+        if (progreso >= 100) {
+            statusTxt = "Completada"; statusCol = "text-white"; barCol = "bg-emerald-500"; bgLabel = "bg-emerald-500";
+        } else if (vencida) {
+            statusTxt = "No Cumplido"; statusCol = "text-red-600"; barCol = "bg-red-500"; bgLabel = "bg-red-100";
+        } else if (diffMeses <= 2 && progreso < 70) {
+            statusTxt = "Requiere Atención"; statusCol = "text-orange-600"; barCol = "bg-orange-500"; bgLabel = "bg-orange-100";
         }
 
-        // Variación de Iconos aleatoria basada en el ID para que sea consistente
-        const iconos = ['rocket_launch', 'account_balance', 'payments', 'savings', 'trending_up', 'flight'];
-        const iconoIdx = meta.id.charCodeAt(meta.id.length - 1) % iconos.length;
-        const iconoElegido = iconos[iconoIdx];
+        const infoIco = obtenerIconoMeta(meta.nombre);
 
         const card = document.createElement('div');
-        card.className = `bg-white dark:bg-slate-900 rounded-2xl border ${borderColor} p-6 shadow-sm relative overflow-hidden`;
+        card.className = `bg-white dark:bg-slate-900 rounded-2xl border-2 ${progreso >= 100 ? 'border-emerald-500' : 'border-slate-100'} p-6 shadow-md relative`;
         card.innerHTML = `
             <div class="flex justify-between items-start mb-6">
-                <div class="size-10 ${progreso >= 100 ? 'bg-emerald-custom text-white' : 'bg-primary/10 text-primary'} rounded-lg flex items-center justify-center">
-                    <span class="material-symbols-outlined">${progreso >= 100 ? 'verified' : iconoElegido}</span>
+                <div class="size-12 ${infoIco.col} text-white rounded-xl shadow-lg flex items-center justify-center">
+                    <span class="material-symbols-outlined text-2xl">${progreso >= 100 ? 'verified' : infoIco.ico}</span>
                 </div>
                 <div class="flex items-center gap-2">
-                    ${statusHtml}
-                    <div class="flex gap-1 ml-2">
-                        <button onclick="prepararEdicionMeta('${meta.id}', '${meta.nombre}', ${meta.objetivo}, ${meta.ahorrado}, '${meta.fecha}')" class="p-1.5 text-slate-400 hover:text-primary transition-colors">
-                            <span class="material-symbols-outlined text-[18px]">edit</span>
-                        </button>
-                        <button onclick="eliminarMeta('${meta.id}')" class="p-1.5 text-slate-400 hover:text-red-500 transition-colors">
-                            <span class="material-symbols-outlined text-[18px]">delete</span>
-                        </button>
+                    <span class="${bgLabel} ${statusCol} text-[10px] font-black px-3 py-1 rounded-full uppercase shadow-sm">${statusTxt}</span>
+                    <div class="flex gap-1 bg-slate-50 rounded-lg p-1">
+                        <button onclick="prepararEdicionMeta('${meta.id}', '${meta.nombre}', ${meta.objetivo}, ${meta.ahorrado}, '${meta.fecha}')" class="text-slate-400 hover:text-primary"><span class="material-symbols-outlined text-lg">edit</span></button>
+                        <button onclick="eliminarMeta('${meta.id}')" class="text-slate-400 hover:text-red-500"><span class="material-symbols-outlined text-lg">delete</span></button>
                     </div>
                 </div>
             </div>
-            <h4 class="text-lg font-bold mb-1">${meta.nombre}</h4>
-            <p class="text-xs text-slate-500 mb-6 italic">Límite: ${meta.fecha}</p>
-            <div class="space-y-2 mb-6">
-                <div class="flex justify-between text-xs font-bold">
-                    <span class="text-slate-500 uppercase">Progreso</span>
-                    <span class="text-emerald-custom">${progreso}%</span>
+            <h4 class="text-xl font-bold text-slate-800 dark:text-white mb-1">${meta.nombre}</h4>
+            <p class="text-xs text-slate-400 mb-6 font-medium">Meta Final: ${meta.fecha}</p>
+            
+            <div class="space-y-3 mb-6">
+                <div class="flex justify-between items-end">
+                    <span class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Progreso de Ahorro</span>
+                    <span class="text-lg font-black ${statusCol.includes('white') ? 'text-emerald-500' : statusCol}">${progreso}%</span>
                 </div>
-                <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
-                    <div class="bg-emerald-custom h-full rounded-full transition-all duration-1000" style="width: ${progreso}%"></div>
+                <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-4 p-1 shadow-inner">
+                    <div class="${barCol} h-full rounded-full transition-all duration-1000 shadow-lg" style="width: ${progreso}%"></div>
                 </div>
             </div>
-            <div class="flex justify-between items-end mb-6 border-t border-slate-50 dark:border-slate-800 pt-4">
+
+            <div class="flex justify-between items-center mb-6 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-dashed border-slate-200">
                 <div>
-                    <p class="text-[10px] text-slate-400 uppercase font-bold">Ahorrado</p>
-                    <p class="text-lg font-black ${progreso >= 100 ? 'text-emerald-custom' : ''}">$${new Intl.NumberFormat('es-CL').format(meta.ahorrado)}</p>
+                    <p class="text-[9px] text-slate-400 uppercase font-black">Ahorrado</p>
+                    <p class="text-lg font-black text-slate-700 dark:text-white">$${new Intl.NumberFormat('es-CL').format(meta.ahorrado)}</p>
                 </div>
                 <div class="text-right">
-                    <p class="text-[10px] text-slate-400 uppercase font-bold">Objetivo</p>
+                    <p class="text-[9px] text-slate-400 uppercase font-black">Objetivo</p>
                     <p class="text-sm font-bold text-slate-500">$${new Intl.NumberFormat('es-CL').format(meta.objetivo)}</p>
                 </div>
             </div>
-            <button onclick="aportarAhorro('${meta.id}', ${meta.ahorrado})" class="w-full ${progreso >= 100 ? 'bg-emerald-custom/10 text-emerald-custom cursor-default' : 'bg-slate-50 dark:bg-slate-800 hover:bg-emerald-custom hover:text-white'} text-slate-700 dark:text-slate-300 font-bold py-3 rounded-xl transition-all border border-slate-200 dark:border-slate-700 text-sm flex items-center justify-center gap-2">
-                <span class="material-symbols-outlined text-lg">${progreso >= 100 ? 'check' : 'payments'}</span>
-                ${progreso >= 100 ? 'Meta Alcanzada' : 'Aportar Ahorro'}
+
+            <button onclick="aportarAhorro('${meta.id}', ${meta.ahorrado})" class="w-full ${progreso >= 100 ? 'bg-emerald-500 text-white shadow-emerald-200' : 'bg-primary text-white shadow-primary/20'} font-bold py-4 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 active:scale-95">
+                <span class="material-symbols-outlined text-xl">${progreso >= 100 ? 'check_circle' : 'add_card'}</span>
+                ${progreso >= 100 ? '¡Meta Lograda!' : 'Aportar Dinero'}
             </button>
         `;
         container.appendChild(card);
@@ -199,75 +197,71 @@
 
 <style type="text/tailwindcss">
     body { font-family: 'Inter', sans-serif; }
-    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
 </style>
 </head>
-<body class="bg-background-light dark:bg-[#111827] font-display text-slate-900 dark:text-slate-100">
+<body class="bg-[#fcfdfe] dark:bg-[#0f172a] font-display">
 <div class="flex min-h-screen">
-<aside class="w-64 bg-[#0f172a] text-white flex flex-col fixed h-full z-50 border-r border-slate-800 p-6">
+<aside class="w-64 bg-[#0f172a] text-white flex flex-col fixed h-full z-50 p-6 border-r border-slate-800">
     <div class="space-y-8 flex-1">
         <div class="flex items-center gap-3 px-2">
-            <div class="size-10 bg-primary rounded-lg flex items-center justify-center text-white shadow-lg shadow-primary/20"><span class="material-symbols-outlined text-2xl">account_balance_wallet</span></div>
-            <div><h1 class="text-xl font-bold tracking-tight leading-none">QuantyA</h1><p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Gestión Financiera</p></div>
+            <div class="size-10 bg-primary rounded-lg flex items-center justify-center text-white shadow-lg shadow-primary/40"><span class="material-symbols-outlined">account_balance_wallet</span></div>
+            <div><h1 class="text-xl font-bold tracking-tight">QuantyA</h1></div>
         </div>
         <nav class="space-y-1">
-            <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl"><span class="material-symbols-outlined text-[20px]">dashboard</span><span class="text-sm font-medium">Panel</span></a>
-            <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl"><span class="material-symbols-outlined text-[20px]">swap_horiz</span><span class="text-sm font-medium">Movimientos</span></a>
-            <a href="analisis.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl"><span class="material-symbols-outlined text-[20px]">analytics</span><span class="text-sm font-medium">Análisis</span></a>
-            <a href="metas.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20"><span class="material-symbols-outlined text-[20px]">track_changes</span><span class="text-sm font-medium">Metas</span></a>
-            <a href="reportes.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl"><span class="material-symbols-outlined text-[20px]">description</span><span class="text-sm font-medium">Reportes</span></a>
-            <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl"><span class="material-symbols-outlined text-[20px]">settings</span><span class="text-sm font-medium">Configuración</span></a>
+            <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white"><span class="material-symbols-outlined">dashboard</span><span class="text-sm font-medium">Panel</span></a>
+            <a href="metas.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg"><span class="material-symbols-outlined">track_changes</span><span class="text-sm font-medium">Metas</span></a>
         </nav>
     </div>
 </aside>
 
-<main class="ml-64 flex-1 flex flex-col">
-    <header class="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-8 flex items-center justify-between sticky top-0 z-40">
-        <h2 class="text-lg font-bold text-slate-800 dark:text-white">Metas Financieras</h2>
-        <div class="flex items-center gap-6">
-            <div class="text-right border-r border-slate-200 dark:border-slate-800 pr-6">
-                <p class="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Ahorro Total</p>
-                <p id="ahorro-total-header" class="text-lg font-black text-emerald-custom">$0</p>
+<main class="ml-64 flex-1">
+    <header class="h-20 bg-white dark:bg-slate-900 border-b border-slate-100 dark:border-slate-800 px-8 flex items-center justify-between sticky top-0 z-40">
+        <h2 class="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter italic">Gestión de Metas</h2>
+        <div class="flex items-center gap-8">
+            <div class="text-right px-6 py-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl border border-emerald-100">
+                <p class="text-[10px] text-emerald-600 uppercase font-black tracking-widest">Ahorro Total Acumulado</p>
+                <p id="ahorro-total-header" class="text-2xl font-black text-emerald-500 leading-none mt-1">$0</p>
             </div>
-            <div class="flex items-center gap-3">
-                <div class="text-right"><p id="user-name-display" class="text-sm font-semibold">Cargando...</p><p class="text-[11px] text-slate-500 font-medium">Admin Senior</p></div>
-                <div class="size-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary border border-primary/20">QA</div>
+            <div class="flex items-center gap-3 border-l pl-8">
+                <div class="text-right"><p id="user-name-display" class="text-sm font-bold text-slate-700">Usuario</p><p class="text-[10px] text-slate-400 font-bold uppercase">Plan Premium</p></div>
+                <div class="size-10 rounded-full bg-gradient-to-tr from-primary to-blue-400 flex items-center justify-center text-white font-bold">QA</div>
             </div>
         </div>
     </header>
 
-    <div class="p-8 space-y-8 max-w-[1440px] mx-auto w-full">
-        <section class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-            <div class="border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 px-6 py-4">
-                <div class="flex items-center gap-2 text-primary">
-                    <span class="material-symbols-outlined">add_circle</span>
-                    <h3 class="font-bold text-lg">Programar Nueva Meta</h3>
+    <div class="p-8 space-y-10 max-w-[1440px] mx-auto">
+        <section class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
+            <div class="bg-primary p-4 px-8 flex items-center gap-3 text-white">
+                <span class="material-symbols-outlined">add_task</span>
+                <h3 class="font-bold">Configura un nuevo objetivo financiero</h3>
+            </div>
+            <div class="p-8 grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black text-slate-400 uppercase ml-1">¿Qué quieres lograr?</label>
+                    <input id="meta-nombre" class="w-full rounded-xl border-slate-200 bg-slate-50 text-slate-700 font-bold py-3 focus:ring-primary" placeholder="Ej: Vacaciones Caribe" type="text"/>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Monto Objetivo</label>
+                    <input id="meta-objetivo" oninput="formatInputCurrency(this)" class="w-full rounded-xl border-slate-200 bg-slate-50 text-emerald-600 font-black py-3" placeholder="$ 0" type="text"/>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Ahorro Inicial</label>
+                    <input id="meta-inicial" oninput="formatInputCurrency(this)" class="w-full rounded-xl border-slate-200 bg-slate-50 text-blue-600 font-black py-3" placeholder="$ 0" type="text"/>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black text-slate-400 uppercase ml-1">Fecha Límite</label>
+                    <input id="meta-fecha" class="w-full rounded-xl border-slate-200 bg-slate-50 text-slate-600 font-bold py-3" type="date"/>
                 </div>
             </div>
-            <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div class="space-y-2">
-                    <span class="text-slate-500 text-xs font-bold uppercase ml-1">Nombre</span>
-                    <input id="meta-nombre" class="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm py-3" placeholder="Ej: Viaje" type="text"/>
-                </div>
-                <div class="space-y-2">
-                    <span class="text-slate-500 text-xs font-bold uppercase ml-1">Objetivo</span>
-                    <div class="relative"><span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span><input id="meta-objetivo" oninput="formatInputCurrency(this)" class="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm py-3 pl-8" placeholder="0" type="text"/></div>
-                </div>
-                <div class="space-y-2">
-                    <span class="text-slate-500 text-xs font-bold uppercase ml-1">Inicial</span>
-                    <div class="relative"><span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span><input id="meta-inicial" oninput="formatInputCurrency(this)" class="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm py-3 pl-8" placeholder="0" type="text"/></div>
-                </div>
-                <div class="space-y-2">
-                    <span class="text-slate-500 text-xs font-bold uppercase ml-1">Fecha</span>
-                    <input id="meta-fecha" class="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm py-3" type="date"/>
-                </div>
-            </div>
-            <div class="px-6 pb-6 flex justify-end">
-                <button id="btn-meta-main" onclick="crearMeta()" class="bg-primary hover:bg-primary/90 text-white font-bold py-3 px-8 rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center gap-2">Crear Meta Financiera</button>
+            <div class="px-8 pb-8 flex justify-end">
+                <button id="btn-meta-main" onclick="crearMeta()" class="bg-primary hover:bg-slate-800 text-white font-black py-4 px-10 rounded-2xl transition-all shadow-lg shadow-primary/30 flex items-center gap-2 uppercase text-xs tracking-widest">
+                    Crear Meta Financiera
+                </button>
             </div>
         </section>
 
-        <div id="metas-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        <div id="metas-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-10"></div>
     </div>
 </main>
 </div>
