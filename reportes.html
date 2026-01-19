@@ -49,7 +49,6 @@
         });
     }
 
-    // Lógica de Filtros
     window.setTipoFiltro = (tipo, btn) => {
         tipoFiltro = tipo;
         document.querySelectorAll('.btn-tipo').forEach(b => {
@@ -74,11 +73,9 @@
         });
     }
 
-    // EXPORTAR EXCEL
     window.exportarExcel = async () => {
         const datos = obtenerDatosFiltrados();
         if(datos.length === 0) return alert("No hay datos en este rango");
-
         const ws = XLSX.utils.json_to_sheet(datos);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Reporte QuantyA");
@@ -86,24 +83,20 @@
         guardarEnHistorial("Excel Corporativo", document.getElementById('fechaInicio').value);
     };
 
-    // GENERAR PDF CORPORATIVO
     window.exportarPDF = () => {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         const datos = obtenerDatosFiltrados();
         if(datos.length === 0) return alert("No hay datos en este rango");
 
-        // Header Corporativo
         doc.setFillColor(23, 98, 130);
         doc.rect(0, 0, 210, 40, 'F');
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(22);
         doc.text("QUANTYA FINANCIAL REPORT", 15, 25);
-        
         doc.setFontSize(10);
         doc.text(`Periodo: ${document.getElementById('fechaInicio').value} al ${document.getElementById('fechaFin').value}`, 15, 35);
 
-        // Tabla de datos nativa (rápida y profesional)
         doc.autoTable({
             startY: 50,
             head: [['Fecha', 'Concepto', 'Categoría', 'Tipo', 'Monto']],
@@ -220,7 +213,17 @@
                 <span class="material-symbols-outlined text-[20px]">assessment</span>
                 <span class="text-sm font-bold">Reportes</span>
             </a>
+            <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
+                <span class="material-symbols-outlined text-[20px]">settings</span>
+                <span class="text-sm font-medium">Configuración</span>
+            </a>
         </nav>
+    </div>
+    <div class="mt-auto">
+        <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors">
+            <span class="material-symbols-outlined text-[20px]">logout</span>
+            <span class="text-sm font-medium">Cerrar Sesión</span>
+        </a>
     </div>
 </aside>
 
@@ -228,6 +231,10 @@
     <header class="h-16 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800 px-8 flex items-center justify-between sticky top-0 z-10">
         <h2 class="text-lg font-bold text-navy-900 dark:text-white">Reportes y Exportación</h2>
         <div class="flex items-center gap-4">
+            <button class="p-2 text-gray-400 hover:text-primary transition-colors">
+                <span class="material-symbols-outlined">notifications</span>
+            </button>
+            <div class="h-8 w-[1px] bg-gray-200 dark:bg-slate-700 mx-2"></div>
             <span class="text-sm text-gray-500 dark:text-slate-400">Estado: Sincronizado</span>
         </div>
     </header>
@@ -242,17 +249,23 @@
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
-                <div>
+                <div class="col-span-1">
                     <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Fecha Inicio</label>
-                    <input id="fechaInicio" class="w-full px-4 py-2.5 rounded-xl border-gray-200 dark:border-slate-700 dark:bg-slate-800 text-sm" type="date" value="2026-01-01"/>
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[20px]">calendar_today</span>
+                        <input id="fechaInicio" class="w-full pl-10 pr-4 py-2.5 rounded-xl border-gray-200 dark:border-slate-700 dark:bg-slate-800 focus:ring-primary focus:border-primary text-sm" type="date" value="2026-01-01"/>
+                    </div>
                 </div>
-                <div>
+                <div class="col-span-1">
                     <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Fecha Fin</label>
-                    <input id="fechaFin" class="w-full px-4 py-2.5 rounded-xl border-gray-200 dark:border-slate-700 dark:bg-slate-800 text-sm" type="date" value="2026-12-31"/>
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[20px]">calendar_month</span>
+                        <input id="fechaFin" class="w-full pl-10 pr-4 py-2.5 rounded-xl border-gray-200 dark:border-slate-700 dark:bg-slate-800 focus:ring-primary focus:border-primary text-sm" type="date" value="2026-12-31"/>
+                    </div>
                 </div>
-                <div>
+                <div class="col-span-1">
                     <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Categoría</label>
-                    <select id="filtroCategoria" class="w-full py-2.5 rounded-xl border-gray-200 dark:border-slate-700 dark:bg-slate-800 text-sm">
+                    <select id="filtroCategoria" class="w-full py-2.5 rounded-xl border-gray-200 dark:border-slate-700 dark:bg-slate-800 focus:ring-primary focus:border-primary text-sm">
                         <option>Todas las categorías</option>
                         <option>Vivienda</option>
                         <option>Alimentación</option>
@@ -260,12 +273,12 @@
                         <option>Servicios</option>
                     </select>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Tipo</label>
+                <div class="col-span-1">
+                    <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Tipo de Movimiento</label>
                     <div class="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
                         <button onclick="setTipoFiltro('Todos', this)" class="btn-tipo flex-1 text-xs font-bold py-2 bg-white dark:bg-slate-700 text-primary dark:text-white rounded-lg shadow-sm">Todos</button>
-                        <button onclick="setTipoFiltro('Ingreso', this)" class="btn-tipo flex-1 text-xs font-bold py-2 text-gray-500">Ingresos</button>
-                        <button onclick="setTipoFiltro('Egreso', this)" class="btn-tipo flex-1 text-xs font-bold py-2 text-gray-500">Egresos</button>
+                        <button onclick="setTipoFiltro('Ingreso', this)" class="btn-tipo flex-1 text-xs font-bold py-2 text-gray-500 hover:text-navy-900">Ingresos</button>
+                        <button onclick="setTipoFiltro('Egreso', this)" class="btn-tipo flex-1 text-xs font-bold py-2 text-gray-500 hover:text-navy-900">Egresos</button>
                     </div>
                 </div>
             </div>
@@ -277,7 +290,7 @@
                     </div>
                     <div>
                         <h4 class="text-lg font-bold text-navy-900 dark:text-white mb-1 group-hover:text-excel-green transition-colors">Exportar a Excel (.xlsx)</h4>
-                        <p class="text-sm text-gray-500 dark:text-slate-400">Hoja de cálculo detallada lista para análisis.</p>
+                        <p class="text-sm text-gray-500 dark:text-slate-400">Hoja de cálculo detallada con tablas dinámicas listas para análisis.</p>
                     </div>
                 </button>
                 <button onclick="exportarPDF()" class="flex items-center gap-6 p-6 rounded-2xl border-2 border-transparent bg-pdf-red/5 hover:border-pdf-red group transition-all text-left">
@@ -286,14 +299,14 @@
                     </div>
                     <div>
                         <h4 class="text-lg font-bold text-navy-900 dark:text-white mb-1 group-hover:text-pdf-red transition-colors">Generar Reporte PDF</h4>
-                        <p class="text-sm text-gray-500 dark:text-slate-400">Documento corporativo visual y profesional.</p>
+                        <p class="text-sm text-gray-500 dark:text-slate-400">Documento corporativo visual con gráficos y sumarios ejecutivos.</p>
                     </div>
                 </button>
             </div>
         </section>
 
         <section class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden">
-            <div class="px-8 py-6 border-b border-gray-100 dark:border-slate-800">
+            <div class="px-8 py-6 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between">
                 <h3 class="text-lg font-bold text-navy-900 dark:text-white">Historial de Reportes</h3>
             </div>
             <div class="overflow-x-auto">
@@ -307,10 +320,14 @@
                         </tr>
                     </thead>
                     <tbody id="tabla-historial" class="divide-y divide-gray-100 dark:divide-slate-800">
-                        </tbody>
+                    </tbody>
                 </table>
             </div>
         </section>
     </div>
+
+    <footer class="p-8 text-center mt-auto">
+        <p class="text-xs text-gray-400">© 2026 QuantyA Financial Systems. Todos los reportes generados están protegidos por encriptación AES-256.</p>
+    </footer>
 </main>
 </body></html>
