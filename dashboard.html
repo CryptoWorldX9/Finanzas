@@ -27,7 +27,9 @@
     const db = getDatabase(app);
     let currentUser = null;
     let editNodeId = null; 
-    let cacheListas = {}; // Caché para evitar lentitud
+    let cacheListas = {};
+    // CACHÉ DE MOVIMIENTOS PARA CARGA INSTANTÁNEA
+    let cacheMovimientos = JSON.parse(localStorage.getItem('cache_movimientos_panel')) || [];
 
     const consejos = [
         "Registra cada gasto, por pequeño que sea, para identificar fugas de dinero.",
@@ -77,6 +79,10 @@
         if (user) {
             currentUser = user;
             document.getElementById('user-name-display').innerText = user.displayName || "Usuario Corporativo";
+            
+            // Renderizado ultrarrápido desde caché
+            if(cacheMovimientos.length > 0) renderizarTablaPanel(cacheMovimientos);
+            
             cargarMovimientosRecientes();
             sincronizarListasDesplegables();
             setInterval(rotarConsejos, 10000);
@@ -86,19 +92,14 @@
         }
     });
 
-    // SISTEMA DE SINCRONIZACIÓN FLUIDA (Optimizado)
     function sincronizarListasDesplegables() {
         const listasRef = ref(db, `usuarios/${currentUser.uid}/listas`);
         onValue(listasRef, (snapshot) => {
             if (snapshot.exists()) {
                 const listas = snapshot.val();
-                
-                // Solo actualiza el DOM si la data realmente cambió (evita lag)
                 const listasStr = JSON.stringify(listas);
                 if (listasStr !== JSON.stringify(cacheListas)) {
                     cacheListas = JSON.parse(listasStr);
-                    
-                    // Ejecuta en el próximo frame disponible para máxima fluidez
                     requestAnimationFrame(() => {
                         llenarSelect('op-tipo', listas.tipo);
                         llenarSelect('op-categoria', listas.categoria);
@@ -114,21 +115,16 @@
     function llenarSelect(elementId, datos) {
         const select = document.getElementById(elementId);
         if (!select || !datos) return;
-        
         const currentVal = select.value;
         const fragment = document.createDocumentFragment();
-        
         Object.keys(datos).forEach(key => {
             const option = document.createElement('option');
             option.value = datos[key].nombre;
             option.textContent = datos[key].nombre;
             fragment.appendChild(option);
         });
-
         select.innerHTML = '';
         select.appendChild(fragment);
-
-        // Restaurar selección previa para que no salte el cursor
         if (currentVal) {
             const existe = Array.from(select.options).some(opt => opt.value === currentVal);
             if (existe) select.value = currentVal;
@@ -174,7 +170,6 @@
         } else {
             await push(ref(db, `usuarios/${currentUser.uid}/movimientos`), operacionData);
         }
-        
         event.target.reset();
     };
 
@@ -199,45 +194,83 @@
     };
 
     function cargarMovimientosRecientes() {
-        const movRef = query(ref(db, `usuarios/${currentUser.uid}/movimientos`), limitToLast(5));
+        // Obtenemos todos para el saldo pero solo 5 para la tabla reciente
+        const movRef = ref(db, `usuarios/${currentUser.uid}/movimientos`);
         onValue(movRef, (snapshot) => {
-            const container = document.getElementById('recent-moves-body');
-            container.innerHTML = '';
-            let tIngresos = 0, tGastos = 0;
-
+            const dataFull = [];
             snapshot.forEach((child) => {
-                const data = child.val();
-                const id = child.key;
-                const tipoLower = data.tipo.toLowerCase();
-                const isIngreso = tipoLower.includes('ingreso') || tipoLower.includes('venta') || tipoLower.includes('entrada');
-                
-                if(isIngreso) tIngresos += data.monto; else tGastos += data.monto;
+                dataFull.push({ id: child.key, ...child.val() });
+            });
+            
+            // Ordenar por fecha reciente
+            dataFull.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+            
+            // Actualizar caché y renderizar solo si hay cambios
+            if(JSON.stringify(dataFull.slice(0, 10)) !== JSON.stringify(cacheMovimientos)) {
+                cacheMovimientos = dataFull.slice(0, 10);
+                localStorage.setItem('cache_movimientos_panel', JSON.stringify(cacheMovimientos));
+                renderizarTablaPanel(cacheMovimientos);
+            }
 
-                const dataString = encodeURIComponent(JSON.stringify(data));
-
-                container.insertAdjacentHTML('afterbegin', `
-                    <tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                        <td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">${data.fecha}</td>
-                        <td class="px-6 py-4 text-sm font-semibold">${data.concepto}</td>
-                        <td class="px-6 py-4 text-sm"><span class="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wide">${data.categoria}</span></td>
-                        <td class="px-6 py-4 text-sm font-bold text-right ${isIngreso ? 'text-emerald-custom' : 'text-red-500'}">${isIngreso ? '+' : '-'} $${new Intl.NumberFormat('es-CL').format(data.monto)}</td>
-                        <td class="px-6 py-4 text-right space-x-2">
-                            <button onclick="prepararEdicion('${id}', '${dataString}')" class="text-slate-400 hover:text-primary transition-colors">
-                                <span class="material-symbols-outlined text-lg">edit</span>
-                            </button>
-                            <button onclick="eliminarMovimiento('${id}')" class="text-slate-400 hover:text-red-500 transition-colors">
-                                <span class="material-symbols-outlined text-lg">delete</span>
-                            </button>
-                        </td>
-                    </tr>
-                `);
+            // Calcular Saldo con todos los datos
+            let tIngresos = 0, tGastos = 0;
+            dataFull.forEach(m => {
+                const tipoLower = m.tipo.toLowerCase();
+                const isIngreso = tipoLower.includes('ingreso') || tipoLower.includes('venta');
+                if(isIngreso) tIngresos += m.monto; else tGastos += m.monto;
             });
 
-            const saldo = tIngresos - tGastos;
             document.getElementById('display-ingresos').innerText = `$ ${new Intl.NumberFormat('es-CL').format(tIngresos)}`;
             document.getElementById('display-gastos').innerText = `$ ${new Intl.NumberFormat('es-CL').format(tGastos)}`;
-            document.getElementById('display-saldo').innerText = `$ ${new Intl.NumberFormat('es-CL').format(saldo)}`;
+            document.getElementById('display-saldo').innerText = `$ ${new Intl.NumberFormat('es-CL').format(tIngresos - tGastos)}`;
         });
+    }
+
+    function renderizarTablaPanel(datos) {
+        const container = document.getElementById('recent-moves-body');
+        const fragment = document.createDocumentFragment();
+        
+        datos.slice(0, 5).forEach((data) => {
+            const tipoLower = data.tipo.toLowerCase();
+            const isIngreso = tipoLower.includes('ingreso') || tipoLower.includes('venta');
+            const dataString = encodeURIComponent(JSON.stringify(data));
+            
+            // Lógica de colores por método de pago
+            const metodo = (data.pago || 'Otro').toLowerCase();
+            let colorClase = 'bg-slate-100 text-slate-600 border-slate-200';
+            if (metodo.includes('transferencia')) colorClase = 'bg-emerald-100 text-emerald-700 border-emerald-200';
+            else if (metodo.includes('debito') || metodo.includes('tarjeta')) colorClase = 'bg-blue-100 text-blue-700 border-blue-200';
+            else if (metodo.includes('credito')) colorClase = 'bg-purple-100 text-purple-700 border-purple-200';
+            else if (metodo.includes('efectivo')) colorClase = 'bg-amber-100 text-amber-700 border-amber-200';
+
+            const tr = document.createElement('tr');
+            tr.className = "group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors";
+            tr.innerHTML = `
+                <td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">${data.fecha}</td>
+                <td class="px-6 py-4">
+                    <p class="text-sm font-semibold">${data.concepto}</p>
+                    <span class="${colorClase} border text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-tighter">${data.pago}</span>
+                </td>
+                <td class="px-6 py-4 text-sm">
+                    <span class="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wide">${data.categoria}</span>
+                </td>
+                <td class="px-6 py-4 text-sm font-bold text-right ${isIngreso ? 'text-emerald-custom' : 'text-red-500'}">
+                    ${isIngreso ? '+' : '-'} $${new Intl.NumberFormat('es-CL').format(data.monto)}
+                </td>
+                <td class="px-6 py-4 text-right space-x-2">
+                    <button onclick="prepararEdicion('${data.id}', '${dataString}')" class="text-slate-400 hover:text-primary transition-colors">
+                        <span class="material-symbols-outlined text-lg">edit</span>
+                    </button>
+                    <button onclick="eliminarMovimiento('${data.id}')" class="text-slate-400 hover:text-red-500 transition-colors">
+                        <span class="material-symbols-outlined text-lg">delete</span>
+                    </button>
+                </td>
+            `;
+            fragment.appendChild(tr);
+        });
+
+        container.innerHTML = '';
+        container.appendChild(fragment);
     }
 </script>
 
