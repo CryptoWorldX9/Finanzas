@@ -2,263 +2,217 @@
 <html class="light" lang="es"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Configuración General del Sistema QuantyA</title>
+<title>QuantyA - Configuración</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
 <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
             theme: {
                 extend: {
                     colors: {
-                        "primary": "#2466eb",
-                        "background-light": "#f9fafa",
-                        "background-dark": "#21242c",
-                        "sidebar-light": "#ffffff",
-                        "sidebar-dark": "#1a1d24",
+                        "primary": "#176282",
+                        "navy-900": "#0f172a",
+                        "background-light": "#f8f9fa"
                     },
                     fontFamily: {
-                        "display": ["Manrope", "sans-serif"]
+                        "display": ["Inter", "sans-serif"]
                     },
-                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                    },
                 },
             },
         }
     </script>
-<style type="text/tailwindcss">.material-symbols-outlined {
-    font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24
-    }
-select {
-    appearance: none;
-    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuAj6Kfyt3VsukB3iAXB0i7bRvX9i8qpR07wIsZ7TL-I_u6jt0i80B5WUC7OT2zT0JbcOALDuUWzhx7Xn2flArA-vrzzhv73dgRkpvB5CBDrWHwS2535QW-AEpH_cJUxMoeWrK_dY6rgaIQygJByeONZhgfgrAo9Hgh-1uk5epqbDwx_1GlWzDm5mH7SCv5Zcc1SsL8p5BvGnbK82RbX07lTgnn48JAlynqOO-6CLYoXtwwvYZvf8XqysjRYV8KCaZTPvHBSMbdvqw);
-    background-repeat: no-repeat;
-    background-position: right 1rem center;
-    background-size: 1.2em
-    }
-.active-nav-item {
-    @apply bg-primary/10 text-primary border-r-4 border-primary font-bold;
-    }</style>
+<style type="text/tailwindcss">
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
 </head>
-<body class="bg-background-light dark:bg-background-dark font-display text-[#111318] dark:text-white transition-colors duration-200">
-<div class="flex h-screen w-full overflow-hidden">
-<aside class="flex w-64 flex-col border-r border-[#f0f2f4] dark:border-[#333f4d] bg-sidebar-light dark:bg-sidebar-dark z-50">
-<div class="flex items-center gap-3 px-6 py-8 text-primary">
-<div class="size-8">
-<svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-<path clip-rule="evenodd" d="M12.0799 24L4 19.2479L9.95537 8.75216L18.04 13.4961L18.0446 4H29.9554L29.96 13.4961L38.0446 8.75216L44 19.2479L35.92 24L44 28.7521L38.0446 39.2479L29.96 34.5039L29.9554 44H18.0446L18.04 34.5039L9.95537 39.2479L4 28.7521L12.0799 24Z" fill="currentColor" fill-rule="evenodd"></path>
-</svg>
-</div>
-<h2 class="text-[#111318] dark:text-white text-xl font-bold leading-tight tracking-tight">QuantyA</h2>
-</div>
-<nav class="flex-1 px-3 space-y-1">
-<a class="flex items-center gap-3 px-3 py-3 text-sm font-medium text-[#616f89] dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-all" href="#">
-<span class="material-symbols-outlined">dashboard</span>
-                Panel
+<body class="bg-background-light dark:bg-[#111827] font-display text-slate-900 dark:text-slate-100">
+<div class="flex min-h-screen">
+<aside class="w-64 bg-[#0f172a] text-white flex flex-col fixed h-full z-50 border-r border-slate-800 p-6">
+    <div class="space-y-8 flex-1">
+        <div class="flex items-center gap-3 px-2">
+            <div class="size-10 bg-primary rounded-lg flex items-center justify-center text-white shadow-lg shadow-primary/20">
+                <span class="material-symbols-outlined text-2xl">account_balance_wallet</span>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight leading-none">QuantyA</h1>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Gestión Financiera</p>
+            </div>
+        </div>
+        <nav class="space-y-1">
+            <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
+                <span class="material-symbols-outlined text-[20px]">dashboard</span>
+                <span class="text-sm font-medium">Panel</span>
             </a>
-<a class="flex items-center gap-3 px-3 py-3 text-sm font-medium text-[#616f89] dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-all" href="#">
-<span class="material-symbols-outlined">swap_horiz</span>
-                Movimientos
+            <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
+                <span class="material-symbols-outlined text-[20px]">swap_horiz</span>
+                <span class="text-sm font-medium">Movimientos</span>
             </a>
-<a class="flex items-center gap-3 px-3 py-3 text-sm font-medium text-[#616f89] dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-all" href="#">
-<span class="material-symbols-outlined">analytics</span>
-                Análisis
+            <a href="analisis.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
+                <span class="material-symbols-outlined text-[20px]">analytics</span>
+                <span class="text-sm font-medium">Análisis</span>
             </a>
-<a class="flex items-center gap-3 px-3 py-3 text-sm font-medium text-[#616f89] dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-all" href="#">
-<span class="material-symbols-outlined">ads_click</span>
-                Metas
+            <a href="metas.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
+                <span class="material-symbols-outlined text-[20px]">track_changes</span>
+                <span class="text-sm font-medium">Metas</span>
             </a>
-<a class="flex items-center gap-3 px-3 py-3 text-sm font-medium text-[#616f89] dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-all" href="#">
-<span class="material-symbols-outlined">description</span>
-                Reportes
+            <a href="reportes.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
+                <span class="material-symbols-outlined text-[20px]">description</span>
+                <span class="text-sm font-medium">Reportes</span>
             </a>
-<a class="flex items-center gap-3 px-3 py-3 text-sm active-nav-item rounded-lg transition-all" href="#">
-<span class="material-symbols-outlined">settings</span>
-                Configuración
+            <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 transition-all">
+                <span class="material-symbols-outlined text-[20px]">settings</span>
+                <span class="text-sm font-medium">Configuración</span>
             </a>
-</nav>
-<div class="p-6 border-t border-[#f0f2f4] dark:border-[#333f4d]">
-<div class="flex items-center gap-3">
-<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border border-gray-200" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBlDQzMjWshzrTtROh1sgMAvEktlngKE-XkPbwlypoYJMI92f1e_JIuQq1uyFk2vaaTnqWn3F0_W-DhtBt3rd9nNq8PK4UA5yUna_X2t_Q26rJFQ-XVuto28lXgH-TMEtptmbaEY-P0m5z2_kRLJItOnlBxKsY1B-HTmV6mh0pZ-x8Wi-FA61DIxJUA4V-luEOgIdxd0b_fK86jh7DlFRp_Z6BvPjKttVfX_I-02-kkSaNn7Rb0tO048G9sM6Ep7ppVRegSdZSUWg");'></div>
-<div class="flex flex-col overflow-hidden">
-<span class="text-sm font-bold text-[#111318] dark:text-white truncate">Admin QuantyA</span>
-<span class="text-xs text-[#616f89] truncate">admin@quantya.com</span>
-</div>
-</div>
-</div>
+        </nav>
+    </div>
+    
+    <div class="mt-auto">
+        <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors">
+            <span class="material-symbols-outlined text-[20px]">logout</span>
+            <span class="text-sm font-medium">Cerrar Sesión</span>
+        </a>
+    </div>
 </aside>
-<div class="flex flex-1 flex-col overflow-y-auto">
-<header class="flex items-center justify-between border-b border-solid border-[#f0f2f4] dark:border-[#333f4d] bg-white dark:bg-background-dark px-10 py-4 sticky top-0 z-40">
-<div class="flex flex-col">
-<h1 class="text-[#111318] dark:text-white text-xl font-bold">Configuración General</h1>
-<p class="text-xs text-[#616f89] dark:text-gray-400">Administración global del sistema</p>
-</div>
-<div class="flex items-center gap-4">
-<button class="flex items-center justify-center rounded-lg h-10 px-5 bg-primary text-white text-sm font-bold shadow-sm hover:bg-primary/90 transition-all">
-<span>Aplicar Cambios Globales</span>
-</button>
-</div>
-</header>
-<main class="flex-1 py-10 px-6 lg:px-12 bg-[#f9fafa] dark:bg-background-dark">
-<div class="mx-auto max-w-[1200px] flex flex-col gap-8">
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-<div class="flex flex-col gap-6 bg-white dark:bg-[#2a2e38] p-8 rounded-xl shadow-sm border border-[#f0f2f4] dark:border-transparent">
-<div class="flex items-center gap-3">
-<span class="material-symbols-outlined text-primary">settings_applications</span>
-<h2 class="text-[#111318] dark:text-white text-2xl font-bold tracking-tight">Parámetros Globales</h2>
-</div>
-<div class="flex flex-col gap-5">
-<label class="flex flex-col gap-2">
-<span class="text-[#111318] dark:text-gray-200 text-sm font-semibold">Moneda Predeterminada</span>
-<select class="flex w-full rounded-lg border border-[#dbdfe6] dark:border-[#4a5568] bg-white dark:bg-[#21242c] text-[#111318] dark:text-white h-12 px-4 focus:ring-2 focus:ring-primary/50 outline-none transition-all">
-<option value="USD">Dólar Estadounidense (USD)</option>
-<option value="EUR">Euro (EUR)</option>
-<option value="MXN">Peso Mexicano (MXN)</option>
-<option value="GBP">Libra Esterlina (GBP)</option>
-</select>
-</label>
-<label class="flex flex-col gap-2">
-<span class="text-[#111318] dark:text-gray-200 text-sm font-semibold">Formato de Fecha</span>
-<select class="flex w-full rounded-lg border border-[#dbdfe6] dark:border-[#4a5568] bg-white dark:bg-[#21242c] text-[#111318] dark:text-white h-12 px-4 focus:ring-2 focus:ring-primary/50 outline-none transition-all">
-<option value="DD/MM/YYYY">DD / MM / YYYY</option>
-<option value="YYYY-MM-DD">YYYY - MM - DD</option>
-<option value="MM/DD/YYYY">MM / DD / YYYY</option>
-</select>
-</label>
-<label class="flex flex-col gap-2">
-<span class="text-[#111318] dark:text-gray-200 text-sm font-semibold">Zona Horaria</span>
-<select class="flex w-full rounded-lg border border-[#dbdfe6] dark:border-[#4a5568] bg-white dark:bg-[#21242c] text-[#111318] dark:text-white h-12 px-4 focus:ring-2 focus:ring-primary/50 outline-none transition-all">
-<option value="UTC-5">(UTC-05:00) Bogota, Lima, Quito, Rio Branco</option>
-<option value="UTC-6">(UTC-06:00) Central America</option>
-<option value="UTC-0">(UTC+00:00) London, Dublin, Lisbon</option>
-</select>
-</label>
-</div>
-</div>
-<div class="flex flex-col gap-6 bg-white dark:bg-[#2a2e38] p-8 rounded-xl shadow-sm border border-[#f0f2f4] dark:border-transparent">
-<div class="flex items-center gap-3">
-<span class="material-symbols-outlined text-primary">palette</span>
-<h2 class="text-[#111318] dark:text-white text-2xl font-bold tracking-tight">Personalización</h2>
-</div>
-<div class="flex flex-col gap-6">
-<div>
-<span class="text-[#111318] dark:text-gray-200 text-sm font-semibold block mb-3">Logotipo Corporativo</span>
-<div class="flex items-center justify-center w-full h-32 border-2 border-dashed border-[#dbdfe6] dark:border-[#4a5568] rounded-lg bg-background-light dark:bg-[#21242c] cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-<div class="flex flex-col items-center gap-2">
-<span class="material-symbols-outlined text-[#616f89]">cloud_upload</span>
-<p class="text-xs text-[#616f89]">Subir archivo PNG o SVG (máx. 2MB)</p>
-</div>
-</div>
-</div>
-<div class="flex items-center justify-between py-2">
-<div class="flex flex-col">
-<span class="text-[#111318] dark:text-gray-200 text-sm font-semibold">Modo Oscuro Automático</span>
-<p class="text-xs text-[#616f89]">Ajustar según preferencias del sistema</p>
-</div>
-<div class="relative inline-flex items-center cursor-pointer">
-<input checked="" class="sr-only peer" type="checkbox" value=""/>
-<div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-</div>
-</div>
-<div>
-<span class="text-[#111318] dark:text-gray-200 text-sm font-semibold block mb-3">Color Primario de Marca</span>
-<div class="flex gap-4">
-<div class="size-10 rounded-full bg-[#2466eb] ring-2 ring-offset-2 ring-primary cursor-pointer shadow-sm"></div>
-<div class="size-10 rounded-full bg-[#10b981] cursor-pointer shadow-sm"></div>
-<div class="size-10 rounded-full bg-[#f59e0b] cursor-pointer shadow-sm"></div>
-<div class="size-10 rounded-full bg-[#ef4444] cursor-pointer shadow-sm"></div>
-<div class="size-10 rounded-full bg-[#8b5cf6] cursor-pointer shadow-sm"></div>
-<div class="size-10 rounded-full border border-gray-300 flex items-center justify-center cursor-pointer bg-white">
-<span class="material-symbols-outlined text-sm">add</span>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="lg:col-span-2 flex flex-col gap-8 bg-white dark:bg-[#2a2e38] p-8 rounded-xl shadow-sm border border-[#f0f2f4] dark:border-transparent">
-<div class="flex items-center justify-between">
-<div class="flex items-center gap-3">
-<span class="material-symbols-outlined text-primary">list_alt</span>
-<h2 class="text-[#111318] dark:text-white text-2xl font-bold tracking-tight">Gestión de Listas</h2>
-</div>
-<button class="text-primary text-sm font-bold flex items-center gap-1 hover:underline">
-<span class="material-symbols-outlined text-sm">add_circle</span>
-                                Nueva Lista
-                            </button>
-</div>
-<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-<div class="flex flex-col gap-4">
-<div class="flex items-center justify-between border-b pb-2 dark:border-[#4a5568]">
-<h3 class="font-bold text-[#111318] dark:text-white">Categorías de Gastos</h3>
-<span class="material-symbols-outlined text-[#616f89] text-lg cursor-pointer">edit</span>
-</div>
-<div class="flex flex-wrap gap-2">
-<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
-                                        Operativos <span class="material-symbols-outlined text-sm cursor-pointer">close</span>
-</span>
-<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
-                                        Marketing <span class="material-symbols-outlined text-sm cursor-pointer">close</span>
-</span>
-<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
-                                        Sueldos <span class="material-symbols-outlined text-sm cursor-pointer">close</span>
-</span>
-<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold">
-                                        Infraestructura <span class="material-symbols-outlined text-sm cursor-pointer">close</span>
-</span>
-<button class="px-3 py-1 rounded-full border border-dashed border-gray-300 text-gray-500 text-xs flex items-center gap-1 hover:border-primary hover:text-primary">
-<span class="material-symbols-outlined text-sm">add</span> Añadir
-                                    </button>
-</div>
-</div>
-<div class="flex flex-col gap-4">
-<div class="flex items-center justify-between border-b pb-2 dark:border-[#4a5568]">
-<h3 class="font-bold text-[#111318] dark:text-white">Métodos de Pago</h3>
-<span class="material-symbols-outlined text-[#616f89] text-lg cursor-pointer">edit</span>
-</div>
-<div class="flex flex-wrap gap-2">
-<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs font-semibold">
-                                        Transferencia <span class="material-symbols-outlined text-sm cursor-pointer">close</span>
-</span>
-<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs font-semibold">
-                                        T. Crédito <span class="material-symbols-outlined text-sm cursor-pointer">close</span>
-</span>
-<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs font-semibold">
-                                        PayPal <span class="material-symbols-outlined text-sm cursor-pointer">close</span>
-</span>
-<button class="px-3 py-1 rounded-full border border-dashed border-gray-300 text-gray-500 text-xs flex items-center gap-1 hover:border-primary hover:text-primary">
-<span class="material-symbols-outlined text-sm">add</span> Añadir
-                                    </button>
-</div>
-</div>
-<div class="flex flex-col gap-4">
-<div class="flex items-center justify-between border-b pb-2 dark:border-[#4a5568]">
-<h3 class="font-bold text-[#111318] dark:text-white">Proveedores Globales</h3>
-<span class="material-symbols-outlined text-[#616f89] text-lg cursor-pointer">edit</span>
-</div>
-<div class="flex flex-wrap gap-2">
-<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-50 text-green-700 text-xs font-semibold dark:bg-green-900/20 dark:text-green-400">
-                                        AWS <span class="material-symbols-outlined text-sm cursor-pointer">close</span>
-</span>
-<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-50 text-green-700 text-xs font-semibold dark:bg-green-900/20 dark:text-green-400">
-                                        Google Cloud <span class="material-symbols-outlined text-sm cursor-pointer">close</span>
-</span>
-<span class="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-50 text-green-700 text-xs font-semibold dark:bg-green-900/20 dark:text-green-400">
-                                        Slack <span class="material-symbols-outlined text-sm cursor-pointer">close</span>
-</span>
-<button class="px-3 py-1 rounded-full border border-dashed border-gray-300 text-gray-500 text-xs flex items-center gap-1 hover:border-primary hover:text-primary">
-<span class="material-symbols-outlined text-sm">add</span> Añadir
-                                    </button>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-</main>
-<footer class="mt-auto border-t border-[#f0f2f4] dark:border-[#333f4d] py-6 px-10 text-center">
-<p class="text-xs text-[#616f89] dark:text-gray-500">© 2024 QuantyA Corp. Todos los derechos reservados. Panel Administrativo v2.4.1</p>
-</footer>
-</div>
-</div>
 
+<main class="ml-64 flex-1 flex flex-col">
+    <header class="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-8 flex items-center justify-between sticky top-0 z-40">
+        <h2 class="text-lg font-bold text-slate-800 dark:text-white">Configuración del Sistema</h2>
+        <button class="bg-primary hover:bg-primary/90 text-white text-xs font-bold px-6 py-2.5 rounded-xl transition-all shadow-lg shadow-primary/20">
+            Aplicar Cambios Globales
+        </button>
+    </header>
+
+    <div class="p-8 space-y-8 max-w-[1200px] mx-auto w-full">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <section class="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+                <div class="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
+                    <span class="material-symbols-outlined text-primary">settings_applications</span>
+                    <h3 class="font-bold text-xl">Parámetros Globales</h3>
+                </div>
+                <div class="space-y-4">
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-500 uppercase">Moneda Predeterminada</label>
+                        <select class="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:ring-primary">
+                            <option>Dólar Estadounidense (USD)</option>
+                            <option>Peso Mexicano (MXN)</option>
+                            <option>Euro (EUR)</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-500 uppercase">Zona Horaria</label>
+                        <select class="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:ring-primary">
+                            <option>(UTC-05:00) Bogota, Lima, Quito</option>
+                            <option>(UTC-06:00) Central America</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <section class="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+                <div class="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
+                    <span class="material-symbols-outlined text-primary">palette</span>
+                    <h3 class="font-bold text-xl">Personalización</h3>
+                </div>
+                <div class="space-y-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-semibold">Modo Oscuro Automático</p>
+                            <p class="text-xs text-slate-500">Sincronizar con el sistema operativo</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" checked class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                        </label>
+                    </div>
+                    <div class="space-y-3">
+                        <p class="text-xs font-bold text-slate-500 uppercase">Color de Marca</p>
+                        <div class="flex gap-3">
+                            <div class="size-8 rounded-full bg-[#176282] ring-2 ring-offset-2 ring-primary cursor-pointer"></div>
+                            <div class="size-8 rounded-full bg-emerald-500 cursor-pointer"></div>
+                            <div class="size-8 rounded-full bg-indigo-500 cursor-pointer"></div>
+                            <div class="size-8 rounded-full bg-rose-500 cursor-pointer"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="lg:col-span-2 bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-8">
+                <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-primary">list_alt</span>
+                        <h3 class="font-bold text-xl">Gestión de Listas Maestras</h3>
+                    </div>
+                    <button class="text-primary text-sm font-bold flex items-center gap-1">
+                        <span class="material-symbols-outlined text-sm">add_circle</span> Nueva Lista
+                    </button>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+                    <div class="space-y-4">
+                        <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex justify-between items-center">
+                            Categorías de Gastos
+                            <span class="material-symbols-outlined text-slate-400 text-sm cursor-pointer">edit</span>
+                        </h4>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-medium flex items-center gap-2">
+                                Operativos <button class="hover:text-red-500">×</button>
+                            </span>
+                            <span class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-medium flex items-center gap-2">
+                                Marketing <button class="hover:text-red-500">×</button>
+                            </span>
+                            <button class="px-3 py-1.5 border border-dashed border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-500 hover:border-primary hover:text-primary transition-colors">
+                                + Añadir
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex justify-between items-center">
+                            Métodos de Pago
+                            <span class="material-symbols-outlined text-slate-400 text-sm cursor-pointer">edit</span>
+                        </h4>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-medium flex items-center gap-2">
+                                Transferencia <button class="hover:text-red-500">×</button>
+                            </span>
+                            <span class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-medium flex items-center gap-2">
+                                T. Crédito <button class="hover:text-red-500">×</button>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex justify-between items-center">
+                            Proveedores Globales
+                            <span class="material-symbols-outlined text-slate-400 text-sm cursor-pointer">edit</span>
+                        </h4>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 rounded-lg text-xs font-medium flex items-center gap-2">
+                                AWS <button class="hover:text-red-500">×</button>
+                            </span>
+                            <span class="px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 rounded-lg text-xs font-medium flex items-center gap-2">
+                                Google <button class="hover:text-red-500">×</button>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <footer class="pt-8 border-t border-slate-200 dark:border-slate-800 text-center">
+            <p class="text-xs text-slate-500 uppercase tracking-widest font-medium">© 2026 QuantyA Corp · Versión v2.4.1</p>
+        </footer>
+    </div>
+</main>
+</div>
 </body></html>
