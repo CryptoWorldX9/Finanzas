@@ -1,165 +1,150 @@
 <!DOCTYPE html>
-<html class="light" lang="es"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>QuantyA | Inicio de Sesión Corporativo</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        "primary": "#2563eb",
-                        "background-light": "#ffffff",
-                        "background-dark": "#212936",
-                        "corporate-gray": "#f0f2f4",
-                    },
-                    fontFamily: {
-                        "display": ["Manrope", "sans-serif"]
-                    },
-                    borderRadius: {
-                        "DEFAULT": "0.25rem",
-                        "lg": "0.5rem",
-                        "xl": "0.75rem",
-                        "full": "9999px"
-                    },
-                },
-            },
-        }
+<html class="light" lang="es">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>QuantyA | Inicio de Sesión Corporativo</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        // Tu configuración de Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCO6WXu9iZsyEUmNNxrE4oWToLYY8wl-y4",
+            authDomain: "misfinanzaspro-d2f3f.firebaseapp.com",
+            databaseURL: "https://misfinanzaspro-d2f3f-default-rtdb.firebaseio.com",
+            projectId: "misfinanzaspro-d2f3f",
+            storageBucket: "misfinanzaspro-d2f3f.firebasestorage.app",
+            messagingSenderId: "613366165036",
+            appId: "1:613366165036:web:bebc72b38d39ab64932b89",
+            measurementId: "G-P699PW831X"
+        };
+
+        // Inicializar Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+
+        // Lógica de Interfaz y Autenticación
+        window.handleAuth = async (event) => {
+            event.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const isRegister = document.querySelector('input[name="auth-mode"]:checked').value === "Create Account";
+            const btnText = document.getElementById('btn-text');
+
+            try {
+                btnText.innerText = "Procesando...";
+                if (isRegister) {
+                    await createUserWithEmailAndPassword(auth, email, password);
+                    alert("Cuenta creada con éxito");
+                } else {
+                    await signInWithEmailAndPassword(auth, email, password);
+                }
+                // Redirigir al Dashboard tras éxito
+                window.location.href = "dashboard.html";
+            } catch (error) {
+                alert("Error: " + error.message);
+                btnText.innerText = isRegister ? "Crear Cuenta" : "Iniciar Sesión";
+            }
+        };
+
+        // Autenticación con Google
+        window.loginGoogle = async () => {
+            try {
+                await signInWithPopup(auth, provider);
+                window.location.href = "dashboard.html";
+            } catch (error) {
+                alert("Error con Google: " + error.message);
+            }
+        };
+
+        // Cambiar texto del botón según modo
+        window.toggleMode = (mode) => {
+            const btn = document.getElementById('submit-btn-main');
+            const title = document.getElementById('form-title');
+            if(mode === 'Create Account') {
+                btn.innerHTML = '<span>Crear Cuenta Ahora</span><span class="material-symbols-outlined ml-2 text-[20px]">person_add</span>';
+                title.innerText = 'Crea tu cuenta';
+            } else {
+                btn.innerHTML = '<span>Iniciar Sesión al Panel</span><span class="material-symbols-outlined ml-2 text-[20px]">arrow_forward</span>';
+                title.innerText = 'Bienvenido de nuevo';
+            }
+        };
     </script>
-<style type="text/tailwindcss">
-        body {
-            font-family: 'Manrope', sans-serif;
-        }
+
+    <style type="text/tailwindcss">
+        body { font-family: 'Inter', sans-serif; }
         .glass-effect {
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
     </style>
 </head>
-<body class="bg-background-light dark:bg-background-dark font-display antialiased overflow-hidden">
+<body class="bg-white dark:bg-[#0f172a] font-display antialiased overflow-hidden">
 <div class="flex min-h-screen w-full">
-<div class="hidden lg:flex lg:w-1/2 relative flex-col justify-between p-12 overflow-hidden">
-<div class="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat transition-transform duration-700 hover:scale-105" style='background-image: linear-gradient(rgba(17, 19, 24, 0.6), rgba(17, 19, 24, 0.85)), url("https://lh3.googleusercontent.com/aida-public/AB6AXuCq_gbyXVNEj6-o1mtstOORl38r3_Hv9D99z0UhtOMhIV9GSYpq9F47_TSs3DnMoAsuagDsvoknHeAsKCYDbIRcVjggKSoWEV59c8ihbsb8iqFB8KOYf1SKAvvhqmeCm6itcXUL3JKbx8jeo1NyYq3dcYXgjit8r1vCM4B_22VjEka_oSX0oDwRkU2KyaTxOzL6o4QV7urKUEx2VscyfBylbR1TGAH1zLkG1OkH0p8g-3oaj-vThEl4AUy7rIDTYaHE8WLhfQyGpQ");'>
-</div>
-<div class="relative z-10 flex items-center gap-2 text-white opacity-90">
-<div class="size-8">
-<svg fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-<path clip-rule="evenodd" d="M12.0799 24L4 19.2479L9.95537 8.75216L18.04 13.4961L18.0446 4H29.9554L29.96 13.4961L38.0446 8.75216L44 19.2479L35.92 24L44 28.7521L38.0446 39.2479L29.96 34.5039L29.9554 44H18.0446L18.04 34.5039L9.95537 39.2479L4 28.7521L12.0799 24Z" fill="currentColor" fill-rule="evenodd"></path>
-</svg>
-</div>
-<span class="text-xl font-bold tracking-tight">QuantyA</span>
-</div>
-<div class="relative z-10 max-w-lg mb-12">
-<h2 class="text-white text-5xl font-extrabold leading-tight tracking-tight mb-6">
-                Más Control. <br/>
-<span class="text-primary/90">Menos preocupación.</span>
-</h2>
-<p class="text-gray-300 text-lg leading-relaxed font-light">
-                La próxima generación de gestión financiera. Profesional, segura y diseñada para operaciones corporativas modernas.
-            </p>
-<div class="mt-8 flex gap-4">
-<div class="glass-effect rounded-lg p-4 flex flex-col gap-1">
-<span class="text-white font-bold text-xl">99.9%</span>
-<span class="text-gray-400 text-xs uppercase tracking-widest">Disponibilidad</span>
-</div>
-<div class="glass-effect rounded-lg p-4 flex flex-col gap-1">
-<span class="text-white font-bold text-xl">Cifrado de 256 bits</span>
-<span class="text-gray-400 text-xs uppercase tracking-widest">Seguridad</span>
-</div>
-</div>
-</div>
-<div class="relative z-10 text-gray-400 text-sm">
-            © 2024 QuantyA Systems Inc. Todos los derechos reservados.
+    <div class="hidden lg:flex lg:w-1/2 relative flex-col justify-between p-12 overflow-hidden bg-[#0b0f1a]">
+        <div class="absolute inset-0 z-0 bg-cover bg-center opacity-40 hover:scale-105 transition-transform duration-700" style='background-image: url("https://images.unsplash.com/photo-1554224155-6726b3ff858f?q=80&w=2022&auto=format&fit=crop");'></div>
+        <div class="relative z-10 flex items-center gap-2 text-white">
+            <div class="size-8 bg-blue-600 rounded flex items-center justify-center">
+                <span class="material-symbols-outlined">account_balance_wallet</span>
+            </div>
+            <span class="text-xl font-bold tracking-tight">QuantyA</span>
         </div>
-</div>
-<div class="w-full lg:w-1/2 flex items-center justify-center p-8 sm:p-12 md:p-24 bg-background-light dark:bg-background-dark overflow-y-auto">
-<div class="w-full max-w-[440px] flex flex-col">
-<div class="mb-10 text-center lg:text-left">
-<div class="flex items-center justify-center lg:justify-start gap-3 mb-8">
-<div class="size-10 bg-primary text-white rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
-<svg class="size-6" fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-<path clip-rule="evenodd" d="M12.0799 24L4 19.2479L9.95537 8.75216L18.04 13.4961L18.0446 4H29.9554L29.96 13.4961L38.0446 8.75216L44 19.2479L35.92 24L44 28.7521L38.0446 39.2479L29.96 34.5039L29.9554 44H18.0446L18.04 34.5039L9.95537 39.2479L4 28.7521L12.0799 24Z" fill="currentColor" fill-rule="evenodd"></path>
-</svg>
-</div>
-<h1 class="text-[#111318] dark:text-white text-2xl font-extrabold tracking-tight">QuantyA</h1>
-</div>
-<h2 class="text-[#111318] dark:text-white text-3xl font-bold leading-tight mb-2">Bienvenido de nuevo</h2>
-<p class="text-[#616f89] dark:text-gray-400 text-base">Por favor, ingrese sus datos para acceder a su panel de control.</p>
-</div>
-<div class="mb-8">
-<div class="flex h-12 w-full items-center justify-center rounded-xl bg-corporate-gray dark:bg-gray-800 p-1.5 shadow-inner">
-<label class="flex cursor-pointer h-full grow items-center justify-center overflow-hidden rounded-lg px-2 has-[:checked]:bg-white dark:has-[:checked]:bg-gray-700 has-[:checked]:shadow-sm has-[:checked]:text-primary text-[#616f89] dark:text-gray-400 text-sm font-semibold transition-all">
-<span class="truncate">Iniciar Sesión</span>
-<input checked="" class="invisible w-0" name="auth-mode" type="radio" value="Sign In"/>
-</label>
-<label class="flex cursor-pointer h-full grow items-center justify-center overflow-hidden rounded-lg px-2 has-[:checked]:bg-white dark:has-[:checked]:bg-gray-700 has-[:checked]:shadow-sm has-[:checked]:text-primary text-[#616f89] dark:text-gray-400 text-sm font-semibold transition-all">
-<span class="truncate">Crear Cuenta</span>
-<input class="invisible w-0" name="auth-mode" type="radio" value="Create Account"/>
-</label>
-</div>
-</div>
-<form class="space-y-6">
-<div class="flex flex-col gap-4">
-<label class="flex flex-col group">
-<p class="text-[#111318] dark:text-gray-200 text-sm font-semibold pb-2 px-1">Correo Electrónico</p>
-<div class="relative">
-<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-[20px]">mail</span>
-<input class="form-input flex w-full rounded-xl text-[#111318] dark:text-white border border-[#dbdfe6] dark:border-gray-700 bg-white dark:bg-gray-800 focus:border-primary focus:ring-4 focus:ring-primary/10 h-14 pl-12 pr-4 transition-all placeholder:text-[#616f89] text-base font-normal" placeholder="nombre@empresa.com" type="email"/>
-</div>
-</label>
-<label class="flex flex-col group">
-<div class="flex justify-between items-center pb-2 px-1">
-<p class="text-[#111318] dark:text-gray-200 text-sm font-semibold">Contraseña</p>
-<a class="text-primary text-xs font-bold hover:underline" href="#">¿Olvidaste tu contraseña?</a>
-</div>
-<div class="relative">
-<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-[20px]">lock</span>
-<input class="form-input flex w-full rounded-xl text-[#111318] dark:text-white border border-[#dbdfe6] dark:border-gray-700 bg-white dark:bg-gray-800 focus:border-primary focus:ring-4 focus:ring-primary/10 h-14 pl-12 pr-12 transition-all placeholder:text-[#616f89] text-base font-normal" placeholder="••••••••" type="password"/>
-<button class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" type="button">
-<span class="material-symbols-outlined text-[20px]">visibility</span>
-</button>
-</div>
-</label>
-</div>
-<div class="flex items-center gap-2 px-1">
-<input class="rounded border-gray-300 text-primary focus:ring-primary h-4 w-4" id="remember" type="checkbox"/>
-<label class="text-sm text-[#616f89] dark:text-gray-400" for="remember">Mantener mi sesión iniciada por 30 días</label>
-</div>
-<button class="flex w-full items-center justify-center rounded-xl h-14 bg-primary text-white text-base font-bold shadow-lg shadow-primary/30 hover:bg-primary/90 hover:-translate-y-0.5 transition-all active:scale-95" type="submit">
-<span class="truncate">Iniciar Sesión al Panel</span>
-<span class="material-symbols-outlined ml-2 text-[20px]">arrow_forward</span>
-</button>
-</form>
-<div class="mt-8">
-<div class="relative flex items-center justify-center mb-8">
-<div class="absolute inset-0 flex items-center">
-<div class="w-full border-t border-gray-200 dark:border-gray-700"></div>
-</div>
-<span class="relative bg-background-light dark:bg-background-dark px-4 text-xs font-bold text-gray-400 uppercase tracking-widest">O continuar con</span>
-</div>
-<button class="flex w-full items-center justify-center gap-3 rounded-xl border border-[#dbdfe6] dark:border-gray-700 h-12 bg-white dark:bg-gray-800 text-[#111318] dark:text-white text-sm font-bold hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-<svg class="w-5 h-5" viewBox="0 0 24 24">
-<path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"></path>
-<path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"></path>
-<path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"></path>
-<path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 1.16-4.53z" fill="#EA4335"></path>
-</svg>
-                    Iniciar sesión con Google SSO
-                </button>
-</div>
-<div class="mt-auto pt-10 text-center">
-<p class="text-[#616f89] dark:text-gray-500 text-xs leading-relaxed">
-                    Al iniciar sesión, aceptas nuestros <a class="text-primary hover:underline" href="#">Términos de Servicio</a> y nuestra <a class="text-primary hover:underline" href="#">Política de Privacidad</a>.
-                </p>
-</div>
-</div>
-</div>
-</div>
+        <div class="relative z-10 max-w-lg mb-12">
+            <h2 class="text-white text-5xl font-extrabold leading-tight mb-6">Más Control.<br><span class="text-blue-500">Menos preocupación.</span></h2>
+            <p class="text-slate-400 text-lg">La próxima generación de gestión financiera corporativa.</p>
+        </div>
+        <div class="relative z-10 text-slate-500 text-sm">© 2026 QuantyA Systems Inc.</div>
+    </div>
 
-</body></html>
+    <div class="w-full lg:w-1/2 flex items-center justify-center p-8 bg-slate-50 dark:bg-[#0f172a]">
+        <div class="w-full max-w-[400px]">
+            <div class="mb-10">
+                <h2 id="form-title" class="text-3xl font-bold text-slate-900 dark:text-white mb-2">Bienvenido de nuevo</h2>
+                <p class="text-slate-500 dark:text-slate-400">Ingresa tus credenciales para acceder.</p>
+            </div>
+
+            <div class="mb-8 p-1 bg-slate-200 dark:bg-slate-800 rounded-xl flex">
+                <button onclick="toggleMode('Sign In')" class="flex-1 py-2 text-sm font-bold rounded-lg transition-all has-[:checked]:bg-white">
+                    <input type="radio" name="auth-mode" value="Sign In" checked class="hidden"> Iniciar Sesión
+                </button>
+                <button onclick="toggleMode('Create Account')" class="flex-1 py-2 text-sm font-bold rounded-lg transition-all has-[:checked]:bg-white">
+                    <input type="radio" name="auth-mode" value="Create Account" class="hidden"> Crear Cuenta
+                </button>
+            </div>
+
+            <form onsubmit="handleAuth(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Email</label>
+                    <input type="email" id="email" required class="w-full h-12 px-4 rounded-xl border-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:ring-blue-500" placeholder="admin@quantya.com">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Contraseña</label>
+                    <input type="password" id="password" required class="w-full h-12 px-4 rounded-xl border-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-white focus:ring-blue-500" placeholder="••••••••">
+                </div>
+                <button type="submit" id="submit-btn-main" class="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg transition-all flex items-center justify-center">
+                    <span id="btn-text">Iniciar Sesión al Panel</span>
+                    <span class="material-symbols-outlined ml-2 text-[20px]">arrow_forward</span>
+                </button>
+            </form>
+
+            <div class="mt-8 relative">
+                <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-slate-200 dark:border-slate-800"></div></div>
+                <span class="relative bg-slate-50 dark:bg-[#0f172a] px-4 text-xs text-slate-400 uppercase center block text-center">O continuar con</span>
+            </div>
+
+            <button onclick="loginGoogle()" class="w-full mt-6 h-12 border border-slate-200 dark:border-slate-700 dark:text-white rounded-xl flex items-center justify-center gap-3 hover:bg-white transition-all font-bold text-sm">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/action/google.svg" class="w-5 h-5">
+                Google SSO
+            </button>
+        </div>
+    </div>
+</div>
+</body>
+</html>
