@@ -7,6 +7,114 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCO6WXu9iZsyEUmNNxrE4oWToLYY8wl-y4",
+            authDomain: "misfinanzaspro-d2f3f.firebaseapp.com",
+            databaseURL: "https://misfinanzaspro-d2f3f-default-rtdb.firebaseio.com",
+            projectId: "misfinanzaspro-d2f3f",
+            storageBucket: "misfinanzaspro-d2f3f.firebasestorage.app",
+            messagingSenderId: "613366165036",
+            appId: "1:613366165036:web:bebc72b38d39ab64932b89"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+        
+        let allMovements = [];
+        let currentUser = null;
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                inicializarApp();
+            } else {
+                window.location.href = "index.html";
+            }
+        });
+
+        function inicializarApp() {
+            // Cargar Listas para los Selects (Categorías)
+            const listasRef = ref(db, `usuarios/${currentUser.uid}/listas/categoria`);
+            onValue(listasRef, (snapshot) => {
+                const selectCat = document.getElementById('filter-categoria');
+                selectCat.innerHTML = '<option value="Todas">Todas</option>';
+                if (snapshot.exists()) {
+                    snapshot.forEach(child => {
+                        const opt = document.createElement('option');
+                        opt.value = child.val().nombre;
+                        opt.textContent = child.val().nombre;
+                        selectCat.appendChild(opt);
+                    });
+                }
+            });
+
+            // Cargar Movimientos
+            const movRef = ref(db, `usuarios/${currentUser.uid}/movimientos`);
+            onValue(movRef, (snapshot) => {
+                allMovements = [];
+                snapshot.forEach(child => {
+                    allMovements.push({ id: child.key, ...child.val() });
+                });
+                allMovements.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+                filtrarYRenderizar();
+            });
+        }
+
+        function filtrarYRenderizar() {
+            const searchText = document.getElementById('filter-search').value.toLowerCase();
+            const type = document.getElementById('filter-tipo').value;
+            const category = document.getElementById('filter-categoria').value;
+            const date = document.getElementById('filter-fecha').value;
+
+            const filtered = allMovements.filter(m => {
+                const matchSearch = m.concepto.toLowerCase().includes(searchText) || (m.id && m.id.toLowerCase().includes(searchText));
+                const matchType = type === "Todos" || (type === "Ingresos" && m.tipo.includes("Ingreso")) || (type === "Egresos" && !m.tipo.includes("Ingreso"));
+                const matchCat = category === "Todas" || m.categoria === category;
+                const matchDate = !date || m.fecha === date;
+                
+                return matchSearch && matchType && matchCat && matchDate;
+            });
+
+            renderTable(filtered);
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+            
+            data.forEach(m => {
+                const isIngreso = m.tipo.toLowerCase().includes('ingreso') || m.tipo.toLowerCase().includes('venta');
+                const row = `
+                    <tr class="hover:bg-slate-50/50 transition-colors border-b border-slate-100 last:border-0">
+                        <td class="px-6 py-4 text-sm text-slate-500">${m.fecha}</td>
+                        <td class="px-6 py-4">
+                            <p class="text-sm font-bold text-slate-700">${m.concepto}</p>
+                            <p class="text-[10px] text-slate-400 uppercase">CAT: ${m.categoria} | ${m.subcategoria || ''}</p>
+                        </td>
+                        <td class="px-6 py-4 text-sm font-black text-right ${isIngreso ? 'text-emerald-custom' : 'text-red-500'}">
+                            ${isIngreso ? '+' : '-'} $${new Intl.NumberFormat('es-CL').format(m.monto)}
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-1 rounded-full uppercase">${m.pago}</span>
+                        </td>
+                    </tr>
+                `;
+                tbody.insertAdjacentHTML('beforeend', row);
+            });
+        }
+
+        // Exponer funciones al buscador en tiempo real
+        window.ejecutarFiltro = filtrarYRenderizar;
+
+    </script>
+
     <script>
         tailwind.config = {
             darkMode: "class",
@@ -82,22 +190,22 @@
 
     <main class="ml-64 flex-1 flex flex-col">
         <header class="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-8 flex items-center justify-between sticky top-0 z-40">
-            <h2 class="text-lg font-bold text-slate-700">Registro de Movimientos</h2>
-            <button class="bg-primary text-white px-4 py-2 rounded-lg text-xs font-bold shadow-lg flex items-center gap-2">
+            <h2 class="text-lg font-bold text-slate-700 dark:text-slate-200">Registro de Movimientos</h2>
+            <a href="dashboard.html" class="bg-primary text-white px-4 py-2 rounded-lg text-xs font-bold shadow-lg flex items-center gap-2">
                 <span class="material-symbols-outlined text-sm">add</span> Nuevo Movimiento
-            </button>
+            </a>
         </header>
 
         <div class="p-8 space-y-8 max-w-[1440px] mx-auto w-full">
-            <section class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 shadow-sm">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <section class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
                     <div>
                         <label class="block text-[10px] font-black text-slate-500 uppercase mb-1">Buscador</label>
-                        <input type="text" placeholder="Referencia o ID..." class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm">
+                        <input id="filter-search" oninput="ejecutarFiltro()" type="text" placeholder="Concepto o ID..." class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm">
                     </div>
                     <div>
                         <label class="block text-[10px] font-black text-slate-500 uppercase mb-1">Tipo</label>
-                        <select class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm font-bold text-slate-600">
+                        <select id="filter-tipo" onchange="ejecutarFiltro()" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-600 dark:text-slate-300">
                             <option>Todos</option>
                             <option>Ingresos</option>
                             <option>Egresos</option>
@@ -105,53 +213,32 @@
                     </div>
                     <div>
                         <label class="block text-[10px] font-black text-slate-500 uppercase mb-1">Categoría</label>
-                        <select class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm">
+                        <select id="filter-categoria" onchange="ejecutarFiltro()" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm">
                             <option>Todas</option>
-                            <option>Sistemas</option>
-                            <option>Ventas</option>
-                            <option>Nómina</option>
                         </select>
                     </div>
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-500 uppercase mb-1">Fecha</label>
+                        <input id="filter-fecha" onchange="ejecutarFiltro()" type="date" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm">
+                    </div>
                     <div class="flex items-end">
-                        <button class="w-full bg-slate-800 text-white font-bold py-2 rounded-lg text-sm">Aplicar Filtros</button>
+                        <button onclick="document.getElementById('filter-search').value=''; ejecutarFiltro();" class="w-full bg-slate-800 dark:bg-slate-700 text-white font-bold py-2 rounded-lg text-sm hover:bg-slate-700 transition-colors">Limpiar Filtros</button>
                     </div>
                 </div>
             </section>
 
-            <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
                 <table class="w-full text-left border-collapse">
                     <thead>
-                        <tr class="bg-slate-50">
-                            <th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Fecha</th>
-                            <th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Concepto / Ref</th>
-                            <th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Monto</th>
-                            <th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Estado</th>
+                        <tr class="bg-slate-50 dark:bg-slate-800/50">
+                            <th class="px-6 py-4 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Fecha</th>
+                            <th class="px-6 py-4 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Concepto / Ref</th>
+                            <th class="px-6 py-4 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest text-right">Monto</th>
+                            <th class="px-6 py-4 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Método</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100">
-                        <tr class="hover:bg-slate-50/50 transition-colors">
-                            <td class="px-6 py-4 text-sm text-slate-500">18/01/2026</td>
-                            <td class="px-6 py-4">
-                                <p class="text-sm font-bold text-slate-700">Venta Licencia QuantyA Pro</p>
-                                <p class="text-[10px] text-slate-400 uppercase">Ref: TX-9901</p>
-                            </td>
-                            <td class="px-6 py-4 text-sm font-black text-right text-emerald-custom">+$2,400.00</td>
-                            <td class="px-6 py-4">
-                                <span class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-1 rounded-full uppercase">Completado</span>
-                            </td>
-                        </tr>
-                        <tr class="hover:bg-slate-50/50 transition-colors">
-                            <td class="px-6 py-4 text-sm text-slate-500">17/01/2026</td>
-                            <td class="px-6 py-4">
-                                <p class="text-sm font-bold text-slate-700">Suscripción AWS Cloud</p>
-                                <p class="text-[10px] text-slate-400 uppercase">Ref: TX-9902</p>
-                            </td>
-                            <td class="px-6 py-4 text-sm font-black text-right text-red-500">-$150.00</td>
-                            <td class="px-6 py-4">
-                                <span class="bg-warning/20 text-amber-700 text-[10px] font-bold px-2 py-1 rounded-full uppercase">Pendiente</span>
-                            </td>
-                        </tr>
-                    </tbody>
+                    <tbody id="table-body" class="divide-y divide-slate-100 dark:divide-slate-800">
+                        </tbody>
                 </table>
             </div>
         </div>
