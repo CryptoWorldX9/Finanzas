@@ -27,15 +27,10 @@
     const db = getDatabase(app);
     let currentUser = null;
 
-    // Elementos del DOM
     const selectMoneda = document.getElementById('conf-moneda');
     const selectZona = document.getElementById('conf-zona');
     const checkDarkMode = document.getElementById('conf-darkmode');
-    
-    // Contenedores de Listas
-    const containerCategorias = document.getElementById('list-categorias');
-    const containerMetodos = document.getElementById('list-metodos');
-    const containerProveedores = document.getElementById('list-proveedores');
+    const containerMaestro = document.getElementById('master-lists-container');
 
     onAuthStateChanged(auth, (user) => {
         if (user) {
@@ -47,10 +42,8 @@
     });
 
     function iniciarSincronizacionRealtime() {
-        const configRef = ref(db, `usuarios/${currentUser.uid}/configuracion`);
-        
-        // Sincronización de Preferencias y Tema
-        onValue(configRef, (snapshot) => {
+        // Configuración Global
+        onValue(ref(db, `usuarios/${currentUser.uid}/configuracion`), (snapshot) => {
             if (snapshot.exists()) {
                 const data = snapshot.val();
                 if(data.moneda) selectMoneda.value = data.moneda;
@@ -62,12 +55,9 @@
             }
         });
 
-        // Sincronización de Listas Maestras
-        const listas = ['categorias', 'metodos', 'proveedores'];
-        listas.forEach(lista => {
-            onValue(ref(db, `usuarios/${currentUser.uid}/listas/${lista}`), (snapshot) => {
-                renderizarLista(lista, snapshot.val());
-            });
+        // Sincronización de TODAS las listas dinámicamente
+        onValue(ref(db, `usuarios/${currentUser.uid}/listas`), (snapshot) => {
+            renderizarTodasLasListas(snapshot.val());
         });
     }
 
@@ -81,66 +71,89 @@
         }
     }
 
-    // --- Lógica de Listas Maestras ---
-    function renderizarLista(tipo, data) {
-        const containers = {
-            'categorias': containerCategorias,
-            'metodos': containerMetodos,
-            'proveedores': containerProveedores
-        };
-        const container = containers[tipo];
-        container.innerHTML = '';
+    function renderizarTodasLasListas(todasLasListas) {
+        containerMaestro.innerHTML = '';
+        if (!todasLasListas) return;
 
-        if (data) {
-            Object.keys(data).forEach(key => {
-                const item = data[key];
-                const span = document.createElement('span');
-                // Estilo condicional para proveedores (verde)
-                const colorClass = tipo === 'proveedores' ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600' : 'bg-slate-100 dark:bg-slate-800';
-                
-                span.className = `px-3 py-1.5 ${colorClass} rounded-lg text-xs font-medium flex items-center gap-2`;
-                span.innerHTML = `${item.nombre} <button onclick="eliminarItem('${tipo}', '${key}')" class="hover:text-red-500">×</button>`;
-                container.appendChild(span);
-            });
-        }
+        Object.keys(todasLasListas).forEach(nombreLista => {
+            const items = todasLasListas[nombreLista];
+            
+            const divCol = document.createElement('div');
+            divCol.className = "space-y-4";
+            
+            // Header de la columna
+            divCol.innerHTML = `
+                <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex justify-between items-center capitalize">
+                    ${nombreLista.replace(/_/g, ' ')}
+                    <button onclick="eliminarTipoLista('${nombreLista}')" class="material-symbols-outlined text-slate-400 text-sm hover:text-red-500">delete</button>
+                </h4>
+                <div id="list-${nombreLista}" class="flex flex-wrap gap-2"></div>
+            `;
 
-        // Botón Añadir (Se mantiene al final)
-        const btnAdd = document.createElement('button');
-        btnAdd.className = "px-3 py-1.5 border border-dashed border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-500 hover:border-primary hover:text-primary transition-colors";
-        btnAdd.innerHTML = "+ Añadir";
-        btnAdd.onclick = () => agregarItem(tipo);
-        container.appendChild(btnAdd);
+            containerMaestro.appendChild(divCol);
+            const listContainer = divCol.querySelector(`#list-${nombreLista}`);
+
+            // Renderizar items de esta lista específica
+            if (items && typeof items === 'object') {
+                Object.keys(items).forEach(itemId => {
+                    const itemData = items[itemId];
+                    const span = document.createElement('span');
+                    span.className = "px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-medium flex items-center gap-2";
+                    span.innerHTML = `${itemData.nombre} <button onclick="eliminarItem('${nombreLista}', '${itemId}')" class="hover:text-red-500">×</button>`;
+                    listContainer.appendChild(span);
+                });
+            }
+
+            // Botón + Añadir datos a esta lista
+            const btnAdd = document.createElement('button');
+            btnAdd.className = "px-3 py-1.5 border border-dashed border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-500 hover:border-primary hover:text-primary transition-colors";
+            btnAdd.innerHTML = "+ Añadir";
+            btnAdd.onclick = () => agregarDatoALista(nombreLista);
+            listContainer.appendChild(btnAdd);
+        });
     }
 
-    window.agregarItem = async (tipo) => {
-        const nombre = prompt(`Nombre del nuevo item para ${tipo}:`);
+    // Acción: Crear un nuevo tipo de lista (ej: Subcategorías)
+    window.crearNuevoTipoLista = async () => {
+        const nombre = prompt("Nombre del nuevo tipo de lista (ej: Subcategorías, Proyectos):");
         if (nombre && nombre.trim() !== "") {
-            const listRef = ref(db, `usuarios/${currentUser.uid}/listas/${tipo}`);
-            await push(listRef, { nombre: nombre.trim() });
+            const key = nombre.trim().toLowerCase().replace(/\s+/g, '_');
+            const listRef = ref(db, `usuarios/${currentUser.uid}/listas/${key}`);
+            // Creamos un item inicial para que la lista exista en la DB
+            await push(listRef, { nombre: "Ejemplo" });
+        }
+    };
+
+    // Acción: Agregar dato a una lista existente
+    window.agregarDatoALista = async (tipo) => {
+        const nombre = prompt(`Añadir nuevo elemento a ${tipo}:`);
+        if (nombre && nombre.trim() !== "") {
+            await push(ref(db, `usuarios/${currentUser.uid}/listas/${tipo}`), { nombre: nombre.trim() });
         }
     };
 
     window.eliminarItem = async (tipo, id) => {
-        if(confirm("¿Estás seguro de eliminar este elemento?")) {
+        if(confirm("¿Eliminar este elemento?")) {
             await remove(ref(db, `usuarios/${currentUser.uid}/listas/${tipo}/${id}`));
         }
     };
 
-    // Guardar Parámetros Globales
+    window.eliminarTipoLista = async (tipo) => {
+        if(confirm(`¿Estás seguro de eliminar TODA la lista de "${tipo}"?`)) {
+            await remove(ref(db, `usuarios/${currentUser.uid}/listas/${tipo}`));
+        }
+    };
+
     window.guardarCambiosGlobales = async () => {
-        if(!currentUser) return;
         const updates = {
             moneda: selectMoneda.value,
             zonaHoraria: selectZona.value,
             darkMode: checkDarkMode.checked,
             lastUpdated: Date.now()
         };
-        try {
-            await update(ref(db, `usuarios/${currentUser.uid}/configuracion`), updates);
-            alert("Configuración global actualizada");
-        } catch (error) { alert("Error al guardar"); }
+        await update(ref(db, `usuarios/${currentUser.uid}/configuracion`), updates);
+        alert("Cambios guardados");
     };
-
 </script>
 
 <script id="tailwind-config">
@@ -153,23 +166,15 @@
                         "navy-900": "#0f172a",
                         "background-light": "#f8f9fa"
                     },
-                    fontFamily: {
-                        "display": ["Inter", "sans-serif"]
-                    },
-                    borderRadius: {
-                        "DEFAULT": "0.5rem",
-                        "lg": "1rem",
-                        "xl": "1.5rem",
-                    },
+                    fontFamily: { "display": ["Inter", "sans-serif"] },
+                    borderRadius: { "DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem" },
                 },
             },
         }
     </script>
 <style type="text/tailwindcss">
         body { font-family: 'Inter', sans-serif; }
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
     </style>
 </head>
 <body class="bg-background-light dark:bg-[#111827] font-display text-slate-900 dark:text-slate-100">
@@ -289,33 +294,13 @@
                         <span class="material-symbols-outlined text-primary">list_alt</span>
                         <h3 class="font-bold text-xl">Gestión de Listas Maestras</h3>
                     </div>
+                    <button onclick="crearNuevoTipoLista()" class="text-primary text-sm font-bold flex items-center gap-1 hover:opacity-80 transition-opacity">
+                        <span class="material-symbols-outlined text-sm">add_circle</span> Nuevo Tipo de Lista
+                    </button>
                 </div>
                 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
-                    <div class="space-y-4">
-                        <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex justify-between items-center">
-                            Categorías de Gastos
-                        </h4>
-                        <div id="list-categorias" class="flex flex-wrap gap-2">
-                            </div>
+                <div id="master-lists-container" class="grid grid-cols-1 md:grid-cols-3 gap-12">
                     </div>
-
-                    <div class="space-y-4">
-                        <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex justify-between items-center">
-                            Métodos de Pago
-                        </h4>
-                        <div id="list-metodos" class="flex flex-wrap gap-2">
-                            </div>
-                    </div>
-
-                    <div class="space-y-4">
-                        <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex justify-between items-center">
-                            Proveedores Globales
-                        </h4>
-                        <div id="list-proveedores" class="flex flex-wrap gap-2">
-                            </div>
-                    </div>
-                </div>
             </section>
         </div>
 
