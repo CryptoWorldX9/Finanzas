@@ -5,7 +5,7 @@
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>QuantyA - Gestión de Movimientos</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
     
     <script type="module">
@@ -27,13 +27,12 @@
         const auth = getAuth(app);
         const db = getDatabase(app);
         
-        let allMovements = JSON.parse(localStorage.getItem('cache_movimientos')) || [];
+        let allMovements = JSON.parse(localStorage.getItem('cache_movimientos_panel')) || [];
         let currentUser = null;
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
-                // Renderizado inicial con lo que haya en caché para velocidad 0ms
                 if(allMovements.length > 0) filtrarYRenderizar();
                 inicializarApp();
             } else {
@@ -42,7 +41,6 @@
         });
 
         function inicializarApp() {
-            // Categorías dinámicas
             const listasRef = ref(db, `usuarios/${currentUser.uid}/listas/categoria`);
             onValue(listasRef, (snapshot) => {
                 const selectCat = document.getElementById('filter-categoria');
@@ -63,22 +61,17 @@
                 selectCat.appendChild(fragment);
             });
 
-            // Movimientos con Sincronización Fluida
             const movRef = ref(db, `usuarios/${currentUser.uid}/movimientos`);
             onValue(movRef, (snapshot) => {
                 const nuevosDatos = [];
                 snapshot.forEach(child => {
                     nuevosDatos.push({ id: child.key, ...child.val() });
                 });
-                
                 nuevosDatos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
                 
-                // Si los datos son distintos a la caché, actualizamos
-                if(JSON.stringify(nuevosDatos) !== JSON.stringify(allMovements)) {
-                    allMovements = nuevosDatos;
-                    localStorage.setItem('cache_movimientos', JSON.stringify(allMovements));
-                    requestAnimationFrame(filtrarYRenderizar);
-                }
+                allMovements = nuevosDatos;
+                localStorage.setItem('cache_movimientos_panel', JSON.stringify(allMovements));
+                filtrarYRenderizar();
             });
         }
 
@@ -90,7 +83,7 @@
 
             const filtered = allMovements.filter(m => {
                 const matchSearch = (m.concepto || "").toLowerCase().includes(searchText) || (m.id && m.id.toLowerCase().includes(searchText));
-                const matchType = type === "Todos" || (type === "Ingresos" && m.tipo.includes("Ingreso")) || (type === "Egresos" && !m.tipo.includes("Ingreso"));
+                const matchType = type === "Todos" || (type === "Ingresos" && (m.tipo.includes("Ingreso") || m.tipo.includes("Venta"))) || (type === "Egresos" && (!m.tipo.includes("Ingreso") && !m.tipo.includes("Venta")));
                 const matchCat = category === "Todas" || m.categoria === category;
                 const matchDate = !date || m.fecha === date;
                 return matchSearch && matchType && matchCat && matchDate;
@@ -101,59 +94,51 @@
 
         function renderTable(data) {
             const tbody = document.getElementById('table-body');
-            const fragment = document.createDocumentFragment();
-            
-            data.forEach(m => {
+            tbody.innerHTML = data.map(m => {
                 const isIngreso = m.tipo.toLowerCase().includes('ingreso') || m.tipo.toLowerCase().includes('venta');
+                const colorClase = obtenerColorPago(m.pago);
                 
-                // Lógica de colores Pro por método de pago
-                const metodo = (m.pago || 'Otro').toLowerCase();
-                let colorClase = 'bg-slate-100 text-slate-600 border-slate-200';
+                return `
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors border-b border-slate-100 dark:border-slate-800 last:border-0 group">
+                        <td class="px-8 py-5 text-sm text-slate-500 font-medium">${m.fecha}</td>
+                        <td class="px-6 py-5">
+                            <p class="text-sm font-bold text-slate-800 dark:text-slate-200">${m.concepto}</p>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span class="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-widest text-slate-500">${m.categoria}</span>
+                                <span class="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">${m.subcategoria || 'General'}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-5 text-sm font-black text-right ${isIngreso ? 'text-emerald-custom' : 'text-red-500'}">
+                            ${isIngreso ? '+' : '-'} $${new Intl.NumberFormat('es-CL').format(m.monto)}
+                        </td>
+                        <td class="px-8 py-5 text-right">
+                            <span class="${colorClase} border text-[9px] font-black px-2.5 py-1 rounded-full uppercase tracking-tighter shadow-sm">
+                                ${m.pago}
+                            </span>
+                        </td>
+                    </tr>`;
+            }).join('');
+        }
 
-                if (metodo.includes('transferencia')) {
-                    colorClase = 'bg-emerald-100 text-emerald-700 border-emerald-200';
-                } else if (metodo.includes('debito') || metodo.includes('tarjeta')) {
-                    colorClase = 'bg-blue-100 text-blue-700 border-blue-200';
-                } else if (metodo.includes('credito')) {
-                    colorClase = 'bg-purple-100 text-purple-700 border-purple-200';
-                } else if (metodo.includes('efectivo')) {
-                    colorClase = 'bg-amber-100 text-amber-700 border-amber-200';
-                }
-
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors border-b border-slate-100 dark:border-slate-800 last:border-0";
-                tr.innerHTML = `
-                    <td class="px-6 py-4 text-sm text-slate-500">${m.fecha}</td>
-                    <td class="px-6 py-4">
-                        <p class="text-sm font-bold text-slate-700 dark:text-slate-200">${m.concepto}</p>
-                        <p class="text-[10px] text-slate-400 uppercase tracking-tight font-medium">CAT: ${m.categoria} | ${m.subcategoria || 'General'}</p>
-                    </td>
-                    <td class="px-6 py-4 text-sm font-black text-right ${isIngreso ? 'text-emerald-custom' : 'text-red-500'}">
-                        ${isIngreso ? '+' : '-'} $${new Intl.NumberFormat('es-CL').format(m.monto)}
-                    </td>
-                    <td class="px-6 py-4">
-                        <span class="${colorClase} border text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-tighter">
-                            ${m.pago}
-                        </span>
-                    </td>
-                `;
-                fragment.appendChild(tr);
-            });
-
-            tbody.innerHTML = '';
-            tbody.appendChild(fragment);
+        function obtenerColorPago(pago) {
+            const p = (pago || '').toLowerCase();
+            if (p.includes('transfer')) return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+            if (p.includes('debito') || p.includes('tarjeta')) return 'bg-blue-100 text-blue-700 border-blue-200';
+            if (p.includes('credito')) return 'bg-purple-100 text-purple-700 border-purple-200';
+            if (p.includes('efectivo')) return 'bg-amber-100 text-amber-700 border-amber-200';
+            return 'bg-slate-100 text-slate-600 border-slate-200';
         }
     </script>
 
-    <script>
+    <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
             theme: {
                 extend: {
                     colors: {
                         "primary": "#176282",
+                        "primary-light": "#2389b5",
                         "navy-900": "#0f172a",
-                        "slate-custom": "#64748b",
                         "emerald-custom": "#10b981",
                         "background-light": "#f8f9fa"
                     },
@@ -162,107 +147,136 @@
             }
         }
     </script>
-    <style type="text/tailwindcss">
-        body { font-family: 'Inter', sans-serif; }
-        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    <style>
+        .nav-link { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .nav-link:hover .icon-box { transform: scale(1.1) rotate(-5deg); }
+        .nav-link.active { background: linear-gradient(135deg, #176282 0%, #2389b5 100%); box-shadow: 0 10px 15px -3px rgba(23, 98, 130, 0.3); }
     </style>
 </head>
-<body class="bg-background-light dark:bg-[#111827] font-display text-slate-900 dark:text-slate-100">
+<body class="bg-background-light dark:bg-[#0b0f1a] font-display text-slate-900 dark:text-slate-100">
 
 <div class="flex min-h-screen">
-    <aside class="w-64 bg-[#0f172a] text-white flex flex-col fixed h-full z-50 border-r border-slate-800">
-        <div class="p-6 flex items-center gap-3">
-            <div class="size-10 bg-primary rounded-lg flex items-center justify-center">
-                <span class="material-symbols-outlined text-white text-2xl">account_balance_wallet</span>
+    <aside class="w-64 bg-navy-900 text-white flex flex-col fixed h-full z-50 border-r border-slate-800/50 shadow-2xl overflow-hidden">
+        <div class="absolute top-0 right-0 -mr-16 -mt-16 size-48 bg-primary/10 rounded-full blur-3xl"></div>
+        
+        <div class="relative p-6 flex-1 flex flex-col">
+            <div class="flex items-center gap-3 mb-8 px-2">
+                <div class="size-10 bg-gradient-to-br from-primary to-primary-light rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20 rotate-3">
+                    <span class="material-symbols-outlined text-xl">account_balance_wallet</span>
+                </div>
+                <div>
+                    <h1 class="text-xl font-black tracking-tight leading-none">QuantyA</h1>
+                    <p class="text-[9px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-1">Intelligence</p>
+                </div>
             </div>
-            <div>
-                <h1 class="text-xl font-bold tracking-tight">QuantyA</h1>
-                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Gestión Profesional</p>
+
+            <nav class="space-y-1.5 flex-1">
+                <p class="px-4 mb-3 text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Menú Principal</p>
+                
+                <a href="dashboard.html" class="nav-link flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl group">
+                    <div class="icon-box size-8 bg-slate-800/50 rounded-lg flex items-center justify-center transition-all group-hover:bg-slate-700">
+                        <span class="material-symbols-outlined text-[18px]">dashboard</span>
+                    </div>
+                    <span class="text-xs font-semibold tracking-wide">Panel de Control</span>
+                </a>
+
+                <a href="movimientos.html" class="nav-link active flex items-center gap-3 px-4 py-2.5 text-white rounded-xl group">
+                    <div class="icon-box size-8 bg-white/10 rounded-lg flex items-center justify-center transition-all group-hover:bg-white/20">
+                        <span class="material-symbols-outlined text-[18px]">swap_horiz</span>
+                    </div>
+                    <span class="text-xs font-bold tracking-wide">Movimientos</span>
+                </a>
+
+                <a href="analisis.html" class="nav-link flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl group">
+                    <div class="icon-box size-8 bg-slate-800/50 rounded-lg flex items-center justify-center transition-all group-hover:bg-slate-700">
+                        <span class="material-symbols-outlined text-[18px]">analytics</span>
+                    </div>
+                    <span class="text-xs font-semibold tracking-wide">Análisis Inteligente</span>
+                </a>
+
+                <a href="metas.html" class="nav-link flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl group">
+                    <div class="icon-box size-8 bg-slate-800/50 rounded-lg flex items-center justify-center transition-all group-hover:bg-slate-700">
+                        <span class="material-symbols-outlined text-[18px]">track_changes</span>
+                    </div>
+                    <span class="text-xs font-semibold tracking-wide">Mis Metas</span>
+                </a>
+
+                <div class="h-[1px] bg-slate-800/50 my-4 mx-4"></div>
+
+                <a href="configuracion.html" class="nav-link flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl group">
+                    <div class="icon-box size-8 bg-slate-800/50 rounded-lg flex items-center justify-center transition-all group-hover:bg-slate-700">
+                        <span class="material-symbols-outlined text-[18px]">settings</span>
+                    </div>
+                    <span class="text-xs font-semibold tracking-wide">Configuración</span>
+                </a>
+            </nav>
+
+            <div class="mt-auto pt-4 border-t border-slate-800/50">
+                <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-all">
+                    <div class="size-8 bg-red-500/10 rounded-lg flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[18px]">logout</span>
+                    </div>
+                    <span class="text-xs font-bold tracking-wide">Cerrar Sesión</span>
+                </a>
             </div>
-        </div>
-
-        <nav class="flex-1 px-4 mt-4 space-y-1">
-            <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">
-                <span class="material-symbols-outlined text-[20px]">dashboard</span>
-                <span class="text-sm font-medium">Panel</span>
-            </a>
-            <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary text-white transition-all shadow-lg shadow-primary/20">
-                <span class="material-symbols-outlined text-[20px]">swap_horiz</span>
-                <span class="text-sm font-medium">Movimientos</span>
-            </a>
-            <a href="analisis.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">
-                <span class="material-symbols-outlined text-[20px]">analytics</span>
-                <span class="text-sm font-medium">Análisis</span>
-            </a>
-            <a href="metas.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">
-                <span class="material-symbols-outlined text-[20px]">track_changes</span>
-                <span class="text-sm font-medium">Metas</span>
-            </a>
-            <a href="reportes.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">
-                <span class="material-symbols-outlined text-[20px]">description</span>
-                <span class="text-sm font-medium">Reportes</span>
-            </a>
-            <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">
-                <span class="material-symbols-outlined text-[20px]">settings</span>
-                <span class="text-sm font-medium">Configuración</span>
-            </a>
-        </nav>
-
-        <div class="p-4 border-t border-slate-800">
-            <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
-                <span class="material-symbols-outlined text-[20px]">logout</span>
-                <span class="text-sm font-medium">Cerrar Sesión</span>
-            </a>
         </div>
     </aside>
 
     <main class="ml-64 flex-1 flex flex-col">
-        <header class="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-8 flex items-center justify-between sticky top-0 z-40">
-            <h2 class="text-lg font-bold text-slate-700 dark:text-slate-200">Registro de Movimientos</h2>
-            <a href="dashboard.html" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-lg flex items-center gap-2 transition-all">
-                <span class="material-symbols-outlined text-sm">add</span> Nuevo Movimiento
+        <header class="h-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-8 flex items-center justify-between sticky top-0 z-40">
+            <div>
+                <h2 class="text-lg font-black text-slate-800 dark:text-white tracking-tight">Historial de Movimientos</h2>
+                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Filtra y gestiona tus finanzas</p>
+            </div>
+            <a href="dashboard.html" class="bg-gradient-to-r from-primary to-primary-light hover:shadow-lg hover:shadow-primary/30 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 transition-all active:scale-95">
+                <span class="material-symbols-outlined text-sm">add_circle</span> Nuevo Registro
             </a>
         </header>
 
-        <div class="p-8 space-y-8 max-w-[1440px] mx-auto w-full">
-            <section class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
-                <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-                    <div>
-                        <label class="block text-[10px] font-black text-slate-500 uppercase mb-1.5">Buscador</label>
-                        <input id="filter-search" oninput="filtrarYRenderizar()" type="text" placeholder="Concepto o ID..." class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm focus:ring-primary">
+        <div class="p-8 space-y-6 max-w-[1440px] mx-auto w-full">
+            <section class="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
+                    <div class="md:col-span-1">
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Buscador Inteligente</label>
+                        <div class="relative">
+                            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+                            <input id="filter-search" oninput="filtrarYRenderizar()" type="text" placeholder="Concepto..." class="w-full pl-10 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20">
+                        </div>
                     </div>
                     <div>
-                        <label class="block text-[10px] font-black text-slate-500 uppercase mb-1.5">Tipo</label>
-                        <select id="filter-tipo" onchange="filtrarYRenderizar()" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-600 dark:text-slate-300">
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Tipo</label>
+                        <select id="filter-tipo" onchange="filtrarYRenderizar()" class="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 focus:ring-2 focus:ring-primary/20">
                             <option>Todos</option>
                             <option>Ingresos</option>
                             <option>Egresos</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-[10px] font-black text-slate-500 uppercase mb-1.5">Categoría</label>
-                        <select id="filter-categoria" onchange="filtrarYRenderizar()" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm">
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Categoría</label>
+                        <select id="filter-categoria" onchange="filtrarYRenderizar()" class="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary/20">
                             <option>Todas</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-[10px] font-black text-slate-500 uppercase mb-1.5">Fecha</label>
-                        <input id="filter-fecha" onchange="filtrarYRenderizar()" type="date" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm">
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Fecha</label>
+                        <input id="filter-fecha" onchange="filtrarYRenderizar()" type="date" class="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-sm font-bold focus:ring-2 focus:ring-primary/20">
                     </div>
                     <div class="flex items-end">
-                        <button onclick="document.getElementById('filter-search').value=''; document.getElementById('filter-fecha').value=''; filtrarYRenderizar();" class="w-full bg-slate-800 dark:bg-slate-700 text-white font-bold py-2.5 rounded-lg text-xs uppercase tracking-widest hover:bg-slate-700 transition-colors">Limpiar</button>
+                        <button onclick="document.getElementById('filter-search').value=''; document.getElementById('filter-fecha').value=''; filtrarYRenderizar();" class="w-full bg-slate-800 dark:bg-slate-700 text-white font-black py-3 rounded-xl text-[10px] uppercase tracking-[0.2em] hover:bg-slate-700 transition-all active:scale-95">
+                            Resetear Filtros
+                        </button>
                     </div>
                 </div>
             </section>
 
-            <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                <table class="w-full text-left border-collapse">
+            <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                <table class="w-full text-left">
                     <thead>
                         <tr class="bg-slate-50 dark:bg-slate-800/50">
-                            <th class="px-6 py-4 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Fecha</th>
-                            <th class="px-6 py-4 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Concepto / Ref</th>
-                            <th class="px-6 py-4 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest text-right">Monto</th>
-                            <th class="px-6 py-4 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">Método</th>
+                            <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Fecha</th>
+                            <th class="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Detalle del Movimiento</th>
+                            <th class="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Monto</th>
+                            <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-right">Método de Pago</th>
                         </tr>
                     </thead>
                     <tbody id="table-body" class="divide-y divide-slate-100 dark:divide-slate-800">
