@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html class="light" lang="es">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>QuantyA - Análisis Financiero</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { "primary": "#286ceb" }, fontFamily: { "display": ["Manrope"] } } }
+        }
+    </script>
+</head>
+<body class="bg-[#f1f2f4] font-display text-[#111318] antialiased">
+<div class="flex h-screen overflow-hidden">
+    
+    <aside class="w-64 bg-white border-r border-[#e5e7eb] flex flex-col shrink-0">
+        <div class="p-6 flex items-center gap-3">
+            <span class="material-symbols-outlined text-3xl text-primary font-bold">account_balance_wallet</span>
+            <h2 class="text-xl font-extrabold tracking-tight">QuantyA</h2>
+        </div>
+        <nav class="flex-1 px-4 space-y-1">
+            <a href="dashboard.html" class="flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:bg-gray-50 rounded-lg">
+                <span class="material-symbols-outlined">dashboard</span> Panel
+            </a>
+            <a href="movimientos.html" class="flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:bg-gray-50 rounded-lg">
+                <span class="material-symbols-outlined">sync_alt</span> Movimientos
+            </a>
+            <a href="analisis.html" class="flex items-center gap-3 px-3 py-2.5 text-sm font-bold bg-primary/10 text-primary border-r-4 border-primary rounded-lg">
+                <span class="material-symbols-outlined">analytics</span> Análisis
+            </a>
+            <a href="metas.html" class="flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:bg-gray-50 rounded-lg">
+                <span class="material-symbols-outlined">flag</span> Metas
+            </a>
+            <a href="reportes.html" class="flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:bg-gray-50 rounded-lg">
+                <span class="material-symbols-outlined">description</span> Reportes
+            </a>
+            <a href="configuracion.html" class="flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-600 hover:bg-gray-50 rounded-lg">
+                <span class="material-symbols-outlined">settings</span> Configuración
+            </a>
+        </nav>
+        <div class="p-4 border-t border-slate-100">
+            <a href="index.html" class="flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-red-500 hover:bg-red-50 rounded-lg">
+                <span class="material-symbols-outlined">logout</span> Cerrar Sesión
+            </a>
+        </div>
+    </aside>
+
+    <main class="flex-1 overflow-y-auto">
+        <header class="h-16 bg-white border-b border-slate-200 px-8 flex items-center justify-between sticky top-0 z-10">
+            <h2 class="font-black text-lg uppercase tracking-tight">Análisis de Rendimiento</h2>
+            <div class="flex gap-2">
+                <button class="px-4 py-2 text-xs font-bold border border-slate-200 rounded-lg bg-white">Últimos 30 días</button>
+            </div>
+        </header>
+
+        <div class="p-8 space-y-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
+                    <h3 class="font-black text-slate-400 text-xs uppercase tracking-widest mb-6">Comparativa Ingresos vs Gastos</h3>
+                    <canvas id="chartBarras" height="200"></canvas>
+                </div>
+
+                <div class="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
+                    <h3 class="font-black text-slate-400 text-xs uppercase tracking-widest mb-6">Distribución por Categoría</h3>
+                    <div class="max-w-[300px] mx-auto">
+                        <canvas id="chartDona"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    // Configuración Gráfico de Barras
+    const ctxBarras = document.getElementById('chartBarras').getContext('2d');
+    new Chart(ctxBarras, {
+        type: 'bar',
+        data: {
+            labels: ['Oct', 'Nov', 'Dic', 'Ene'],
+            datasets: [
+                { label: 'Ingresos', data: [12000, 15000, 11000, 14000], backgroundColor: '#10b981' },
+                { label: 'Gastos', data: [7000, 8500, 9000, 7500], backgroundColor: '#ef4444' }
+            ]
+        },
+        options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+    });
+
+    // Configuración Gráfico de Dona
+    const ctxDona = document.getElementById('chartDona').getContext('2d');
+    new Chart(ctxDona, {
+        type: 'doughnut',
+        data: {
+            labels: ['Servicios', 'Nómina', 'Marketing', 'Software'],
+            datasets: [{
+                data: [40, 30, 15, 15],
+                backgroundColor: ['#286ceb', '#38bdf8', '#818cf8', '#c7d2fe']
+            }]
+        },
+        options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+    });
+</script>
+</body>
+</html>
