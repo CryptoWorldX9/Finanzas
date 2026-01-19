@@ -2,12 +2,23 @@
 <html class="light" lang="es"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>QuantyA Intelligence - Análisis</title>
+<title>Análisis Pro - QuantyA</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<script id="tailwind-config">
+    tailwind.config = {
+        theme: {
+            extend: {
+                colors: { "primary": "#176282", "background-light": "#f9fafb", "background-dark": "#181d25" },
+                fontFamily: { "display": ["Inter", "sans-serif"] },
+            },
+        },
+    }
+</script>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -25,242 +36,234 @@
     const auth = getAuth(app);
     const db = getDatabase(app);
     let currentUser = null;
-    let rawData = [];
-    let currentFilter = 'mensual';
 
     onAuthStateChanged(auth, (user) => {
         if (user) {
             currentUser = user;
-            escucharDatos();
-            cargarMetas();
+            cargarTodo();
         } else { window.location.href = "index.html"; }
     });
 
-    function escucharDatos() {
-        // Carga única y veloz
+    function cargarTodo() {
+        // Carga de Movimientos para Gráficos y Tablas
         onValue(ref(db, `usuarios/${currentUser.uid}/movimientos`), (snapshot) => {
-            rawData = [];
-            if (snapshot.exists()) {
-                snapshot.forEach(child => { rawData.push(child.val()); });
-            }
-            procesarYRenderizar();
-        });
-    }
-
-    window.setFilter = (filter) => {
-        currentFilter = filter;
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('border-primary', 'text-primary'));
-        event.target.classList.add('border-primary', 'text-primary');
-        procesarYRenderizar();
-    };
-
-    function procesarYRenderizar() {
-        let ingresos = 0, gastos = 0;
-        let catsIngresos = {}, catsGastos = {};
-
-        // Filtrar por fecha (Lógica simple para demo, expandible)
-        rawData.forEach(m => {
-            const monto = parseFloat(m.monto);
-            if (m.tipo === 'ingreso') {
-                ingresos += monto;
-                catsIngresos[m.categoria] = (catsIngresos[m.categoria] || 0) + monto;
-            } else {
-                gastos += monto;
-                catsGastos[m.categoria] = (catsGastos[m.categoria] || 0) + monto;
-            }
+            let ing = 0, gas = 0;
+            let catsGastos = {}, catsIngresos = {};
+            snapshot.forEach(child => {
+                const m = child.val();
+                const monto = parseFloat(m.monto);
+                if(m.tipo === 'ingreso') {
+                    ing += monto;
+                    catsIngresos[m.categoria] = (catsIngresos[m.categoria] || 0) + monto;
+                } else {
+                    gas += monto;
+                    catsGastos[m.categoria] = (catsGastos[m.categoria] || 0) + monto;
+                }
+            });
+            actualizarUI(ing, gas, catsIngresos, catsGastos);
         });
 
-        // Actualizar Gráfico Circular (Balance)
-        const total = ingresos + gastos;
-        const dashIngreso = total > 0 ? (ingresos / total) * 251.2 : 125;
-        document.getElementById('circle-ingreso').style.strokeDashoffset = 251.2 - dashIngreso;
-        document.getElementById('balance-total').innerText = `$${new Intl.NumberFormat('es-CL').format(ingresos - gastos)}`;
-
-        // Renderizar Columnas Top 4
-        renderList('list-top-ingresos', catsIngresos, 'bg-emerald-500');
-        renderList('list-top-gastos', catsGastos, 'bg-red-500');
-
-        // Tabla Rendimiento
-        updateTabla(ingresos, gastos);
-    }
-
-    function renderList(id, data, color) {
-        const container = document.getElementById(id);
-        container.innerHTML = '';
-        Object.entries(data).sort((a,b) => b[1] - a[1]).slice(0, 4).forEach(([name, val]) => {
-            container.innerHTML += `
-                <div class="flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg transition-all">
-                    <div class="flex items-center gap-2">
-                        <span class="size-2 rounded-full ${color}"></span>
-                        <span class="text-xs font-medium text-slate-600">${name}</span>
-                    </div>
-                    <span class="text-xs font-bold">$${new Intl.NumberFormat('es-CL').format(val)}</span>
-                </div>`;
-        });
-    }
-
-    function updateTabla(ing, gas) {
-        const diffIng = ((ing - 500000) / 500000 * 100).toFixed(1);
-        const diffGas = ((gas - 300000) / 300000 * 100).toFixed(1);
-
-        document.getElementById('td-ing-real').innerHTML = `
-            <div class="flex items-center justify-end gap-2 text-emerald-600 font-bold">
-                $${new Intl.NumberFormat('es-CL').format(ing)}
-                <span class="material-symbols-outlined text-sm">${diffIng >= 0 ? 'trending_up' : 'trending_down'}</span>
-            </div>`;
-        document.getElementById('td-gas-real').innerHTML = `
-            <div class="flex items-center justify-end gap-2 ${gas > 300000 ? 'text-red-500' : 'text-emerald-500'} font-bold">
-                $${new Intl.NumberFormat('es-CL').format(gas)}
-                <span class="material-symbols-outlined text-sm">${gas > 300000 ? 'trending_up' : 'trending_down'}</span>
-            </div>`;
-    }
-
-    // --- METAS ---
-    function cargarMetas() {
+        // Carga de Metas
         onValue(ref(db, `usuarios/${currentUser.uid}/metas`), (snapshot) => {
-            const container = document.getElementById('metas-list');
+            const container = document.getElementById('metas-analisis-container');
             container.innerHTML = '';
             snapshot.forEach(child => {
                 const meta = child.val();
                 const prog = Math.min(Math.round((meta.ahorrado/meta.objetivo)*100), 100);
-                container.innerHTML += `
-                    <div class="bg-white border border-slate-100 p-5 rounded-xl shadow-sm">
-                        <div class="flex justify-between items-center mb-3">
-                            <span class="text-xs font-bold text-slate-800">${meta.nombre}</span>
-                            <span class="text-xs font-black text-primary">${prog}%</span>
-                        </div>
-                        <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mb-4">
-                            <div class="bg-primary h-full" style="width: ${prog}%"></div>
-                        </div>
-                        <button onclick="window.aportar('${child.key}', ${meta.ahorrado})" class="w-full py-2 bg-[#176282] text-white text-[10px] font-bold rounded-lg uppercase tracking-widest">Aportar</button>
-                    </div>`;
+                container.innerHTML += renderizarMetaCard(child.key, meta, prog);
             });
         });
     }
 
+    function actualizarUI(ing, gas, catsIng, catsGas) {
+        document.getElementById('total-center').innerText = `$${new Intl.NumberFormat('es-CL').format(gas)}`;
+        document.getElementById('ing-real').innerText = `$${new Intl.NumberFormat('es-CL').format(ing)}`;
+        document.getElementById('gas-real').innerText = `$${new Intl.NumberFormat('es-CL').format(gas)}`;
+        
+        // Indicadores (Flechas)
+        document.getElementById('ind-ing').innerHTML = ing >= 5000 ? '<span class="text-green-500 flex items-center"><span class="material-symbols-outlined text-xs">trending_up</span>+</span>' : '<span class="text-red-500 flex items-center"><span class="material-symbols-outlined text-xs">trending_down</span>-</span>';
+        document.getElementById('ind-gas').innerHTML = gas <= 3000 ? '<span class="text-green-500 flex items-center"><span class="material-symbols-outlined text-xs">trending_down</span>OK</span>' : '<span class="text-red-500 flex items-center"><span class="material-symbols-outlined text-xs">trending_up</span>ALTO</span>';
+
+        // Detalle Gastos e Ingresos (Top 4)
+        renderTop(catsGas, 'list-gastos', 'bg-red-500');
+        renderTop(catsIng, 'list-ingresos', 'bg-green-500');
+    }
+
+    function renderTop(data, id, color) {
+        const cont = document.getElementById(id);
+        cont.innerHTML = '';
+        Object.entries(data).sort((a,b)=>b[1]-a[1]).slice(0,4).forEach(([name, val])=>{
+            cont.innerHTML += `<div class="flex items-center justify-between"><div class="flex items-center gap-3"><span class="size-3 rounded-full ${color}"></span><span class="text-sm font-semibold">${name}</span></div><span class="text-sm font-bold">$${new Intl.NumberFormat('es-CL').format(val)}</span></div>`;
+        });
+    }
+
+    function renderizarMetaCard(id, meta, prog) {
+        return `
+        <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-100 group hover:border-primary/50 transition-colors">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="size-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary"><span class="material-symbols-outlined">track_changes</span></div>
+                    <div><h4 class="font-bold text-base">${meta.nombre}</h4><p class="text-xs text-slate-500 font-medium">Progreso acumulado</p></div>
+                </div>
+                <span class="text-primary font-black text-lg">${prog}%</span>
+            </div>
+            <div class="w-full h-3 bg-slate-100 rounded-full mb-4 overflow-hidden"><div class="h-full bg-primary rounded-full" style="width: ${prog}%"></div></div>
+            <div class="flex justify-between items-end">
+                <div><p class="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1">Ahorrado</p><p class="text-xl font-black leading-none">$${new Intl.NumberFormat('es-CL').format(meta.ahorrado)}</p></div>
+                <button onclick="window.aportar('${id}', ${meta.ahorrado})" class="bg-[#176282] text-white px-4 py-2 rounded-lg font-bold text-xs hover:opacity-90 transition-all uppercase tracking-widest">Añadir Ahorro</button>
+            </div>
+        </div>`;
+    }
+
     window.toggleModal = (show) => document.getElementById('modal-meta').classList.toggle('hidden', !show);
+    
+    window.guardarMeta = async () => {
+        const nombre = document.getElementById('m-n').value;
+        const objetivo = parseFloat(document.getElementById('m-o').value);
+        const fecha = document.getElementById('m-f').value;
+        if(nombre && objetivo) {
+            await push(ref(db, `usuarios/${currentUser.uid}/metas`), { nombre, objetivo, ahorrado: 0, fecha, timestamp: Date.now() });
+            toggleModal(false);
+        }
+    };
+
+    window.exportarPDF = async () => {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
+        const element = document.getElementById('main-content');
+        const canvas = await html2canvas(element);
+        doc.addImage(canvas.toDataURL('image/png'), 'PNG', 10, 10, 190, 0);
+        doc.save('Analisis_QuantyA.pdf');
+    };
+
+    window.aportar = async (id, actual) => {
+        const monto = prompt("Monto a aportar:");
+        if(monto) {
+            const nuevo = parseFloat(actual) + parseFloat(monto.replace(/\./g, ""));
+            await update(ref(db, `usuarios/${currentUser.uid}/metas/${id}`), { ahorrado: nuevo });
+        }
+    };
 </script>
 
 <style type="text/tailwindcss">
-    body { -webkit-font-smoothing: antialiased; }
-    .filter-btn { @apply pb-2 text-xs font-bold uppercase tracking-widest transition-all border-b-2 border-transparent text-slate-400; }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #dce2e5; border-radius: 10px; }
 </style>
 </head>
-<body class="bg-[#fcfdfe] text-slate-800 font-display">
+<body class="bg-background-light font-display text-[#121617]">
 
-<div id="modal-meta" class="fixed inset-0 z-[100] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center hidden">
-    <div class="bg-white w-full max-w-sm rounded-2xl p-8 shadow-2xl border border-slate-100">
-        <h3 class="text-lg font-bold mb-6 flex items-center gap-2"><span class="material-symbols-outlined text-primary">target</span> Nueva Meta</h3>
+<div id="modal-meta" class="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center hidden">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl p-8 border border-slate-200">
+        <h3 class="text-xl font-black mb-6 uppercase tracking-tight">Nueva Meta de Ahorro</h3>
         <div class="space-y-4">
-            <input id="m-n" class="w-full rounded-xl border-slate-100 bg-slate-50 p-3 text-sm font-medium" placeholder="¿Qué ahorramos?" type="text"/>
-            <input id="m-o" class="w-full rounded-xl border-slate-100 bg-slate-50 p-3 text-sm font-bold" placeholder="Monto Objetivo" type="number"/>
-            <input id="m-f" class="w-full rounded-xl border-slate-100 bg-slate-50 p-3 text-sm font-medium" type="date"/>
-            <button onclick="window.guardarMeta()" class="w-full bg-primary text-white py-3 rounded-xl font-bold text-xs tracking-widest uppercase">Establecer Meta</button>
-            <button onclick="toggleModal(false)" class="w-full py-2 text-slate-400 text-xs font-bold">Cancelar</button>
+            <input id="m-n" class="w-full rounded-xl border-slate-200 p-4 font-bold" placeholder="Nombre de la meta" type="text"/>
+            <input id="m-o" class="w-full rounded-xl border-slate-200 p-4 font-black text-primary" placeholder="Monto Objetivo" type="number"/>
+            <input id="m-f" class="w-full rounded-xl border-slate-200 p-4 font-bold" type="date"/>
+            <div class="flex gap-3 pt-4">
+                <button onclick="toggleModal(false)" class="flex-1 py-4 text-slate-500 font-black uppercase text-xs">Cancelar</button>
+                <button onclick="guardarMeta()" class="flex-1 bg-primary text-white py-4 rounded-xl font-black uppercase text-xs shadow-lg shadow-primary/30">Guardar Meta</button>
+            </div>
         </div>
     </div>
 </div>
 
 <div class="flex h-screen overflow-hidden">
-    <aside class="w-64 bg-[#0f172a] text-white flex flex-col p-6 shrink-0">
-        <div class="flex items-center gap-3 mb-10 px-2">
-            <div class="size-8 bg-primary rounded flex items-center justify-center shadow-lg shadow-primary/20"><span class="material-symbols-outlined text-lg">payments</span></div>
-            <h1 class="text-lg font-bold tracking-tighter">QuantyA</h1>
+    <aside class="w-72 bg-[#0f172a] text-white flex flex-col shrink-0 border-r border-slate-800 p-6">
+        <div class="space-y-8 flex-1">
+            <div class="flex items-center gap-3 px-2">
+                <div class="size-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20"><span class="material-symbols-outlined text-2xl">account_balance_wallet</span></div>
+                <div><h1 class="text-xl font-black tracking-tight leading-none">QuantyA</h1><p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Gestión Financiera</p></div>
+            </div>
+            <nav class="space-y-1">
+                <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">dashboard</span><span class="font-semibold text-sm">Panel</span></a>
+                <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">swap_horiz</span><span class="font-semibold text-sm">Movimientos</span></a>
+                <a href="analisis.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 transition-all"><span class="material-symbols-outlined">analytics</span><span class="font-bold text-sm">Análisis</span></a>
+                <a href="metas.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">track_changes</span><span class="font-semibold text-sm">Metas</span></a>
+            </nav>
         </div>
-        <nav class="space-y-1 flex-1">
-            <a href="dashboard.html" class="flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white text-sm font-medium rounded-lg"><span class="material-symbols-outlined">dashboard</span>Panel</a>
-            <a href="analisis.html" class="flex items-center gap-3 px-4 py-2.5 bg-primary text-white text-sm font-medium rounded-lg shadow-md"><span class="material-symbols-outlined">analytics</span>Análisis</a>
-            <a href="metas.html" class="flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white text-sm font-medium rounded-lg"><span class="material-symbols-outlined">track_changes</span>Metas</a>
-        </nav>
     </aside>
 
-    <main class="flex-1 overflow-y-auto bg-[#fcfdfe]">
-        <header class="px-10 py-8 flex justify-between items-center">
-            <div>
-                <h2 class="text-2xl font-bold text-slate-800 tracking-tight">Análisis Operativo</h2>
-                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">Sincronizado con Firebase Realtime</p>
-            </div>
-            <div class="flex gap-4">
-                <button onclick="window.print()" class="h-10 px-6 bg-white border border-slate-200 rounded-xl text-xs font-bold flex items-center gap-2 hover:bg-slate-50 transition-all">
-                    <span class="material-symbols-outlined text-sm">print</span> Exportar Reporte
+    <main class="flex-1 overflow-y-auto custom-scrollbar flex flex-col" id="main-content">
+        <header class="sticky top-0 z-10 bg-background-light/80 backdrop-blur-md px-10 py-6 flex justify-between items-center">
+            <div><h2 class="text-3xl font-black tracking-tight">Análisis y Metas</h2><p class="text-slate-500 text-sm font-medium">Sincronización en tiempo real</p></div>
+            <div class="flex items-center gap-4">
+                <div class="relative"><span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span><input class="bg-white border-none rounded-xl pl-10 pr-4 py-2 text-sm w-64 shadow-sm" placeholder="Buscar..." type="text"/></div>
+                <select class="bg-white border border-slate-200 p-2 rounded-xl font-bold text-sm px-4 h-10"><option>Últimos 30 Días</option><option>Últimos 90 Días</option><option>Año 2026</option></select>
+                <button onclick="exportarPDF()" class="bg-primary text-white px-6 h-10 rounded-xl font-bold text-sm shadow-lg shadow-primary/20 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-sm">download</span> Exportar Informe
                 </button>
             </div>
         </header>
 
-        <div class="px-10 pb-10 grid grid-cols-12 gap-8">
-            <div class="col-span-8 bg-white rounded-2xl border border-slate-100 p-8 shadow-sm">
-                <div class="flex justify-between items-start mb-10">
-                    <div>
-                        <h3 class="text-base font-bold text-slate-800">Distribución de Flujos</h3>
-                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Ingresos vs Gastos</p>
-                    </div>
-                    <div class="flex gap-6">
-                        <button onclick="setFilter('mensual')" class="filter-btn border-primary text-primary">Mensual</button>
-                        <button onclick="setFilter('trimestral')" class="filter-btn">Trimestral</button>
-                        <button onclick="setFilter('anual')" class="filter-btn">Anual</button>
-                    </div>
-                </div>
-
-                <div class="flex items-center gap-16">
-                    <div class="relative size-56 flex items-center justify-center">
-                        <svg class="size-full -rotate-90" viewBox="0 0 100 100">
-                            <circle cx="50" cy="50" r="40" fill="transparent" stroke="#ef4444" stroke-width="8" stroke-dasharray="251.2"></circle>
-                            <circle id="circle-ingreso" cx="50" cy="50" r="40" fill="transparent" stroke="#10b981" stroke-width="8" stroke-dasharray="251.2" stroke-dashoffset="120" stroke-linecap="round"></circle>
-                        </svg>
-                        <div class="absolute inset-0 flex flex-col items-center justify-center">
-                            <span class="text-[9px] font-bold text-slate-400 uppercase">Balance Neto</span>
-                            <span id="balance-total" class="text-xl font-black text-slate-800">$0</span>
+        <div class="px-10 pb-10 flex gap-8">
+            <section class="flex-[1.2] space-y-6">
+                <div class="bg-white rounded-xl p-8 shadow-sm border border-slate-100">
+                    <div class="flex justify-between items-end mb-8">
+                        <h3 class="text-xl font-bold tracking-tight">Distribución de Gastos e Ingresos</h3>
+                        <div class="flex gap-4 border-b border-slate-100">
+                            <button class="pb-2 border-b-2 border-primary text-primary font-bold text-sm">Mensual</button>
+                            <button class="pb-2 text-slate-400 font-bold text-sm hover:text-slate-600 transition-all">Trimestral</button>
+                            <button class="pb-2 text-slate-400 font-bold text-sm hover:text-slate-600 transition-all">Anual</button>
                         </div>
                     </div>
-
-                    <div class="flex-1 grid grid-cols-2 gap-10">
-                        <div>
-                            <p class="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                <span class="material-symbols-outlined text-sm">arrow_upward</span> Top 4 Ingresos
-                            </p>
-                            <div id="list-top-ingresos" class="space-y-1"></div>
-                        </div>
-                        <div>
-                            <p class="text-[10px] font-black text-red-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                <span class="material-symbols-outlined text-sm">arrow_downward</span> Top 4 Gastos
-                            </p>
-                            <div id="list-top-gastos" class="space-y-1"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-span-4 space-y-6">
-                <div class="bg-slate-900 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
-                    <div class="relative z-10">
-                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Rendimiento Operativo</p>
-                        <h4 class="text-sm font-medium text-slate-300">Presupuesto vs Real</h4>
-                        <div class="mt-6 space-y-4">
-                            <div class="flex justify-between items-center py-2 border-b border-slate-800">
-                                <span class="text-xs text-slate-400">Ingresos</span>
-                                <div id="td-ing-real"></div>
-                            </div>
-                            <div class="flex justify-between items-center py-2 border-b border-slate-800">
-                                <span class="text-xs text-slate-400">Gastos</span>
-                                <div id="td-gas-real"></div>
+                    <div class="flex items-center gap-12">
+                        <div class="relative size-64 flex items-center justify-center shrink-0">
+                            <svg class="size-full transform -rotate-90" viewBox="0 0 100 100">
+                                <circle class="text-slate-100" cx="50" cy="50" fill="transparent" r="40" stroke="currentColor" stroke-width="12"></circle>
+                                <circle cx="50" cy="50" fill="transparent" r="40" stroke="#176282" stroke-dasharray="251.2" stroke-dashoffset="113" stroke-linecap="round" stroke-width="12"></circle>
+                            </svg>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                <span class="text-xs text-slate-400 font-bold uppercase tracking-wider">Total Gasto</span>
+                                <span id="total-center" class="text-3xl font-black text-slate-800">$0</span>
                             </div>
                         </div>
+                        <div class="flex-1 grid grid-cols-2 gap-8">
+                            <div><p class="text-[10px] font-black text-red-500 uppercase mb-4 tracking-widest">Mayores Gastos</p><div id="list-gastos" class="space-y-4"></div></div>
+                            <div><p class="text-[10px] font-black text-emerald-500 uppercase mb-4 tracking-widest">Mayores Ingresos</p><div id="list-ingresos" class="space-y-4"></div></div>
+                        </div>
                     </div>
-                    <div class="absolute -right-4 -bottom-4 size-32 bg-primary/20 rounded-full blur-3xl"></div>
                 </div>
 
+                <div class="bg-white rounded-xl overflow-hidden shadow-sm border border-slate-100">
+                    <div class="p-6 border-b border-slate-50"><h3 class="text-lg font-bold tracking-tight">Resumen de Rendimiento</h3></div>
+                    <table class="w-full text-left">
+                        <thead class="bg-slate-50"><tr>
+                            <th class="px-6 py-4 text-xs font-black uppercase text-slate-400 tracking-widest">Categoría</th>
+                            <th class="px-6 py-4 text-xs font-black uppercase text-slate-400 tracking-widest text-right">Presupuesto</th>
+                            <th class="px-6 py-4 text-xs font-black uppercase text-slate-400 tracking-widest text-right">Real</th>
+                            <th class="px-6 py-4 text-xs font-black uppercase text-slate-400 tracking-widest text-right">Indicador</th>
+                        </tr></thead>
+                        <tbody class="divide-y divide-slate-50">
+                            <tr>
+                                <td class="px-6 py-4 font-semibold text-sm">Ingresos Mensuales</td>
+                                <td class="px-6 py-4 text-sm font-bold text-right">$5,000</td>
+                                <td id="ing-real" class="px-6 py-4 text-sm font-black text-right">$0</td>
+                                <td id="ind-ing" class="px-6 py-4 text-right"></td>
+                            </tr>
+                            <tr>
+                                <td class="px-6 py-4 font-semibold text-sm">Gastos Totales</td>
+                                <td class="px-6 py-4 text-sm font-bold text-right">$3,200</td>
+                                <td id="gas-real" class="px-6 py-4 text-sm font-black text-right text-red-500">$0</td>
+                                <td id="ind-gas" class="px-6 py-4 text-right"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="flex-1 space-y-6">
                 <div class="flex justify-between items-center">
-                    <h3 class="text-sm font-bold text-slate-800 uppercase tracking-tighter">Metas de Ahorro</h3>
-                    <button onclick="toggleModal(true)" class="size-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center hover:bg-primary hover:text-white transition-all shadow-sm">
-                        <span class="material-symbols-outlined text-sm">add</span>
-                    </button>
+                    <h3 class="text-xl font-bold tracking-tight">Metas de Ahorro</h3>
+                    <button onclick="toggleModal(true)" class="size-10 rounded-xl bg-slate-100 text-slate-600 hover:bg-primary hover:text-white transition-all flex items-center justify-center group"><span class="material-symbols-outlined">add</span></button>
                 </div>
-                
-                <div id="metas-list" class="space-y-4">
+                <div id="metas-analisis-container" class="grid grid-cols-1 gap-5">
                     </div>
-            </div>
+                <div onclick="toggleModal(true)" class="border-2 border-dashed border-slate-200 rounded-xl p-8 flex flex-col items-center justify-center text-center group hover:bg-white transition-all cursor-pointer">
+                    <div class="size-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mb-3 group-hover:bg-primary group-hover:text-white transition-colors"><span class="material-symbols-outlined">add</span></div>
+                    <p class="font-bold text-sm text-slate-500">Crear Nueva Meta</p>
+                </div>
+            </section>
         </div>
     </main>
 </div>
-
 </body></html>
