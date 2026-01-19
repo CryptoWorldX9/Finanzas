@@ -6,6 +6,88 @@
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getDatabase, ref, get, set, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCO6WXu9iZsyEUmNNxrE4oWToLYY8wl-y4",
+        authDomain: "misfinanzaspro-d2f3f.firebaseapp.com",
+        databaseURL: "https://misfinanzaspro-d2f3f-default-rtdb.firebaseio.com",
+        projectId: "misfinanzaspro-d2f3f",
+        storageBucket: "misfinanzaspro-d2f3f.firebasestorage.app",
+        messagingSenderId: "613366165036",
+        appId: "1:613366165036:web:bebc72b38d39ab64932b89"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+    let currentUser = null;
+
+    // Elementos del DOM
+    const selectMoneda = document.getElementById('conf-moneda');
+    const selectZona = document.getElementById('conf-zona');
+    const checkDarkMode = document.getElementById('conf-darkmode');
+    const btnGuardar = document.getElementById('btn-save-all');
+
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            currentUser = user;
+            cargarConfiguracion();
+        } else {
+            window.location.href = "index.html";
+        }
+    });
+
+    async function cargarConfiguracion() {
+        const confRef = ref(db, `usuarios/${currentUser.uid}/configuracion`);
+        const snapshot = await get(confRef);
+        
+        if (snapshot.exists()) {
+            const data = snapshot.val();
+            if(data.moneda) selectMoneda.value = data.moneda;
+            if(data.zonaHoraria) selectZona.value = data.zonaHoraria;
+            if(data.darkMode !== undefined) {
+                checkDarkMode.checked = data.darkMode;
+                aplicarModoVisual(data.darkMode);
+            }
+        }
+    }
+
+    function aplicarModoVisual(isDark) {
+        if(isDark) {
+            document.documentElement.classList.add('dark');
+            document.documentElement.classList.remove('light');
+        } else {
+            document.documentElement.classList.remove('dark');
+            document.documentElement.classList.add('light');
+        }
+    }
+
+    window.guardarCambiosGlobales = async () => {
+        if(!currentUser) return;
+        
+        const updates = {
+            moneda: selectMoneda.value,
+            zonaHoraria: selectZona.value,
+            darkMode: checkDarkMode.checked,
+            lastUpdated: Date.now()
+        };
+
+        try {
+            await update(ref(db, `usuarios/${currentUser.uid}/configuracion`), updates);
+            aplicarModoVisual(updates.darkMode);
+            alert("Configuración actualizada correctamente");
+        } catch (error) {
+            console.error(error);
+            alert("Error al guardar los cambios");
+        }
+    };
+</script>
+
 <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -87,7 +169,7 @@
 <main class="ml-64 flex-1 flex flex-col">
     <header class="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-8 flex items-center justify-between sticky top-0 z-40">
         <h2 class="text-lg font-bold text-slate-800 dark:text-white">Configuración del Sistema</h2>
-        <button class="bg-primary hover:bg-primary/90 text-white text-xs font-bold px-6 py-2.5 rounded-xl transition-all shadow-lg shadow-primary/20">
+        <button id="btn-save-all" onclick="guardarCambiosGlobales()" class="bg-primary hover:bg-primary/90 text-white text-xs font-bold px-6 py-2.5 rounded-xl transition-all shadow-lg shadow-primary/20">
             Aplicar Cambios Globales
         </button>
     </header>
@@ -102,17 +184,19 @@
                 <div class="space-y-4">
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-500 uppercase">Moneda Predeterminada</label>
-                        <select class="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:ring-primary">
-                            <option>Dólar Estadounidense (USD)</option>
-                            <option>Peso Mexicano (MXN)</option>
-                            <option>Euro (EUR)</option>
+                        <select id="conf-moneda" class="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:ring-primary">
+                            <option value="USD">Dólar Estadounidense (USD)</option>
+                            <option value="MXN">Peso Mexicano (MXN)</option>
+                            <option value="EUR">Euro (EUR)</option>
+                            <option value="CLP">Peso Chileno (CLP)</option>
                         </select>
                     </div>
                     <div class="space-y-1.5">
                         <label class="text-xs font-bold text-slate-500 uppercase">Zona Horaria</label>
-                        <select class="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:ring-primary">
-                            <option>(UTC-05:00) Bogota, Lima, Quito</option>
-                            <option>(UTC-06:00) Central America</option>
+                        <select id="conf-zona" class="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:ring-primary">
+                            <option value="GMT-5">(UTC-05:00) Bogota, Lima, Quito</option>
+                            <option value="GMT-6">(UTC-06:00) Central America</option>
+                            <option value="GMT-3">(UTC-03:00) Santiago, Buenos Aires</option>
                         </select>
                     </div>
                 </div>
@@ -130,7 +214,7 @@
                             <p class="text-xs text-slate-500">Sincronizar con el sistema operativo</p>
                         </div>
                         <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" checked class="sr-only peer">
+                            <input id="conf-darkmode" type="checkbox" class="sr-only peer">
                             <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                         </label>
                     </div>
