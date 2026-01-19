@@ -77,12 +77,47 @@
             currentUser = user;
             document.getElementById('user-name-display').innerText = user.displayName || "Usuario Corporativo";
             cargarMovimientosRecientes();
+            sincronizarListasDesplegables(); // Nueva función de sincronización
             setInterval(rotarConsejos, 10000);
             rotarConsejos();
         } else {
             window.location.href = "index.html";
         }
     });
+
+    // Función para sincronizar los selectores con las Listas Maestras
+    function sincronizarListasDesplegables() {
+        const listasRef = ref(db, `usuarios/${currentUser.uid}/listas`);
+        onValue(listasRef, (snapshot) => {
+            if (snapshot.exists()) {
+                const listas = snapshot.val();
+                llenarSelect('op-tipo', listas.tipo);
+                llenarSelect('op-categoria', listas.categoria);
+                llenarSelect('op-subcategoria', listas.sub_categoria);
+                llenarSelect('op-pago', listas.pago);
+                llenarSelect('op-recurrente', listas.recurrente);
+            }
+        });
+    }
+
+    function llenarSelect(elementId, datos) {
+        const select = document.getElementById(elementId);
+        if (!select || !datos) return;
+        
+        // Guardamos el valor seleccionado actualmente para no perderlo al actualizar
+        const currentVal = select.value;
+        select.innerHTML = '';
+        
+        Object.keys(datos).forEach(key => {
+            const option = document.createElement('option');
+            option.value = datos[key].nombre;
+            option.textContent = datos[key].nombre;
+            select.appendChild(option);
+        });
+
+        // Restaurar valor si aún existe en las nuevas opciones
+        if (currentVal) select.value = currentVal;
+    }
 
     window.formatMoneyInput = (input) => {
         let value = input.value.replace(/\D/g, "");
@@ -107,7 +142,7 @@
         const recurrente = document.getElementById('op-recurrente').value;
         const fechaSeleccionada = document.getElementById('op-fecha').value;
 
-        if(!concepto || !montoRaw || !fechaSeleccionada) return alert("Completa los campos");
+        if(!concepto || !montoRaw || !fechaSeleccionada) return alert("Completa los campos obligatorios");
 
         const operacionData = {
             concepto, tipo, categoria, subcategoria, pago, recurrente,
@@ -157,7 +192,10 @@
             snapshot.forEach((child) => {
                 const data = child.val();
                 const id = child.key;
-                const isIngreso = data.tipo === 'ingreso';
+                const isIngreso = data.tipo.toLowerCase() === 'ingreso' || data.tipo === 'Entrada' || data.tipo === 'Venta'; 
+                // Nota: La lógica de color depende de cómo nombres tus 'Tipos' en la lista maestra. 
+                // Si usas 'Ingreso' y 'Egreso' como nombres, funcionará bien.
+                
                 if(isIngreso) tIngresos += data.monto; else tGastos += data.monto;
 
                 const dataString = encodeURIComponent(JSON.stringify(data));
@@ -318,8 +356,7 @@
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Tipo</label>
                             <select id="op-tipo" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold">
-                                <option value="ingreso">Ingreso (+)</option><option value="egreso">Egreso (-)</option>
-                            </select>
+                                </select>
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Monto (CLP)</label>
@@ -330,28 +367,24 @@
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Categoría</label>
                             <select id="op-categoria" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm">
-                                <option>Sueldos</option><option>Ventas</option><option>Insumos</option><option>Marketing</option>
-                            </select>
+                                </select>
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Sub Categoria</label>
                             <select id="op-subcategoria" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm">
-                                <option>General</option><option>Servicios</option><option>Bonos</option>
-                            </select>
+                                </select>
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Pago</label>
                             <select id="op-pago" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm">
-                                <option>Transferencia</option><option>Tarjeta</option><option>Efectivo</option>
-                            </select>
+                                </select>
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Recurrente</label>
                             <select id="op-recurrente" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm">
-                                <option>No</option><option>Mensual</option><option>Anual</option>
-                            </select>
+                                </select>
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-3 pt-2">
