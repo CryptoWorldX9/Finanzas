@@ -3,196 +3,160 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>Gestión de Movimientos Financieros | QuantyA</title>
+    <title>QuantyA - Gestión de Movimientos</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-    <script id="tailwind-config">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script>
         tailwind.config = {
             darkMode: "class",
             theme: {
                 extend: {
                     colors: {
-                        "primary": "#1d3d5d",
-                        "background-light": "#f6f7f8",
-                        "background-dark": "#14191e",
-                        "success": "#3D9970",
-                        "warning": "#FFD60A",
+                        "primary": "#176282",
+                        "navy-900": "#0f172a",
+                        "slate-custom": "#64748b",
+                        "emerald-custom": "#10b981",
+                        "background-light": "#f8f9fa",
                         "danger": "#E04040",
-                        "slate-custom": "#4A5568"
+                        "warning": "#FFD60A"
                     },
-                    fontFamily: {
-                        "display": ["Manrope", "sans-serif"]
-                    },
-                    borderRadius: {
-                        "DEFAULT": "0.25rem",
-                        "lg": "0.5rem",
-                        "xl": "0.75rem",
-                        "full": "9999px"
-                    },
-                },
-            },
+                    fontFamily: { "display": ["Inter", "sans-serif"] }
+                }
+            }
         }
     </script>
     <style type="text/tailwindcss">
-        body { font-family: 'Manrope', sans-serif; }
+        body { font-family: 'Inter', sans-serif; }
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
-        .high-density-table tr:hover { background-color: rgba(29, 61, 93, 0.04); }
-        .sidebar-item-active { @apply bg-primary/10 text-primary border-r-4 border-primary; }
-        .sidebar-item { @apply flex items-center gap-3 px-6 py-3.5 text-sm font-semibold text-gray-500 hover:text-primary hover:bg-gray-50 transition-all; }
     </style>
 </head>
-<body class="bg-background-light dark:bg-background-dark text-slate-custom dark:text-gray-300 min-h-screen">
-<div class="flex w-full max-w-[1440px] mx-auto min-h-screen border-x border-gray-200 dark:border-gray-800 bg-white dark:bg-background-dark overflow-hidden">
-    
-    <aside class="w-64 border-r border-gray-100 dark:border-gray-800 flex flex-col bg-white dark:bg-background-dark shrink-0">
-        <div class="p-8">
-            <div class="flex items-center gap-3 text-primary dark:text-white">
-                <div class="size-9 bg-primary rounded-lg flex items-center justify-center text-white shadow-lg shadow-primary/20">
-                    <span class="material-symbols-outlined text-2xl">account_balance_wallet</span>
-                </div>
-                <h1 class="text-xl font-extrabold tracking-tight">QuantyA</h1>
+<body class="bg-background-light dark:bg-[#111827] font-display text-slate-900 dark:text-slate-100">
+
+<div class="flex min-h-screen">
+    <aside class="w-64 bg-[#0f172a] text-white flex flex-col fixed h-full z-50 border-r border-slate-800">
+        <div class="p-6 flex items-center gap-3">
+            <div class="size-10 bg-primary rounded-lg flex items-center justify-center">
+                <span class="material-symbols-outlined text-white text-2xl">account_balance_wallet</span>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold tracking-tight">QuantyA</h1>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Gestión Profesional</p>
             </div>
         </div>
-        <nav class="flex-1 mt-4">
-            <a class="sidebar-item" href="dashboard.html">
-                <span class="material-symbols-outlined">grid_view</span> Panel
+
+        <nav class="flex-1 px-4 mt-4 space-y-1">
+            <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">
+                <span class="material-symbols-outlined text-[20px]">dashboard</span>
+                <span class="text-sm font-medium">Panel</span>
             </a>
-            <a class="sidebar-item sidebar-item-active" href="movimientos.html">
-                <span class="material-symbols-outlined">receipt_long</span> Movimientos
+            <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary text-white transition-all">
+                <span class="material-symbols-outlined text-[20px]">swap_horiz</span>
+                <span class="text-sm font-medium">Movimientos</span>
             </a>
-            <a class="sidebar-item" href="analisis.html">
-                <span class="material-symbols-outlined">query_stats</span> Análisis
+            <a href="analisis.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">
+                <span class="material-symbols-outlined text-[20px]">analytics</span>
+                <span class="text-sm font-medium">Análisis</span>
             </a>
-            <a class="sidebar-item" href="metas.html">
-                <span class="material-symbols-outlined">track_changes</span> Metas
+            <a href="metas.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">
+                <span class="material-symbols-outlined text-[20px]">track_changes</span>
+                <span class="text-sm font-medium">Metas</span>
             </a>
-            <a class="sidebar-item" href="reportes.html">
-                <span class="material-symbols-outlined">description</span> Reportes
+            <a href="reportes.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">
+                <span class="material-symbols-outlined text-[20px]">description</span>
+                <span class="text-sm font-medium">Reportes</span>
             </a>
-            <div class="mt-8 px-6 mb-2">
-                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Configuración</p>
-            </div>
-            <a class="sidebar-item" href="configuracion.html">
-                <span class="material-symbols-outlined">settings</span> Configuración
+            <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">
+                <span class="material-symbols-outlined text-[20px]">settings</span>
+                <span class="text-sm font-medium">Configuración</span>
             </a>
         </nav>
-        <div class="p-6 border-t border-gray-100 dark:border-gray-800">
-            <div class="flex items-center gap-3 p-2 rounded-xl bg-gray-50 dark:bg-gray-800/50">
-                <div class="size-10 bg-gradient-to-br from-primary to-blue-900 rounded-lg shadow-sm"></div>
-                <div class="flex-1 overflow-hidden">
-                    <p class="text-xs font-bold text-gray-900 dark:text-white truncate">Admin User</p>
-                    <p class="text-[10px] text-gray-500 uppercase tracking-widest">Corporate</p>
-                </div>
-                <a href="index.html" class="text-gray-400 hover:text-danger">
-                    <span class="material-symbols-outlined text-xl">logout</span>
-                </a>
-            </div>
+
+        <div class="p-4 border-t border-slate-800">
+            <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
+                <span class="material-symbols-outlined text-[20px]">logout</span>
+                <span class="text-sm font-medium">Cerrar Sesión</span>
+            </a>
         </div>
     </aside>
 
-    <div class="flex-1 flex flex-col h-screen overflow-y-auto">
-        <header class="flex items-center justify-between px-8 py-4 border-b border-gray-100 dark:border-gray-800 sticky top-0 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md z-50">
-            <div>
-                <h2 class="text-lg font-bold text-gray-900 dark:text-white">Gestión de Movimientos</h2>
-            </div>
-            <div class="flex items-center gap-4">
-                <div class="relative hidden lg:block">
-                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg">search</span>
-                    <input class="pl-9 pr-4 py-1.5 bg-gray-50 dark:bg-gray-900 border-none rounded-full text-xs w-64 focus:ring-2 focus:ring-primary/20" placeholder="Búsqueda rápida..." type="text"/>
-                </div>
-                <button class="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg relative">
-                    <span class="material-symbols-outlined">notifications</span>
-                    <span class="absolute top-2 right-2 size-2 bg-danger rounded-full border-2 border-white dark:border-background-dark"></span>
-                </button>
-                <div class="h-6 w-px bg-gray-200 dark:bg-gray-700 mx-2"></div>
-                <button class="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg text-xs font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all">
-                    <span class="material-symbols-outlined text-sm">add</span> Nuevo Movimiento
-                </button>
-            </div>
+    <main class="ml-64 flex-1 flex flex-col">
+        <header class="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-8 flex items-center justify-between sticky top-0 z-40">
+            <h2 class="text-lg font-bold text-slate-700">Registro de Movimientos</h2>
+            <button class="bg-primary text-white px-4 py-2 rounded-lg text-xs font-bold shadow-lg flex items-center gap-2">
+                <span class="material-symbols-outlined text-sm">add</span> Nuevo Movimiento
+            </button>
         </header>
 
-        <main class="p-8">
-            <div class="mb-8">
-                <div class="flex items-center gap-2 text-xs font-bold text-primary/60 mb-2">
-                    <span class="material-symbols-outlined text-sm">home</span>
-                    <span>QuantyA</span>
-                    <span class="material-symbols-outlined text-sm">chevron_right</span>
-                    <span class="text-gray-400">Movimientos</span>
-                </div>
-                <h2 class="text-3xl font-black text-primary dark:text-white tracking-tight">Registro de Transacciones</h2>
-                <p class="text-slate-custom mt-1 text-sm font-medium">Panel de auditoría detallada y gestión operativa de transacciones corporativas.</p>
-            </div>
-
-            <section class="bg-gray-50 dark:bg-gray-800/30 p-6 rounded-xl border border-gray-100 dark:border-gray-800 mb-8">
-                <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
-                    <div class="md:col-span-4">
-                        <label class="block text-[11px] font-bold uppercase text-gray-500 mb-1.5 ml-1">Buscador Predictivo</label>
-                        <div class="relative">
-                            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xl">search</span>
-                            <input class="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm shadow-sm" placeholder="Referencia, concepto o ID de transacción..." type="text"/>
-                        </div>
+        <div class="p-8 space-y-8 max-w-[1440px] mx-auto w-full">
+            <section class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 shadow-sm">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-500 uppercase mb-1">Buscador</label>
+                        <input type="text" placeholder="Referencia o ID..." class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm">
                     </div>
-                    <div class="md:col-span-2">
-                        <label class="block text-[11px] font-bold uppercase text-gray-500 mb-1.5 ml-1">Tipo</label>
-                        <select class="w-full py-2.5 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 rounded-lg text-sm">
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-500 uppercase mb-1">Tipo</label>
+                        <select class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm font-bold text-slate-600">
                             <option>Todos</option>
                             <option>Ingresos</option>
                             <option>Egresos</option>
                         </select>
                     </div>
-                    <div class="md:col-span-2">
-                        <label class="block text-[11px] font-bold uppercase text-gray-500 mb-1.5 ml-1">Categoría</label>
-                        <select class="w-full py-2.5 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 rounded-lg text-sm">
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-500 uppercase mb-1">Categoría</label>
+                        <select class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm">
                             <option>Todas</option>
-                            <option>Nómina</option>
                             <option>Sistemas</option>
-                            <option>Viáticos</option>
                             <option>Ventas</option>
+                            <option>Nómina</option>
                         </select>
                     </div>
-                    <div class="md:col-span-4 flex items-end">
-                        <button class="w-full bg-primary hover:bg-primary/95 text-white font-bold py-2.5 rounded-lg text-sm transition-all shadow-md">
-                            Aplicar Filtros
-                        </button>
+                    <div class="flex items-end">
+                        <button class="w-full bg-slate-800 text-white font-bold py-2 rounded-lg text-sm">Aplicar Filtros</button>
                     </div>
                 </div>
             </section>
 
-            <div class="bg-white dark:bg-background-dark border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden shadow-sm">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse high-density-table">
-                        <thead>
-                            <tr class="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-800">
-                                <th class="px-6 py-4 text-[11px] font-bold uppercase text-gray-500 tracking-wider">Fecha</th>
-                                <th class="px-6 py-4 text-[11px] font-bold uppercase text-gray-500 tracking-wider">Referencia</th>
-                                <th class="px-6 py-4 text-[11px] font-bold uppercase text-gray-500 tracking-wider">Categoría</th>
-                                <th class="px-6 py-4 text-[11px] font-bold uppercase text-gray-500 tracking-wider text-right">Monto</th>
-                                <th class="px-6 py-4 text-[11px] font-bold uppercase text-gray-500 tracking-wider w-10"></th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
-                            <tr class="transition-colors group">
-                                <td class="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">15/10/2023</td>
-                                <td class="px-6 py-4">
-                                    <p class="text-sm font-bold text-gray-900 dark:text-white">Pago de Nómina Q3</p>
-                                </td>
-                                <td class="px-6 py-4 text-sm">Operativo</td>
-                                <td class="px-6 py-4 text-sm font-black text-danger text-right">-$4,500.00</td>
-                                <td class="px-6 py-4 text-right">
-                                    <button class="material-symbols-outlined text-gray-400">more_vert</button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+            <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50">
+                            <th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Fecha</th>
+                            <th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Concepto / Ref</th>
+                            <th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Monto</th>
+                            <th class="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        <tr class="hover:bg-slate-50/50 transition-colors">
+                            <td class="px-6 py-4 text-sm text-slate-500">18/01/2026</td>
+                            <td class="px-6 py-4">
+                                <p class="text-sm font-bold text-slate-700">Venta Licencia QuantyA Pro</p>
+                                <p class="text-[10px] text-slate-400 uppercase">Ref: TX-9901</p>
+                            </td>
+                            <td class="px-6 py-4 text-sm font-black text-right text-emerald-custom">+$2,400.00</td>
+                            <td class="px-6 py-4">
+                                <span class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-1 rounded-full uppercase">Completado</span>
+                            </td>
+                        </tr>
+                        <tr class="hover:bg-slate-50/50 transition-colors">
+                            <td class="px-6 py-4 text-sm text-slate-500">17/01/2026</td>
+                            <td class="px-6 py-4">
+                                <p class="text-sm font-bold text-slate-700">Suscripción AWS Cloud</p>
+                                <p class="text-[10px] text-slate-400 uppercase">Ref: TX-9902</p>
+                            </td>
+                            <td class="px-6 py-4 text-sm font-black text-right text-red-500">-$150.00</td>
+                            <td class="px-6 py-4">
+                                <span class="bg-warning/20 text-amber-700 text-[10px] font-bold px-2 py-1 rounded-full uppercase">Pendiente</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
-        </main>
-        
-        <footer class="mt-auto px-8 py-6 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center bg-white dark:bg-background-dark">
-            <p class="text-[11px] text-gray-400 font-medium">© 2024 QuantyA Corp. Todos los derechos reservados.</p>
-        </footer>
-    </div>
+        </div>
+    </main>
 </div>
+
 </body>
 </html>
