@@ -10,7 +10,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getDatabase, ref, push, onValue, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    import { getDatabase, ref, push, onValue, query, limitToLast, remove, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCO6WXu9iZsyEUmNNxrE4oWToLYY8wl-y4",
@@ -26,6 +26,7 @@
     const auth = getAuth(app);
     const db = getDatabase(app);
     let currentUser = null;
+    let editNodeId = null; // Para saber si estamos editando
 
     const consejos = [
         "Registra cada gasto, por pequeño que sea, para identificar fugas de dinero.",
@@ -98,18 +99,46 @@
         const subcategoria = document.getElementById('op-subcategoria').value;
         const pago = document.getElementById('op-pago').value;
         const recurrente = document.getElementById('op-recurrente').value;
+        const fechaSeleccionada = document.getElementById('op-fecha').value;
 
-        if(!concepto || !montoRaw) return alert("Completa los campos");
+        if(!concepto || !montoRaw || !fechaSeleccionada) return alert("Completa los campos");
 
-        const nuevaOp = {
+        const operacionData = {
             concepto, tipo, categoria, subcategoria, pago, recurrente,
             monto: parseInt(montoRaw),
-            fecha: new Date().toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }),
+            fecha: fechaSeleccionada,
             timestamp: Date.now()
         };
 
-        await push(ref(db, `usuarios/${currentUser.uid}/movimientos`), nuevaOp);
+        if(editNodeId) {
+            await update(ref(db, `usuarios/${currentUser.uid}/movimientos/${editNodeId}`), operacionData);
+            editNodeId = null;
+            document.getElementById('btn-submit').innerText = "Registrar Operación";
+        } else {
+            await push(ref(db, `usuarios/${currentUser.uid}/movimientos`), operacionData);
+        }
+        
         event.target.reset();
+    };
+
+    window.eliminarMovimiento = async (id) => {
+        if(confirm("¿Estás seguro de eliminar este movimiento?")) {
+            await remove(ref(db, `usuarios/${currentUser.uid}/movimientos/${id}`));
+        }
+    };
+
+    window.prepararEdicion = (id, dataStr) => {
+        const data = JSON.parse(decodeURIComponent(dataStr));
+        editNodeId = id;
+        document.getElementById('op-concepto').value = data.concepto;
+        document.getElementById('op-tipo').value = data.tipo;
+        document.getElementById('op-monto').value = new Intl.NumberFormat('es-CL').format(data.monto);
+        document.getElementById('op-categoria').value = data.categoria;
+        document.getElementById('op-subcategoria').value = data.subcategoria;
+        document.getElementById('op-pago').value = data.pago;
+        document.getElementById('op-recurrente').value = data.recurrente;
+        document.getElementById('op-fecha').value = data.fecha;
+        document.getElementById('btn-submit').innerText = "Actualizar Movimiento";
     };
 
     function cargarMovimientosRecientes() {
@@ -121,16 +150,26 @@
 
             snapshot.forEach((child) => {
                 const data = child.val();
+                const id = child.key;
                 const isIngreso = data.tipo === 'ingreso';
                 if(isIngreso) tIngresos += data.monto; else tGastos += data.monto;
+
+                const dataString = encodeURIComponent(JSON.stringify(data));
 
                 container.insertAdjacentHTML('afterbegin', `
                     <tr class="group hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                         <td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">${data.fecha}</td>
                         <td class="px-6 py-4 text-sm font-semibold">${data.concepto}</td>
                         <td class="px-6 py-4 text-sm"><span class="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wide">${data.categoria}</span></td>
-                        <td class="px-6 py-4"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-custom/10 text-emerald-custom">Pagado</span></td>
                         <td class="px-6 py-4 text-sm font-bold text-right ${isIngreso ? 'text-emerald-custom' : 'text-red-500'}">${isIngreso ? '+' : '-'} $${new Intl.NumberFormat('es-CL').format(data.monto)}</td>
+                        <td class="px-6 py-4 text-right space-x-2">
+                            <button onclick="prepararEdicion('${id}', '${dataString}')" class="text-slate-400 hover:text-primary transition-colors">
+                                <span class="material-symbols-outlined text-lg">edit</span>
+                            </button>
+                            <button onclick="eliminarMovimiento('${id}')" class="text-slate-400 hover:text-red-500 transition-colors">
+                                <span class="material-symbols-outlined text-lg">delete</span>
+                            </button>
+                        </td>
                     </tr>
                 `);
             });
@@ -265,6 +304,10 @@
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Concepto</label>
                         <input id="op-concepto" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm" type="text" placeholder="Ej. Pago Servicios"/>
                     </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Fecha de Operación</label>
+                        <input id="op-fecha" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg text-sm" type="date"/>
+                    </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5">Tipo</label>
@@ -305,7 +348,7 @@
                             </select>
                         </div>
                     </div>
-                    <button type="submit" class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 rounded-lg shadow-lg uppercase text-[10px] tracking-widest transition-all">Registrar Operación</button>
+                    <button id="btn-submit" type="submit" class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-3 rounded-lg shadow-lg uppercase text-[10px] tracking-widest transition-all">Registrar Operación</button>
                 </form>
             </div>
         </div>
@@ -315,7 +358,13 @@
             <div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
                 <table class="w-full text-left">
                     <thead class="bg-slate-50 dark:bg-slate-800/50">
-                        <tr class="text-xs font-bold text-slate-500 uppercase tracking-wider"><th class="px-6 py-4">Fecha</th><th class="px-6 py-4">Descripción</th><th class="px-6 py-4">Categoría</th><th class="px-6 py-4 text-right">Monto</th></tr>
+                        <tr class="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                            <th class="px-6 py-4">Fecha</th>
+                            <th class="px-6 py-4">Descripción</th>
+                            <th class="px-6 py-4">Categoría</th>
+                            <th class="px-6 py-4 text-right">Monto</th>
+                            <th class="px-6 py-4 text-right">Acciones</th>
+                        </tr>
                     </thead>
                     <tbody id="recent-moves-body" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
                 </table>
