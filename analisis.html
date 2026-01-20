@@ -1,257 +1,258 @@
 <!DOCTYPE html>
-<html class="light" lang="es"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Análisis y Metas - QuantyA</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+<html class="light" lang="es">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Análisis y Metas - QuantyA</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyCO6WXu9iZsyEUmNNxrE4oWToLYY8wl-y4",
-        authDomain: "misfinanzaspro-d2f3f.firebaseapp.com",
-        databaseURL: "https://misfinanzaspro-d2f3f-default-rtdb.firebaseio.com",
-        projectId: "misfinanzaspro-d2f3f",
-        storageBucket: "misfinanzaspro-d2f3f.firebasestorage.app",
-        messagingSenderId: "613366165036",
-        appId: "1:613366165036:web:bebc72b38d39ab64932b89"
-    };
+        const firebaseConfig = {
+            apiKey: "AIzaSyCO6WXu9iZsyEUmNNxrE4oWToLYY8wl-y4",
+            authDomain: "misfinanzaspro-d2f3f.firebaseapp.com",
+            databaseURL: "https://misfinanzaspro-d2f3f-default-rtdb.firebaseio.com",
+            projectId: "misfinanzaspro-d2f3f",
+            storageBucket: "misfinanzaspro-d2f3f.firebasestorage.app",
+            messagingSenderId: "613366165036",
+            appId: "1:613366165036:web:bebc72b38d39ab64932b89"
+        };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getDatabase(app);
-    let miGrafico = null;
-    let todosLosMovimientos = [];
-    let filtroActual = 90;
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+        let miGrafico = null;
+        let todosLosMovimientos = [];
+        let filtroActual = 90;
 
-    Chart.register(ChartDataLabels);
+        Chart.register(ChartDataLabels);
 
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            document.getElementById('user-name-display').innerText = user.displayName || "Usuario";
-            iniciarSincronizacion(user.uid);
-        } else { window.location.href = "index.html"; }
-    });
-
-    function iniciarSincronizacion(uid) {
-        onValue(ref(db, `usuarios/${uid}/movimientos`), (snapshot) => {
-            todosLosMovimientos = [];
-            snapshot.forEach(child => { todosLosMovimientos.push(child.val()); });
-            aplicarFiltroYActualizar(filtroActual);
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                document.getElementById('user-name-display').innerText = user.displayName || "Usuario";
+                iniciarSincronizacion(user.uid);
+            } else { window.location.href = "index.html"; }
         });
 
-        onValue(ref(db, `usuarios/${uid}/metas`), (snapshot) => {
-            const metas = [];
-            snapshot.forEach(child => { 
-                metas.push({ id: child.key, ...child.val() }); 
+        function iniciarSincronizacion(uid) {
+            onValue(ref(db, `usuarios/${uid}/movimientos`), (snapshot) => {
+                todosLosMovimientos = [];
+                snapshot.forEach(child => { todosLosMovimientos.push(child.val()); });
+                aplicarFiltroYActualizar(filtroActual);
             });
-            renderizarMetas(metas);
-        });
-    }
 
-    window.setFiltro = (dias, element) => {
-        filtroActual = dias;
-        document.querySelectorAll('.filter-tab').forEach(el => {
-            el.classList.remove('text-primary', 'border-primary');
-            el.classList.add('text-slate-400', 'border-transparent');
-        });
-        element.classList.add('text-primary', 'border-primary');
-        element.classList.remove('text-slate-400', 'border-transparent');
-        aplicarFiltroYActualizar(dias);
-    };
-
-    function aplicarFiltroYActualizar(dias) {
-        const fechaLimite = new Date();
-        fechaLimite.setDate(fechaLimite.getDate() - dias);
-        const filtrados = todosLosMovimientos.filter(m => new Date(m.fecha) >= fechaLimite);
-        actualizarAnalisis(filtrados);
-    }
-
-    function getIconByConcepto(concepto) {
-        const c = concepto.toLowerCase();
-        if (c.includes('luz')) return { ico: 'bolt', col: 'text-yellow-500 bg-yellow-50' };
-        if (c.includes('agua')) return { ico: 'water_drop', col: 'text-blue-500 bg-blue-50' };
-        if (c.includes('tarjeta')) return { ico: 'credit_card', col: 'text-purple-500 bg-purple-50' };
-        if (c.includes('combustible') || c.includes('auto')) return { ico: 'local_gas_station', col: 'text-orange-500 bg-orange-50' };
-        return { ico: 'payments', col: 'text-slate-500 bg-slate-50' };
-    }
-
-    function actualizarAnalisis(datos) {
-        let ingresos = 0, gastos = 0, listaGastos = [];
-        datos.forEach(m => {
-            const monto = Number(m.monto) || 0;
-            if (m.tipo.toLowerCase().includes('ingreso')) ingresos += monto;
-            else { gastos += monto; listaGastos.push(m); }
-        });
-
-        const saldo = ingresos - gastos;
-        document.getElementById('centro-monto').innerText = `$${new Intl.NumberFormat('es-CL').format(Math.abs(saldo))}`;
-        document.getElementById('centro-monto').className = `text-3xl font-black ${saldo >= 0 ? 'text-emerald-500' : 'text-red-500'}`;
-
-        const topGastos = listaGastos.sort((a, b) => b.monto - a.monto).slice(0, 4);
-        const contenedorLista = document.getElementById('lista-categorias-gastos');
-        contenedorLista.innerHTML = topGastos.map(g => {
-            const style = getIconByConcepto(g.concepto);
-            return `
-                <div class="flex items-center justify-between p-2">
-                    <div class="flex items-center gap-3">
-                        <div class="size-9 rounded-lg flex items-center justify-center ${style.col}">
-                            <span class="material-symbols-outlined text-xl">${style.ico}</span>
-                        </div>
-                        <span class="text-sm font-bold truncate w-32 text-slate-700 dark:text-slate-200">${g.concepto}</span>
-                    </div>
-                    <span class="text-sm font-black text-red-500">$${new Intl.NumberFormat('es-CL').format(g.monto)}</span>
-                </div>`;
-        }).join('');
-
-        const ctx = document.getElementById('graficoDistribucion').getContext('2d');
-        if (miGrafico) miGrafico.destroy();
-        miGrafico = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Ingresos', 'Gastos'],
-                datasets: [{
-                    data: [ingresos, gastos],
-                    backgroundColor: ['#10b981', '#ef4444'],
-                    hoverOffset: 10, borderWidth: 4, borderColor: 'white', borderRadius: 5
-                }]
-            },
-            options: {
-                cutout: '65%',
-                plugins: {
-                    legend: { display: false },
-                    datalabels: {
-                        color: '#fff', font: { weight: '900', size: 14 },
-                        formatter: (v, context) => {
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            return total > 0 ? Math.round((v / total) * 100) + '%' : '';
-                        }
-                    }
-                },
-                responsive: true, maintainAspectRatio: false
-            }
-        });
-
-        document.getElementById('resumen-rendimiento-dinamico').innerHTML = `
-            <div class="grid grid-cols-2 gap-4 p-6">
-                <div class="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
-                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Tasa de Ahorro</p>
-                    <p class="text-xl font-black ${ingresos > 0 && (ingresos-gastos)>0 ? 'text-emerald-500' : 'text-orange-500'}">${ingresos > 0 ? (((ingresos-gastos)/ingresos)*100).toFixed(1) : 0}%</p>
-                </div>
-                <div class="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
-                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Ratio de Gastos</p>
-                    <p class="text-xl font-black ${gastos > ingresos ? 'text-red-500' : 'text-emerald-500'}">${ingresos > 0 ? ((gastos/ingresos)*100).toFixed(1) : 0}%</p>
-                </div>
-                <div class="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
-                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Saldo Neto</p>
-                    <p class="text-xl font-black text-primary">$${new Intl.NumberFormat('es-CL').format(saldo)}</p>
-                </div>
-                <div class="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
-                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Salud</p>
-                    <p class="text-xl font-black ${saldo > 0 ? 'text-emerald-500' : 'text-red-500'}">${saldo > 0 ? 'Óptima' : 'Crítica'}</p>
-                </div>
-            </div>`;
-    }
-
-    function renderizarMetas(metas) {
-        const contenedor = document.getElementById('contenedor-metas-dinamicas');
-        if (!metas || metas.length === 0) {
-            contenedor.innerHTML = '<p class="text-center text-slate-400 py-10 font-bold text-sm">No hay metas activas</p>';
-            return;
+            onValue(ref(db, `usuarios/${uid}/metas`), (snapshot) => {
+                const metas = [];
+                snapshot.forEach(child => { 
+                    metas.push({ id: child.key, ...child.val() }); 
+                });
+                renderizarMetas(metas);
+            });
         }
 
-        contenedor.innerHTML = metas.map(meta => {
-            const actual = Number(meta.ahorrado) || 0;
-            const objetivo = Number(meta.objetivo) || 1;
-            const porcentaje = Math.min(Math.round((actual / objetivo) * 100), 100);
-            
-            let icon = "savings", colorBase = "emerald-500";
-            const n = meta.nombre.toLowerCase();
-            if (n.includes('vacac') || n.includes('viaje')) { icon = 'flight'; colorBase = 'blue-500'; }
-            else if (n.includes('deuda') || n.includes('pago')) { icon = 'payments'; colorBase = 'red-500'; }
-            else if (n.includes('casa')) { icon = 'home'; colorBase = 'orange-500'; }
+        window.setFiltro = (dias, element) => {
+            filtroActual = dias;
+            document.querySelectorAll('.filter-tab').forEach(el => {
+                el.classList.remove('text-primary', 'border-primary');
+                el.classList.add('text-slate-400', 'border-transparent');
+            });
+            element.classList.add('text-primary', 'border-primary');
+            element.classList.remove('text-slate-400', 'border-transparent');
+            aplicarFiltroYActualizar(dias);
+        };
 
-            return `
-                <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-100 dark:border-slate-700 transition-all hover:shadow-md">
-                    <div class="flex items-center justify-between mb-4">
+        function aplicarFiltroYActualizar(dias) {
+            const fechaLimite = new Date();
+            fechaLimite.setDate(fechaLimite.getDate() - dias);
+            const filtrados = todosLosMovimientos.filter(m => new Date(m.fecha) >= fechaLimite);
+            actualizarAnalisis(filtrados);
+        }
+
+        function getIconByConcepto(concepto) {
+            const c = concepto.toLowerCase();
+            if (c.includes('luz')) return { ico: 'bolt', col: 'text-yellow-500 bg-yellow-50' };
+            if (c.includes('agua')) return { ico: 'water_drop', col: 'text-blue-500 bg-blue-50' };
+            if (c.includes('tarjeta')) return { ico: 'credit_card', col: 'text-purple-500 bg-purple-50' };
+            if (c.includes('combustible') || c.includes('auto')) return { ico: 'local_gas_station', col: 'text-orange-500 bg-orange-50' };
+            return { ico: 'payments', col: 'text-slate-500 bg-slate-50' };
+        }
+
+        function actualizarAnalisis(datos) {
+            let ingresos = 0, gastos = 0, listaGastos = [];
+            datos.forEach(m => {
+                const monto = Number(m.monto) || 0;
+                if (m.tipo.toLowerCase().includes('ingreso')) ingresos += monto;
+                else { gastos += monto; listaGastos.push(m); }
+            });
+
+            const saldo = ingresos - gastos;
+            document.getElementById('centro-monto').innerText = `$${new Intl.NumberFormat('es-CL').format(Math.abs(saldo))}`;
+            document.getElementById('centro-monto').className = `text-3xl font-black ${saldo >= 0 ? 'text-emerald-500' : 'text-red-500'}`;
+
+            const topGastos = listaGastos.sort((a, b) => b.monto - a.monto).slice(0, 4);
+            const contenedorLista = document.getElementById('lista-categorias-gastos');
+            contenedorLista.innerHTML = topGastos.map(g => {
+                const style = getIconByConcepto(g.concepto);
+                return `
+                    <div class="flex items-center justify-between p-2">
                         <div class="flex items-center gap-3">
-                            <div class="size-12 bg-slate-100 dark:bg-slate-700 rounded-xl flex items-center justify-center" style="color: ${colorBase === 'emerald-500' ? '#10b981' : colorBase === 'blue-500' ? '#3b82f6' : '#ef4444'}">
-                                <span class="material-symbols-outlined text-2xl" style="color: inherit">${icon}</span>
+                            <div class="size-9 rounded-lg flex items-center justify-center ${style.col}">
+                                <span class="material-symbols-outlined text-xl">${style.ico}</span>
                             </div>
-                            <div>
-                                <h4 class="font-bold text-base text-slate-800 dark:text-white">${meta.nombre}</h4>
-                                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Meta: $${new Intl.NumberFormat('es-CL').format(objetivo)}</p>
-                            </div>
+                            <span class="text-sm font-bold truncate w-32 text-slate-700 dark:text-slate-200">${g.concepto}</span>
                         </div>
-                        <span class="font-black text-lg" style="color: ${colorBase === 'emerald-500' ? '#10b981' : colorBase === 'blue-500' ? '#3b82f6' : '#ef4444'}">${porcentaje}%</span>
+                        <span class="text-sm font-black text-red-500">$${new Intl.NumberFormat('es-CL').format(g.monto)}</span>
+                    </div>`;
+            }).join('');
+
+            const ctx = document.getElementById('graficoDistribucion').getContext('2d');
+            if (miGrafico) miGrafico.destroy();
+            miGrafico = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Ingresos', 'Gastos'],
+                    datasets: [{
+                        data: [ingresos, gastos],
+                        backgroundColor: ['#10b981', '#ef4444'],
+                        hoverOffset: 10, borderWidth: 4, borderColor: 'white', borderRadius: 5
+                    }]
+                },
+                options: {
+                    cutout: '65%',
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: {
+                            color: '#fff', font: { weight: '900', size: 14 },
+                            formatter: (v, context) => {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                return total > 0 ? Math.round((v / total) * 100) + '%' : '';
+                            }
+                        }
+                    },
+                    responsive: true, maintainAspectRatio: false
+                }
+            });
+
+            document.getElementById('resumen-rendimiento-dinamico').innerHTML = `
+                <div class="grid grid-cols-2 gap-4 p-6">
+                    <div class="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Tasa de Ahorro</p>
+                        <p class="text-xl font-black ${ingresos > 0 && (ingresos-gastos)>0 ? 'text-emerald-500' : 'text-orange-500'}">${ingresos > 0 ? (((ingresos-gastos)/ingresos)*100).toFixed(1) : 0}%</p>
                     </div>
-                    <div class="w-full h-3 bg-slate-100 dark:bg-slate-700 rounded-full mb-4 overflow-hidden">
-                        <div class="h-full transition-all duration-1000" style="width: ${porcentaje}%; background-color: ${colorBase === 'emerald-500' ? '#10b981' : colorBase === 'blue-500' ? '#3b82f6' : '#ef4444'}"></div>
+                    <div class="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Ratio de Gastos</p>
+                        <p class="text-xl font-black ${gastos > ingresos ? 'text-red-500' : 'text-emerald-500'}">${ingresos > 0 ? ((gastos/ingresos)*100).toFixed(1) : 0}%</p>
                     </div>
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <p class="text-[9px] text-slate-400 font-bold uppercase">Ahorrado</p>
-                            <p class="text-sm font-black text-slate-800 dark:text-white">$${new Intl.NumberFormat('es-CL').format(actual)}</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-[9px] text-slate-400 font-bold uppercase">Restante</p>
-                            <p class="text-sm font-black text-slate-800 dark:text-white">$${new Intl.NumberFormat('es-CL').format(Math.max(0, objetivo - actual))}</p>
-                        </div>
+                    <div class="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Saldo Neto</p>
+                        <p class="text-xl font-black text-primary">$${new Intl.NumberFormat('es-CL').format(saldo)}</p>
+                    </div>
+                    <div class="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Salud</p>
+                        <p class="text-xl font-black ${saldo > 0 ? 'text-emerald-500' : 'text-red-500'}">${saldo > 0 ? 'Óptima' : 'Crítica'}</p>
                     </div>
                 </div>`;
-        }).join('');
-    }
-
-    window.generarReportePDF = async () => {
-        const { jsPDF } = window.jspdf;
-        const btn = document.getElementById('btn-pdf-trigger');
-        const originalContent = btn.innerHTML;
-        btn.innerHTML = '<span class="animate-spin material-symbols-outlined text-sm">sync</span> Generando...';
-        
-        try {
-            const element = document.getElementById('pdf-capture-area');
-            const canvas = await html2canvas(element, {
-                scale: 2,
-                useCORS: true,
-                backgroundColor: null
-            });
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const imgProps = pdf.getImageProperties(imgData);
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-            pdf.save(`QuantyA_Reporte_${new Date().toLocaleDateString()}.pdf`);
-        } catch (error) {
-            console.error("Error al generar PDF:", error);
-        } finally {
-            btn.innerHTML = originalContent;
         }
-    };
-</script>
 
-<script id="tailwind-config">
-    tailwind.config = {
-        darkMode: "class",
-        theme: {
-            extend: {
-                colors: { "primary": "#176282", "background-light": "#f9fafb", "background-dark": "#181d25" },
-                fontFamily: { "display": ["Inter", "sans-serif"] }
+        function renderizarMetas(metas) {
+            const contenedor = document.getElementById('contenedor-metas-dinamicas');
+            if (!metas || metas.length === 0) {
+                contenedor.innerHTML = '<p class="text-center text-slate-400 py-10 font-bold text-sm">No hay metas activas</p>';
+                return;
+            }
+
+            contenedor.innerHTML = metas.map(meta => {
+                const actual = Number(meta.ahorrado) || 0;
+                const objetivo = Number(meta.objetivo) || 1;
+                const porcentaje = Math.min(Math.round((actual / objetivo) * 100), 100);
+                
+                let icon = "savings", colorBase = "emerald-500";
+                const n = meta.nombre.toLowerCase();
+                if (n.includes('vacac') || n.includes('viaje')) { icon = 'flight'; colorBase = 'blue-500'; }
+                else if (n.includes('deuda') || n.includes('pago')) { icon = 'payments'; colorBase = 'red-500'; }
+                else if (n.includes('casa')) { icon = 'home'; colorBase = 'orange-500'; }
+
+                return `
+                    <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-100 dark:border-slate-700 transition-all hover:shadow-md">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="size-12 bg-slate-100 dark:bg-slate-700 rounded-xl flex items-center justify-center" style="color: ${colorBase === 'emerald-500' ? '#10b981' : colorBase === 'blue-500' ? '#3b82f6' : '#ef4444'}">
+                                    <span class="material-symbols-outlined text-2xl" style="color: inherit">${icon}</span>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-base text-slate-800 dark:text-white">${meta.nombre}</h4>
+                                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Meta: $${new Intl.NumberFormat('es-CL').format(objetivo)}</p>
+                                </div>
+                            </div>
+                            <span class="font-black text-lg" style="color: ${colorBase === 'emerald-500' ? '#10b981' : colorBase === 'blue-500' ? '#3b82f6' : '#ef4444'}">${porcentaje}%</span>
+                        </div>
+                        <div class="w-full h-3 bg-slate-100 dark:bg-slate-700 rounded-full mb-4 overflow-hidden">
+                            <div class="h-full transition-all duration-1000" style="width: ${porcentaje}%; background-color: ${colorBase === 'emerald-500' ? '#10b981' : colorBase === 'blue-500' ? '#3b82f6' : '#ef4444'}"></div>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <p class="text-[9px] text-slate-400 font-bold uppercase">Ahorrado</p>
+                                <p class="text-sm font-black text-slate-800 dark:text-white">$${new Intl.NumberFormat('es-CL').format(actual)}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-[9px] text-slate-400 font-bold uppercase">Restante</p>
+                                <p class="text-sm font-black text-slate-800 dark:text-white">$${new Intl.NumberFormat('es-CL').format(Math.max(0, objetivo - actual))}</p>
+                            </div>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        window.generarReportePDF = async () => {
+            const { jsPDF } = window.jspdf;
+            const btn = document.getElementById('btn-pdf-trigger');
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = '<span class="animate-spin material-symbols-outlined text-sm">sync</span> Generando...';
+            
+            try {
+                const element = document.getElementById('pdf-capture-area');
+                const canvas = await html2canvas(element, {
+                    scale: 2,
+                    useCORS: true,
+                    backgroundColor: null
+                });
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const imgProps = pdf.getImageProperties(imgData);
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`QuantyA_Reporte_${new Date().toLocaleDateString()}.pdf`);
+            } catch (error) {
+                console.error("Error al generar PDF:", error);
+            } finally {
+                btn.innerHTML = originalContent;
+            }
+        };
+    </script>
+
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: { "primary": "#176282", "background-light": "#f9fafb", "background-dark": "#181d25" },
+                    fontFamily: { "display": ["Inter", "sans-serif"] }
+                }
             }
         }
-    }
-</script>
+    </script>
 </head>
 <body class="bg-background-light dark:bg-background-dark font-display text-[#121617] dark:text-white transition-colors duration-200">
 <div class="flex h-screen overflow-hidden">
@@ -272,27 +273,32 @@
                 <nav class="space-y-1">
                     <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-2xl transition-all">
                         <span class="material-symbols-outlined">dashboard</span>
-                        <span class="font-semibold text-sm">Panel</span>
+                        <span class="font-semibold text-sm">Panel de Control</span>
                     </a>
+
                     <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-2xl transition-all">
                         <span class="material-symbols-outlined">swap_horiz</span>
                         <span class="font-semibold text-sm">Movimientos</span>
                     </a>
+
                     <a href="analisis.html" class="flex items-center justify-between px-4 py-3 bg-primary text-white rounded-2xl shadow-lg shadow-primary/20 transition-all">
                         <div class="flex items-center gap-3">
                             <span class="material-symbols-outlined font-fill">analytics</span>
-                            <span class="font-bold text-sm">Análisis</span>
+                            <span class="font-bold text-sm">Análisis Inteligente</span>
                         </div>
                         <div class="size-1.5 bg-white rounded-full animate-pulse"></div>
                     </a>
+
                     <a href="metas.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-2xl transition-all">
                         <span class="material-symbols-outlined">track_changes</span>
-                        <span class="font-semibold text-sm">Metas</span>
+                        <span class="font-semibold text-sm">Mis Metas</span>
                     </a>
+
                     <a href="reportes.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-2xl transition-all">
                         <span class="material-symbols-outlined">description</span>
-                        <span class="font-semibold text-sm">Reportes</span>
+                        <span class="font-semibold text-sm">Reportes Export</span>
                     </a>
+
                     <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-2xl transition-all">
                         <span class="material-symbols-outlined">settings</span>
                         <span class="font-semibold text-sm">Configuración</span>
@@ -369,4 +375,5 @@
         </div>
     </main>
 </div>
-</body></html>
+</body>
+</html>
