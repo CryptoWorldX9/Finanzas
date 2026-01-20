@@ -267,33 +267,40 @@
                     <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Gestión Financiera</p>
                 </div>
             </div>
-            <nav class="space-y-1">
-                <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
-                    <span class="material-symbols-outlined">dashboard</span>
-                    <span class="font-semibold text-sm">Panel</span>
-                </a>
-                <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
-                    <span class="material-symbols-outlined">swap_horiz</span>
-                    <span class="font-semibold text-sm">Movimientos</span>
-                </a>
-                <a href="analisis.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 transition-all">
-                    <span class="material-symbols-outlined font-fill">analytics</span>
-                    <span class="font-bold text-sm">Análisis</span>
-                </a>
-                <a href="metas.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
-                    <span class="material-symbols-outlined">track_changes</span>
-                    <span class="font-semibold text-sm">Metas</span>
-                </a>
-                <a href="reportes.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
-                    <span class="material-symbols-outlined">description</span>
-                    <span class="font-semibold text-sm">Reportes</span>
-                </a>
-                <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
-                    <span class="material-symbols-outlined">settings</span>
-                    <span class="font-semibold text-sm">Configuración</span>
-                </a>
-            </nav>
+            
+            <div class="bg-slate-900/50 rounded-3xl p-2 border border-slate-800/50">
+                <nav class="space-y-1">
+                    <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-2xl transition-all">
+                        <span class="material-symbols-outlined">dashboard</span>
+                        <span class="font-semibold text-sm">Panel</span>
+                    </a>
+                    <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-2xl transition-all">
+                        <span class="material-symbols-outlined">swap_horiz</span>
+                        <span class="font-semibold text-sm">Movimientos</span>
+                    </a>
+                    <a href="analisis.html" class="flex items-center justify-between px-4 py-3 bg-primary text-white rounded-2xl shadow-lg shadow-primary/20 transition-all">
+                        <div class="flex items-center gap-3">
+                            <span class="material-symbols-outlined font-fill">analytics</span>
+                            <span class="font-bold text-sm">Análisis</span>
+                        </div>
+                        <div class="size-1.5 bg-white rounded-full animate-pulse"></div>
+                    </a>
+                    <a href="metas.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-2xl transition-all">
+                        <span class="material-symbols-outlined">track_changes</span>
+                        <span class="font-semibold text-sm">Metas</span>
+                    </a>
+                    <a href="reportes.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-2xl transition-all">
+                        <span class="material-symbols-outlined">description</span>
+                        <span class="font-semibold text-sm">Reportes</span>
+                    </a>
+                    <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-2xl transition-all">
+                        <span class="material-symbols-outlined">settings</span>
+                        <span class="font-semibold text-sm">Configuración</span>
+                    </a>
+                </nav>
+            </div>
         </div>
+
         <div class="pt-6 border-t border-slate-800">
             <div class="bg-slate-800/50 p-4 rounded-2xl flex items-center gap-3 mb-2">
                 <div class="size-10 rounded-full bg-primary flex items-center justify-center font-bold text-xs text-white">QA</div>
@@ -301,7 +308,7 @@
                     <p id="user-name-display" class="text-sm font-bold truncate text-white">Cargando...</p>
                 </div>
             </div>
-            <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors w-full">
+            <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-2xl transition-colors w-full">
                 <span class="material-symbols-outlined">logout</span>
                 <span class="font-semibold text-sm">Cerrar Sesión</span>
             </a>
