@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<html class="light" lang="es"><head>
+<html class="light" lang="es">
+<head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>QuantyA - Panel de Control Profesional</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
 
 <script type="module">
@@ -205,6 +206,12 @@
         document.getElementById('op-fecha').value = d.fecha;
         document.getElementById('btn-submit').innerText = "Actualizar";
     };
+
+    // Lógica para el menú responsive
+    window.toggleMenu = () => {
+        const sidebar = document.getElementById('sidebar');
+        sidebar.classList.toggle('-translate-x-full');
+    };
 </script>
 
 <script id="tailwind-config">
@@ -214,203 +221,219 @@
             extend: {
                 colors: { 
                     "primary": "#176282", 
-                    "primary-light": "#2389b5",
+                    "primary-dark": "#0d3b4f",
                     "emerald-custom": "#10b981", 
                     "background-light": "#f8f9fa",
-                    "navy-800": "#1e293b",
-                    "navy-900": "#0f172a"
+                    "navy-900": "#0b121f"
                 },
                 fontFamily: { "display": ["Inter", "sans-serif"] },
             },
         },
     }
 </script>
+
 <style>
     #sugerencia-texto { transition: opacity 0.5s ease-in-out; }
     .nav-link { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
     .nav-link:hover .icon-box { transform: scale(1.1) rotate(-5deg); }
-    .nav-link.active { background: linear-gradient(135deg, #176282 0%, #2389b5 100%); box-shadow: 0 10px 15px -3px rgba(23, 98, 130, 0.3); }
+    .nav-link.active { background: #176282; box-shadow: 0 10px 15px -3px rgba(23, 98, 130, 0.3); color: white !important; }
+    .nav-link.active .icon-box { background: rgba(255, 255, 255, 0.2); }
+    
+    /* Scrollbar fina para el menú */
+    aside::-webkit-scrollbar { width: 4px; }
+    aside::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
 </style>
 </head>
 <body class="bg-background-light dark:bg-[#0b0f1a] font-display text-slate-900 dark:text-slate-100">
+
 <div class="flex min-h-screen">
-
-<aside class="w-64 bg-navy-900 text-white flex flex-col fixed h-full z-50 border-r border-slate-800/50 shadow-2xl overflow-hidden">
-    <div class="absolute top-0 right-0 -mr-16 -mt-16 size-48 bg-primary/10 rounded-full blur-3xl"></div>
-    
-    <div class="relative p-6 flex-1 flex flex-col">
-        <div class="flex items-center gap-3 mb-8 px-2">
-            <div class="size-10 bg-gradient-to-br from-primary to-primary-light rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20 rotate-3 group cursor-pointer transition-transform hover:rotate-0">
-                <span class="material-symbols-outlined text-xl">account_balance_wallet</span>
-            </div>
-            <div>
-                <h1 class="text-xl font-black tracking-tight leading-none">QuantyA</h1>
-                <p class="text-[9px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-1">Intelligence</p>
-            </div>
-        </div>
-
-        <nav class="space-y-1.5 flex-1">
-            <p class="px-4 mb-3 text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Menú Principal</p>
-            
-            <a href="dashboard.html" class="nav-link active flex items-center gap-3 px-4 py-2.5 text-white rounded-xl group">
-                <div class="icon-box size-8 bg-white/10 rounded-lg flex items-center justify-center transition-all group-hover:bg-white/20">
-                    <span class="material-symbols-outlined text-[18px]">dashboard</span>
+    <aside id="sidebar" class="w-72 bg-navy-900 text-white flex flex-col fixed h-full z-50 border-r border-slate-800/50 shadow-2xl transition-transform duration-300 -translate-x-full lg:translate-x-0 overflow-y-auto">
+        <div class="p-8 flex flex-col h-full">
+            <div class="flex items-center gap-3 mb-10 px-2">
+                <div class="size-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
+                    <span class="material-symbols-outlined text-2xl">account_balance_wallet</span>
                 </div>
-                <span class="text-xs font-bold tracking-wide">Panel de Control</span>
-            </a>
-
-            <a href="movimientos.html" class="nav-link flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl group">
-                <div class="icon-box size-8 bg-slate-800/50 rounded-lg flex items-center justify-center transition-all group-hover:bg-slate-700">
-                    <span class="material-symbols-outlined text-[18px]">swap_horiz</span>
-                </div>
-                <span class="text-xs font-semibold tracking-wide">Movimientos</span>
-            </a>
-
-            <a href="analisis.html" class="nav-link flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl group">
-                <div class="icon-box size-8 bg-slate-800/50 rounded-lg flex items-center justify-center transition-all group-hover:bg-slate-700">
-                    <span class="material-symbols-outlined text-[18px]">analytics</span>
-                </div>
-                <span class="text-xs font-semibold tracking-wide">Análisis Inteligente</span>
-            </a>
-
-            <a href="metas.html" class="nav-link flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl group">
-                <div class="icon-box size-8 bg-slate-800/50 rounded-lg flex items-center justify-center transition-all group-hover:bg-slate-700">
-                    <span class="material-symbols-outlined text-[18px]">track_changes</span>
-                </div>
-                <span class="text-xs font-semibold tracking-wide">Mis Metas</span>
-            </a>
-
-            <a href="reportes.html" class="nav-link flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl group">
-                <div class="icon-box size-8 bg-slate-800/50 rounded-lg flex items-center justify-center transition-all group-hover:bg-slate-700">
-                    <span class="material-symbols-outlined text-[18px]">description</span>
-                </div>
-                <span class="text-xs font-semibold tracking-wide">Reportes Export</span>
-            </a>
-
-            <div class="h-[1px] bg-slate-800/50 my-4 mx-4"></div>
-
-            <a href="configuracion.html" class="nav-link flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl group">
-                <div class="icon-box size-8 bg-slate-800/50 rounded-lg flex items-center justify-center transition-all group-hover:bg-slate-700">
-                    <span class="material-symbols-outlined text-[18px]">settings</span>
-                </div>
-                <span class="text-xs font-semibold tracking-wide">Configuración</span>
-            </a>
-        </nav>
-
-        <div class="mt-auto pt-4 border-t border-slate-800/50">
-            <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-all group">
-                <div class="size-8 bg-red-500/10 rounded-lg flex items-center justify-center group-hover:bg-red-500/20">
-                    <span class="material-symbols-outlined text-[18px]">logout</span>
-                </div>
-                <span class="text-xs font-bold tracking-wide">Cerrar Sesión</span>
-            </a>
-        </div>
-    </div>
-</aside>
-
-<main class="ml-64 flex-1 flex flex-col">
-    <header class="h-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-8 flex items-center justify-between sticky top-0 z-40">
-        <div class="relative w-72">
-            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl">search</span>
-            <input class="w-full pl-11 pr-4 py-2.5 bg-slate-100 dark:bg-slate-800/50 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 transition-all" placeholder="Buscar movimientos..."/>
-        </div>
-        <div class="flex items-center gap-6">
-            <div class="flex items-center gap-3">
-                <div class="text-right hidden sm:block">
-                    <p id="user-name-display" class="text-sm font-bold text-slate-900 dark:text-white">Cargando...</p>
-                    <p class="text-[10px] text-emerald-500 font-black uppercase tracking-widest">Premium Plan</p>
-                </div>
-                <div class="size-11 rounded-2xl bg-gradient-to-br from-primary to-primary-light flex items-center justify-center font-black text-white shadow-lg shadow-primary/20 text-sm">QA</div>
-            </div>
-        </div>
-    </header>
-
-    <div class="p-8 space-y-8 max-w-[1440px] mx-auto w-full">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="bg-white dark:bg-slate-900 p-7 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-xl hover:shadow-emerald-500/5 transition-all group">
-                <div class="flex items-center justify-between mb-4">
-                    <p class="text-xs font-black text-slate-500 uppercase tracking-[0.15em]">Ingresos Totales</p>
-                    <div class="p-2 bg-emerald-500/10 text-emerald-500 rounded-lg group-hover:scale-110 transition-transform"><span class="material-symbols-outlined text-xl">trending_up</span></div>
-                </div>
-                <p id="display-ingresos" class="text-3xl font-black text-slate-900 dark:text-white">$ 0</p>
-                <div class="mt-6 h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden"><div id="bar-ingresos" class="h-full bg-emerald-custom w-0 transition-all duration-1000"></div></div>
-            </div>
-            <div class="bg-white dark:bg-slate-900 p-7 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-xl hover:shadow-red-500/5 transition-all group">
-                <div class="flex items-center justify-between mb-4">
-                    <p class="text-xs font-black text-slate-500 uppercase tracking-[0.15em]">Gastos Totales</p>
-                    <div class="p-2 bg-red-500/10 text-red-500 rounded-lg group-hover:scale-110 transition-transform"><span class="material-symbols-outlined text-xl">trending_down</span></div>
-                </div>
-                <p id="display-gastos" class="text-3xl font-black text-slate-900 dark:text-white">$ 0</p>
-                <div class="mt-6 h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden"><div id="bar-gastos" class="h-full bg-red-500 w-0 transition-all duration-1000"></div></div>
-            </div>
-            <div class="bg-white dark:bg-slate-900 p-7 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-xl hover:shadow-primary/5 transition-all group">
-                <div class="flex items-center justify-between mb-4">
-                    <p class="text-xs font-black text-slate-500 uppercase tracking-[0.15em]">Saldo Disponible</p>
-                    <div class="p-2 bg-primary/10 text-primary rounded-lg group-hover:scale-110 transition-transform"><span class="material-symbols-outlined text-xl">account_balance</span></div>
-                </div>
-                <p id="display-saldo" class="text-3xl font-black text-slate-900 dark:text-white">$ 0</p>
-                <div class="mt-6 h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden"><div id="bar-saldo" class="h-full bg-primary w-0 transition-all duration-1000"></div></div>
-            </div>
-        </div>
-
-        <div class="bg-gradient-to-r from-primary to-primary-light p-1 rounded-3xl shadow-lg shadow-primary/20">
-            <div class="bg-white dark:bg-slate-900 p-5 rounded-[22px] flex items-center gap-5">
-                <div class="size-12 bg-primary text-white rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-primary/30">
-                    <span class="material-symbols-outlined text-2xl">auto_awesome</span>
-                </div>
-                <div class="flex-1">
-                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-primary/60 mb-0.5">QuantyA Smart Tips</p>
-                    <p id="sugerencia-texto" class="text-sm font-bold text-slate-700 dark:text-slate-200">Analizando patrones de gasto para tu próximo consejo...</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div class="lg:col-span-1">
-                <div class="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm sticky top-28">
-                    <h2 class="text-xl font-black mb-6 flex items-center gap-3"><span class="material-symbols-outlined text-primary">add_circle</span> Nueva Operación</h2>
-                    <form id="form-operacion" onsubmit="registrarOperacion(event)" class="space-y-4">
-                        <input id="op-concepto" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl text-sm p-3 focus:ring-2 focus:ring-primary/20 transition-all" placeholder="Ej: Pago de Arriendo" required/>
-                        <input id="op-fecha" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl text-sm p-3" type="date" required/>
-                        <div class="grid grid-cols-2 gap-4">
-                            <select id="op-tipo" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold p-3"></select>
-                            <input id="op-monto" oninput="formatMoneyInput(this)" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl text-sm font-black p-3" placeholder="$ 0" required/>
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <select id="op-categoria" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl text-sm p-3"></select>
-                            <select id="op-subcategoria" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl text-sm p-3"></select>
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <select id="op-pago" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl text-sm p-3"></select>
-                            <select id="op-recurrente" class="w-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl text-sm p-3"></select>
-                        </div>
-                        <button id="btn-submit" type="submit" class="w-full bg-gradient-to-r from-primary to-primary-light text-white font-black py-4 rounded-xl text-xs uppercase tracking-[0.2em] hover:shadow-xl hover:shadow-primary/30 transition-all active:scale-95">Registrar Operación</button>
-                    </form>
+                <div>
+                    <h1 class="text-xl font-black tracking-tighter leading-none">QuantyA</h1>
+                    <p class="text-[9px] text-slate-500 font-bold uppercase tracking-[0.2em] mt-1">Intelligence Pro</p>
                 </div>
             </div>
 
-            <div class="lg:col-span-2">
-                <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                    <div class="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
-                        <h3 class="font-black text-slate-800 dark:text-white uppercase tracking-widest text-xs">Últimos Movimientos</h3>
-                        <a href="movimientos.html" class="text-primary text-[10px] font-black uppercase tracking-widest hover:underline">Ver Todo</a>
+            <nav class="space-y-1.5 flex-1">
+                <p class="px-4 mb-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 opacity-60">Principales</p>
+                
+                <a href="dashboard.html" class="nav-link active flex items-center gap-3 px-4 py-3 rounded-2xl group">
+                    <div class="icon-box size-9 bg-slate-800/40 rounded-xl flex items-center justify-center transition-all group-hover:bg-primary/20">
+                        <span class="material-symbols-outlined text-[20px]">dashboard</span>
                     </div>
-                    <table class="w-full text-left text-sm">
-                        <thead class="bg-slate-50 dark:bg-slate-800/50">
-                            <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                <th class="px-8 py-4">Fecha</th>
-                                <th class="px-6 py-4">Descripción</th>
-                                <th class="px-6 py-4">Categoría</th>
-                                <th class="px-6 py-4 text-right">Monto</th>
-                                <th class="px-8 py-4 text-right">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="recent-moves-body" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
-                    </table>
+                    <span class="text-sm font-medium tracking-tight">Panel de Control</span>
+                </a>
+
+                <a href="movimientos.html" class="nav-link flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-2xl group">
+                    <div class="icon-box size-9 bg-slate-800/40 rounded-xl flex items-center justify-center transition-all group-hover:bg-slate-700">
+                        <span class="material-symbols-outlined text-[20px]">swap_horiz</span>
+                    </div>
+                    <span class="text-sm font-medium tracking-tight">Movimientos</span>
+                </a>
+
+                <a href="analisis.html" class="nav-link flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-2xl group">
+                    <div class="icon-box size-9 bg-slate-800/40 rounded-xl flex items-center justify-center transition-all group-hover:bg-slate-700">
+                        <span class="material-symbols-outlined text-[20px]">analytics</span>
+                    </div>
+                    <span class="text-sm font-medium tracking-tight">Análisis Inteligente</span>
+                </a>
+
+                <a href="metas.html" class="nav-link flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-2xl group">
+                    <div class="icon-box size-9 bg-slate-800/40 rounded-xl flex items-center justify-center transition-all group-hover:bg-slate-700">
+                        <span class="material-symbols-outlined text-[20px]">track_changes</span>
+                    </div>
+                    <span class="text-sm font-medium tracking-tight">Mis Metas</span>
+                </a>
+
+                <a href="reportes.html" class="nav-link flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-2xl group">
+                    <div class="icon-box size-9 bg-slate-800/40 rounded-xl flex items-center justify-center transition-all group-hover:bg-slate-700">
+                        <span class="material-symbols-outlined text-[20px]">description</span>
+                    </div>
+                    <span class="text-sm font-medium tracking-tight">Reportes</span>
+                </a>
+
+                <div class="py-4">
+                    <div class="h-px bg-slate-800/50 mx-4"></div>
+                </div>
+
+                <a href="configuracion.html" class="nav-link flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-2xl group">
+                    <div class="icon-box size-9 bg-slate-800/40 rounded-xl flex items-center justify-center transition-all group-hover:bg-slate-700">
+                        <span class="material-symbols-outlined text-[20px]">settings</span>
+                    </div>
+                    <span class="text-sm font-medium tracking-tight">Configuración</span>
+                </a>
+            </nav>
+
+            <div class="mt-10 pt-6 border-t border-slate-800/50">
+                <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-2xl transition-all group">
+                    <span class="material-symbols-outlined text-[20px]">logout</span>
+                    <span class="text-sm font-bold">Cerrar Sesión</span>
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    <div onclick="toggleMenu()" class="fixed inset-0 bg-black/50 z-40 lg:hidden hidden" id="overlay"></div>
+
+    <main class="lg:ml-72 flex-1 flex flex-col">
+        <header class="h-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-6 lg:px-10 flex items-center justify-between sticky top-0 z-40">
+            <div class="flex items-center gap-4">
+                <button onclick="toggleMenu()" class="lg:hidden size-10 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                    <span class="material-symbols-outlined">menu</span>
+                </button>
+                <div class="relative hidden sm:block w-64 lg:w-80">
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl font-light">search</span>
+                    <input class="w-full pl-11 pr-4 py-2.5 bg-slate-100/50 dark:bg-slate-800/50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-primary/20 transition-all font-medium" placeholder="Buscar en QuantyA..."/>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4 lg:gap-6">
+                <div class="flex items-center gap-3">
+                    <div class="text-right hidden sm:block">
+                        <p id="user-name-display" class="text-sm font-black text-slate-900 dark:text-white tracking-tight">Cargando...</p>
+                        <p class="text-[9px] text-primary font-black uppercase tracking-[0.2em]">Premium Member</p>
+                    </div>
+                    <div class="size-10 lg:size-11 rounded-2xl bg-gradient-to-br from-primary to-primary-dark flex items-center justify-center font-black text-white shadow-lg shadow-primary/20 text-xs">QA</div>
+                </div>
+            </div>
+        </header>
+
+        <div class="p-6 lg:p-10 space-y-8 max-w-[1600px] mx-auto w-full">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white dark:bg-slate-900 p-7 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-xl hover:shadow-emerald-500/5 transition-all group">
+                    <div class="flex items-center justify-between mb-4">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">Ingresos Mensuales</p>
+                        <div class="p-2 bg-emerald-500/10 text-emerald-500 rounded-lg group-hover:scale-110 transition-transform"><span class="material-symbols-outlined text-xl">trending_up</span></div>
+                    </div>
+                    <p id="display-ingresos" class="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">$ 0</p>
+                    <div class="mt-6 h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden"><div id="bar-ingresos" class="h-full bg-emerald-custom w-0 transition-all duration-1000"></div></div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-900 p-7 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-xl hover:shadow-red-500/5 transition-all group">
+                    <div class="flex items-center justify-between mb-4">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">Gastos Realizados</p>
+                        <div class="p-2 bg-red-500/10 text-red-500 rounded-lg group-hover:scale-110 transition-transform"><span class="material-symbols-outlined text-xl">trending_down</span></div>
+                    </div>
+                    <p id="display-gastos" class="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">$ 0</p>
+                    <div class="mt-6 h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden"><div id="bar-gastos" class="h-full bg-red-500 w-0 transition-all duration-1000"></div></div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-900 p-7 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-xl hover:shadow-primary/5 transition-all group">
+                    <div class="flex items-center justify-between mb-4">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">Patrimonio Neto</p>
+                        <div class="p-2 bg-primary/10 text-primary rounded-lg group-hover:scale-110 transition-transform"><span class="material-symbols-outlined text-xl">account_balance</span></div>
+                    </div>
+                    <p id="display-saldo" class="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">$ 0</p>
+                    <div class="mt-6 h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden"><div id="bar-saldo" class="h-full bg-primary w-0 transition-all duration-1000"></div></div>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-r from-primary to-primary-dark p-0.5 rounded-[2rem] shadow-lg shadow-primary/20">
+                <div class="bg-white dark:bg-slate-900 p-5 rounded-[1.9rem] flex items-center gap-5">
+                    <div class="size-12 bg-primary/10 text-primary rounded-2xl flex items-center justify-center shrink-0">
+                        <span class="material-symbols-outlined text-2xl">lightbulb</span>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-[9px] font-black uppercase tracking-[0.2em] text-primary mb-0.5">QuantyA Smart AI</p>
+                        <p id="sugerencia-texto" class="text-sm font-semibold text-slate-700 dark:text-slate-200">Analizando tus movimientos para darte el mejor consejo financiero...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-1">
+                    <div class="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm sticky top-28">
+                        <h2 class="text-lg font-black mb-8 flex items-center gap-3 tracking-tight"><span class="material-symbols-outlined text-primary">add_circle</span> Nueva Operación</h2>
+                        <form id="form-operacion" onsubmit="registrarOperacion(event)" class="space-y-4">
+                            <input id="op-concepto" class="w-full bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 rounded-2xl text-sm p-4 focus:ring-2 focus:ring-primary/20 transition-all font-medium" placeholder="Descripción del gasto o ingreso" required/>
+                            <input id="op-fecha" class="w-full bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 rounded-2xl text-sm p-4" type="date" required/>
+                            <div class="grid grid-cols-2 gap-4">
+                                <select id="op-tipo" class="w-full bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 rounded-2xl text-sm font-bold p-4"></select>
+                                <input id="op-monto" oninput="formatMoneyInput(this)" class="w-full bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 rounded-2xl text-sm font-black p-4 text-primary" placeholder="$ 0" required/>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <select id="op-categoria" class="w-full bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 rounded-2xl text-sm p-4"></select>
+                                <select id="op-subcategoria" class="w-full bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 rounded-2xl text-sm p-4"></select>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <select id="op-pago" class="w-full bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 rounded-2xl text-sm p-4"></select>
+                                <select id="op-recurrente" class="w-full bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700 rounded-2xl text-sm p-4"></select>
+                            </div>
+                            <button id="btn-submit" type="submit" class="w-full bg-primary text-white font-black py-4 rounded-2xl text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-primary/30 hover:bg-primary-dark transition-all active:scale-95 mt-4">Registrar Operación</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-2">
+                    <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                        <div class="px-8 py-6 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                            <h3 class="font-black text-slate-800 dark:text-white uppercase tracking-widest text-[10px]">Movimientos Recientes</h3>
+                            <a href="movimientos.html" class="text-primary text-[10px] font-black uppercase tracking-widest hover:underline">Gestionar Todos</a>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-50/50 dark:bg-slate-800/50">
+                                    <tr class="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                                        <th class="px-8 py-5">Fecha</th>
+                                        <th class="px-6 py-5">Concepto</th>
+                                        <th class="px-6 py-5">Categoría</th>
+                                        <th class="px-6 py-5 text-right">Importe</th>
+                                        <th class="px-8 py-5 text-right">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recent-moves-body" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-</main>
+    </main>
 </div>
-</body></html>
+</body>
+</html>
