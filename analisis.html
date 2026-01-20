@@ -259,56 +259,60 @@
     .nav-link { transition: all 0.3s ease; }
     .nav-link:hover .icon-box { transform: scale(1.1); }
     .nav-link.active { background: linear-gradient(135deg, #176282 0%, #2389b5 100%); color: white !important; }
+    .nav-link.active .icon-box { background: rgba(255, 255, 255, 0.2); }
 </style>
 </head>
 <body class="bg-background-light dark:bg-background-dark font-display text-[#121617] dark:text-white transition-colors duration-200">
 <div class="flex h-screen overflow-hidden">
     
-    <aside class="w-72 bg-[#0f172a] text-white flex flex-col shrink-0 border-r border-slate-800 p-6 relative overflow-hidden">
-        <div class="absolute top-0 right-0 -mr-16 -mt-16 size-48 bg-primary/10 rounded-full blur-3xl"></div>
-        <div class="relative space-y-8 flex-1">
+    <aside class="w-72 bg-[#0f172a] text-white flex flex-col shrink-0 border-r border-slate-800 p-6 relative">
+        <div class="space-y-8 flex-1">
             <div class="flex items-center gap-3 px-2">
-                <div class="size-10 bg-gradient-to-br from-primary to-blue-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20 rotate-3">
+                <div class="size-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
                     <span class="material-symbols-outlined text-2xl">account_balance_wallet</span>
                 </div>
                 <div>
                     <h1 class="text-xl font-black tracking-tight leading-none">QuantyA</h1>
-                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Intelligence</p>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Gestión Financiera</p>
                 </div>
             </div>
 
             <nav class="space-y-1.5">
-                <p class="px-4 mb-3 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Principal</p>
                 <a href="dashboard.html" class="nav-link flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl group">
                     <div class="icon-box size-8 bg-slate-800/50 rounded-lg flex items-center justify-center transition-all group-hover:bg-slate-700">
                         <span class="material-symbols-outlined text-[20px]">dashboard</span>
                     </div>
                     <span class="font-bold text-sm tracking-wide">Panel</span>
                 </a>
+
                 <a href="movimientos.html" class="nav-link flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl group">
                     <div class="icon-box size-8 bg-slate-800/50 rounded-lg flex items-center justify-center transition-all group-hover:bg-slate-700">
                         <span class="material-symbols-outlined text-[20px]">swap_horiz</span>
                     </div>
                     <span class="font-bold text-sm tracking-wide">Movimientos</span>
                 </a>
+
                 <a href="analisis.html" class="nav-link active flex items-center gap-3 px-4 py-3 rounded-xl shadow-xl shadow-primary/20">
-                    <div class="icon-box size-8 bg-white/20 rounded-lg flex items-center justify-center">
+                    <div class="icon-box size-8 rounded-lg flex items-center justify-center transition-all">
                         <span class="material-symbols-outlined text-[20px] font-fill">analytics</span>
                     </div>
                     <span class="font-bold text-sm tracking-wide">Análisis</span>
                 </a>
+
                 <a href="metas.html" class="nav-link flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl group">
                     <div class="icon-box size-8 bg-slate-800/50 rounded-lg flex items-center justify-center transition-all group-hover:bg-slate-700">
                         <span class="material-symbols-outlined text-[20px]">track_changes</span>
                     </div>
                     <span class="font-bold text-sm tracking-wide">Metas</span>
                 </a>
+
                 <a href="reportes.html" class="nav-link flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl group">
                     <div class="icon-box size-8 bg-slate-800/50 rounded-lg flex items-center justify-center transition-all group-hover:bg-slate-700">
                         <span class="material-symbols-outlined text-[20px]">description</span>
                     </div>
                     <span class="font-bold text-sm tracking-wide">Reportes</span>
                 </a>
+
                 <a href="configuracion.html" class="nav-link flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-white hover:bg-white/5 rounded-xl group">
                     <div class="icon-box size-8 bg-slate-800/50 rounded-lg flex items-center justify-center transition-all group-hover:bg-slate-700">
                         <span class="material-symbols-outlined text-[20px]">settings</span>
@@ -318,7 +322,7 @@
             </nav>
         </div>
 
-        <div class="relative pt-6 border-t border-slate-800">
+        <div class="pt-6 border-t border-slate-800">
             <div class="bg-slate-800/50 p-4 rounded-2xl flex items-center gap-3 mb-2">
                 <div class="size-10 rounded-full bg-primary flex items-center justify-center font-bold text-xs text-white">QA</div>
                 <div class="flex-1 overflow-hidden"><p id="user-name-display" class="text-sm font-bold truncate text-white">Cargando...</p></div>
