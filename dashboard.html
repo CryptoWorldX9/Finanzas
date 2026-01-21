@@ -30,7 +30,10 @@
         let editNodeId = null; 
         let cacheListas = JSON.parse(localStorage.getItem('cache_listas')) || {};
         let cacheMovimientos = JSON.parse(localStorage.getItem('cache_movimientos_panel')) || [];
-        let tarjetasLocal = {}; 
+        
+        // Variables para la mezcla de pagos
+        let pagosConfiguracion = {};
+        let tarjetasBilletera = {}; 
 
         const consejos = [
             "Revisa tus suscripciones activas este mes.", "El 30% de tus gastos son en comida rápida.", "Ahorra el 10% de cada ingreso extra.",
@@ -72,19 +75,24 @@
         });
 
         function iniciarSincronizacionRealtime() {
+            // 1. Sincronizar Listas de Configuración (Tipo, Categ, Pago, etc)
             onValue(ref(db, `usuarios/${currentUser.uid}/listas`), (snapshot) => {
                 if (snapshot.exists()) {
                     const listas = snapshot.val();
                     localStorage.setItem('cache_listas', JSON.stringify(listas));
+                    pagosConfiguracion = listas.pago || {}; // Guardamos los pagos de configuración
                     llenarTodosLosSelects(listas);
+                    actualizarSelectorPagoMaestro(); // Refrescar el selector mixto
                 }
             });
 
+            // 2. Sincronizar Tarjetas de la Billetera
             onValue(ref(db, `usuarios/${currentUser.uid}/tarjetas`), (snapshot) => {
-                tarjetasLocal = snapshot.val() || {};
-                actualizarSelectorPago();
+                tarjetasBilletera = snapshot.val() || {};
+                actualizarSelectorPagoMaestro(); // Refrescar el selector mixto
             });
 
+            // 3. Sincronizar Movimientos
             onValue(ref(db, `usuarios/${currentUser.uid}/movimientos`), (snapshot) => {
                 const dataFull = [];
                 snapshot.forEach((child) => {
@@ -117,25 +125,33 @@
             select.appendChild(fragment);
         }
 
-        function actualizarSelectorPago() {
+        // FUNCIÓN CLAVE: Mezcla Pagos de Configuración + Tarjetas de Billetera
+        function actualizarSelectorPagoMaestro() {
             const select = document.getElementById('op-pago');
             if(!select) return;
-            // Opciones de configuración + Tarjetas dinámicas
-            let opciones = `
-                <option value="Efectivo">Efectivo</option>
-                <option value="Débito">Débito</option>
-                <option value="Transferencia">Transferencia</option>`;
             
-            Object.keys(tarjetasLocal).forEach(id => {
-                opciones += `<option value="${id}">💳 ${tarjetasLocal[id].nombre}</option>`;
+            let opciones = '';
+
+            // Primero: Lo que el usuario definió en CONFIGURACIÓN (Efectivo, Debito, etc)
+            Object.keys(pagosConfiguracion).forEach(key => {
+                const nombre = pagosConfiguracion[key].nombre;
+                opciones += `<option value="${nombre}">${nombre}</option>`;
             });
+
+            // Segundo: Las TARJETAS de la BILLETERA
+            Object.keys(tarjetasBilletera).forEach(id => {
+                const t = tarjetasBilletera[id];
+                opciones += `<option value="${id}">💳 ${t.nombre}</option>`;
+            });
+
             select.innerHTML = opciones;
         }
 
         window.checkMetodoPago = () => {
             const val = document.getElementById('op-pago').value;
             const divCuotas = document.getElementById('div-cuotas-dinamico');
-            divCuotas.classList.toggle('hidden', !tarjetasLocal[val]);
+            // Si el valor coincide con un ID de tarjeta en billetera, mostrar cuotas
+            divCuotas.classList.toggle('hidden', !tarjetasBilletera[val]);
         };
 
         function renderizarTodo(datos) {
@@ -187,7 +203,7 @@
             const montoRaw = parseInt(document.getElementById('op-monto').value.replace(/\./g, ""));
             const metodoId = document.getElementById('op-pago').value;
             const cuotas = parseInt(document.getElementById('op-cuotas')?.value) || 1;
-            const esTarjeta = tarjetasLocal[metodoId];
+            const esTarjeta = tarjetasBilletera[metodoId];
             
             for(let i=0; i<cuotas; i++){
                 let f = new Date(document.getElementById('op-fecha').value);
