@@ -1,291 +1,297 @@
 <!DOCTYPE html>
-<html class="light" lang="es"><head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>QuantyA - Configuración</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<html class="light" lang="es">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>QuantyA - Configuración</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getDatabase, ref, get, set, update, onValue, push, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getDatabase, ref, get, set, update, onValue, push, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyCO6WXu9iZsyEUmNNxrE4oWToLYY8wl-y4",
-        authDomain: "misfinanzaspro-d2f3f.firebaseapp.com",
-        databaseURL: "https://misfinanzaspro-d2f3f-default-rtdb.firebaseio.com",
-        projectId: "misfinanzaspro-d2f3f",
-        storageBucket: "misfinanzaspro-d2f3f.firebasestorage.app",
-        messagingSenderId: "613366165036",
-        appId: "1:613366165036:web:bebc72b38d39ab64932b89"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getDatabase(app);
-    let currentUser = null;
-
-    // Listas Maestras actualizadas (Monto eliminado)
-    const LISTAS_REQUERIDAS = [
-        { id: 'tipo', nombre: 'Tipo' },
-        { id: 'categoria', nombre: 'Categoría' },
-        { id: 'sub_categoria', nombre: 'Sub Categoría' },
-        { id: 'pago', nombre: 'Pago' },
-        { id: 'recurrente', nombre: 'Recurrente' }
-    ];
-
-    const selectMoneda = document.getElementById('conf-moneda');
-    const selectZona = document.getElementById('conf-zona');
-    const checkDarkMode = document.getElementById('conf-darkmode');
-    const containerMaestro = document.getElementById('master-lists-container');
-
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            currentUser = user;
-            iniciarSincronizacionRealtime();
-        } else {
-            window.location.href = "index.html";
-        }
-    });
-
-    function iniciarSincronizacionRealtime() {
-        onValue(ref(db, `usuarios/${currentUser.uid}/configuracion`), (snapshot) => {
-            if (snapshot.exists()) {
-                const data = snapshot.val();
-                if(data.moneda) selectMoneda.value = data.moneda;
-                if(data.zonaHoraria) selectZona.value = data.zonaHoraria;
-                if(data.darkMode !== undefined) {
-                    checkDarkMode.checked = data.darkMode;
-                    aplicarModoVisual(data.darkMode);
-                }
-            }
-        });
-
-        onValue(ref(db, `usuarios/${currentUser.uid}/listas`), (snapshot) => {
-            renderizarListas(snapshot.val() || {});
-        });
-    }
-
-    function aplicarModoVisual(isDark) {
-        if(isDark) {
-            document.documentElement.classList.add('dark');
-            document.documentElement.classList.remove('light');
-        } else {
-            document.documentElement.classList.remove('dark');
-            document.documentElement.classList.add('light');
-        }
-    }
-
-    function renderizarListas(dataFirebase) {
-        containerMaestro.innerHTML = '';
-        LISTAS_REQUERIDAS.forEach(lista => {
-            const divCol = document.createElement('div');
-            divCol.className = "space-y-4";
-            divCol.innerHTML = `
-                <h4 class="text-sm font-bold text-slate-800 dark:text-slate-200 flex justify-between items-center">
-                    ${lista.nombre}
-                </h4>
-                <div id="list-${lista.id}" class="flex flex-wrap gap-2"></div>
-            `;
-            containerMaestro.appendChild(divCol);
-            
-            const listContainer = divCol.querySelector(`#list-${lista.id}`);
-            const items = dataFirebase[lista.id];
-            
-            if (items) {
-                Object.keys(items).forEach(itemId => {
-                    const span = document.createElement('span');
-                    span.className = "px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-medium flex items-center gap-2";
-                    span.innerHTML = `${items[itemId].nombre} <button onclick="eliminarItem('${lista.id}', '${itemId}')" class="hover:text-red-500">×</button>`;
-                    listContainer.appendChild(span);
-                });
-            }
-
-            const btnAdd = document.createElement('button');
-            btnAdd.className = "px-3 py-1.5 border border-dashed border-slate-300 dark:border-slate-700 rounded-lg text-xs text-slate-500 hover:border-primary hover:text-primary transition-colors";
-            btnAdd.innerHTML = "+ Añadir";
-            btnAdd.onclick = () => agregarDatoALista(lista.id, lista.nombre);
-            listContainer.appendChild(btnAdd);
-        });
-    }
-
-    window.agregarDatoALista = async (listaId, listaNombre) => {
-        const nombre = prompt(`Nueva opción para ${listaNombre}:`);
-        if (nombre && nombre.trim() !== "") {
-            await push(ref(db, `usuarios/${currentUser.uid}/listas/${listaId}`), { nombre: nombre.trim() });
-        }
-    };
-
-    window.eliminarItem = async (listaId, itemId) => {
-        if(confirm("¿Eliminar esta opción?")) {
-            await remove(ref(db, `usuarios/${currentUser.uid}/listas/${listaId}/${itemId}`));
-        }
-    };
-
-    window.guardarCambiosGlobales = async () => {
-        const updates = {
-            moneda: selectMoneda.value,
-            zonaHoraria: selectZona.value,
-            darkMode: checkDarkMode.checked,
-            lastUpdated: Date.now()
+        const firebaseConfig = {
+            apiKey: "AIzaSyCO6WXu9iZsyEUmNNxrE4oWToLYY8wl-y4",
+            authDomain: "misfinanzaspro-d2f3f.firebaseapp.com",
+            databaseURL: "https://misfinanzaspro-d2f3f-default-rtdb.firebaseio.com",
+            projectId: "misfinanzaspro-d2f3f",
+            storageBucket: "misfinanzaspro-d2f3f.firebasestorage.app",
+            messagingSenderId: "613366165036",
+            appId: "1:613366165036:web:bebc72b38d39ab64932b89"
         };
-        await update(ref(db, `usuarios/${currentUser.uid}/configuracion`), updates);
-        alert("Configuración guardada.");
-    };
 
-</script>
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+        let currentUser = null;
 
-<script id="tailwind-config">
+        const LISTAS_REQUERIDAS = [
+            { id: 'tipo', nombre: 'Tipo' },
+            { id: 'categoria', nombre: 'Categoría' },
+            { id: 'sub_categoria', nombre: 'Sub Categoría' },
+            { id: 'pago', nombre: 'Pago' },
+            { id: 'recurrente', nombre: 'Recurrente' }
+        ];
+
+        const selectMoneda = document.getElementById('conf-moneda');
+        const selectZona = document.getElementById('conf-zona');
+        const checkDarkMode = document.getElementById('conf-darkmode');
+        const containerMaestro = document.getElementById('master-lists-container');
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                // Mostrar nombre dinámico en el sidebar
+                document.getElementById('user-name-display').innerText = user.displayName || "Usuario";
+                iniciarSincronizacionRealtime();
+            } else {
+                window.location.href = "index.html";
+            }
+        });
+
+        function iniciarSincronizacionRealtime() {
+            onValue(ref(db, `usuarios/${currentUser.uid}/configuracion`), (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    if(data.moneda) selectMoneda.value = data.moneda;
+                    if(data.zonaHoraria) selectZona.value = data.zonaHoraria;
+                    if(data.darkMode !== undefined) {
+                        checkDarkMode.checked = data.darkMode;
+                        aplicarModoVisual(data.darkMode);
+                    }
+                }
+            });
+
+            onValue(ref(db, `usuarios/${currentUser.uid}/listas`), (snapshot) => {
+                renderizarListas(snapshot.val() || {});
+            });
+        }
+
+        function aplicarModoVisual(isDark) {
+            if(isDark) {
+                document.documentElement.classList.add('dark');
+                document.documentElement.classList.remove('light');
+            } else {
+                document.documentElement.classList.remove('dark');
+                document.documentElement.classList.add('light');
+            }
+        }
+
+        function renderizarListas(dataFirebase) {
+            containerMaestro.innerHTML = '';
+            LISTAS_REQUERIDAS.forEach(lista => {
+                const divCol = document.createElement('div');
+                divCol.className = "space-y-4";
+                divCol.innerHTML = `
+                    <h4 class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex justify-between items-center">
+                        ${lista.nombre}
+                    </h4>
+                    <div id="list-${lista.id}" class="flex flex-wrap gap-2"></div>
+                `;
+                containerMaestro.appendChild(divCol);
+                
+                const listContainer = divCol.querySelector(`#list-${lista.id}`);
+                const items = dataFirebase[lista.id];
+                
+                if (items) {
+                    Object.keys(items).forEach(itemId => {
+                        const span = document.createElement('span');
+                        span.className = "px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center gap-2 border border-slate-200 dark:border-slate-700";
+                        span.innerHTML = `${items[itemId].nombre} <button onclick="eliminarItem('${lista.id}', '${itemId}')" class="hover:text-red-500 font-black text-lg leading-none">×</button>`;
+                        listContainer.appendChild(span);
+                    });
+                }
+
+                const btnAdd = document.createElement('button');
+                btnAdd.className = "px-3 py-1.5 border border-dashed border-slate-300 dark:border-slate-700 rounded-lg text-[10px] font-black uppercase tracking-tighter text-slate-500 hover:border-primary hover:text-primary transition-colors";
+                btnAdd.innerHTML = "+ Añadir";
+                btnAdd.onclick = () => agregarDatoALista(lista.id, lista.nombre);
+                listContainer.appendChild(btnAdd);
+            });
+        }
+
+        window.agregarDatoALista = async (listaId, listaNombre) => {
+            const nombre = prompt(`Nueva opción para ${listaNombre}:`);
+            if (nombre && nombre.trim() !== "") {
+                await push(ref(db, `usuarios/${currentUser.uid}/listas/${listaId}`), { nombre: nombre.trim() });
+            }
+        };
+
+        window.eliminarItem = async (listaId, itemId) => {
+            if(confirm("¿Eliminar esta opción?")) {
+                await remove(ref(db, `usuarios/${currentUser.uid}/listas/${listaId}/${itemId}`));
+            }
+        };
+
+        window.guardarCambiosGlobales = async () => {
+            const updates = {
+                moneda: selectMoneda.value,
+                zonaHoraria: selectZona.value,
+                darkMode: checkDarkMode.checked,
+                lastUpdated: Date.now()
+            };
+            await update(ref(db, `usuarios/${currentUser.uid}/configuracion`), updates);
+            alert("Configuración guardada correctamente.");
+        };
+    </script>
+
+    <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
             theme: {
                 extend: {
-                    colors: {
-                        "primary": "#176282",
-                        "navy-900": "#0f172a",
-                        "background-light": "#f8f9fa"
-                    },
-                    fontFamily: { "display": ["Inter", "sans-serif"] },
-                    borderRadius: { "DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem" },
-                },
-            },
+                    colors: { "primary": "#176282", "navy-900": "#0f172a" },
+                    fontFamily: { sans: ["Inter", "sans-serif"] },
+                }
+            }
         }
     </script>
+    <style type="text/tailwindcss">
+        body { -webkit-font-smoothing: antialiased; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300; }
+        .material-symbols-outlined.fill { font-variation-settings: 'FILL' 1, 'wght' 400; }
+    </style>
 </head>
-<body class="bg-background-light dark:bg-[#111827] font-display text-slate-900 dark:text-slate-100">
-<div class="flex min-h-screen">
-<aside class="w-64 bg-[#0f172a] text-white flex flex-col fixed h-full z-50 border-r border-slate-800 p-6">
+<body class="bg-[#fcfdfe] dark:bg-[#0f172a] text-slate-700 dark:text-slate-300 flex h-screen overflow-hidden font-sans">
+
+<aside class="w-72 bg-[#0f172a] text-white flex flex-col shrink-0 border-r border-slate-800 p-6 h-full z-50">
     <div class="space-y-8 flex-1">
         <div class="flex items-center gap-3 px-2">
-            <div class="size-10 bg-primary rounded-lg flex items-center justify-center text-white shadow-lg shadow-primary/20">
-                <span class="material-symbols-outlined text-2xl">account_balance_wallet</span>
+            <div class="size-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
+                <span class="material-symbols-outlined text-2xl fill">account_balance_wallet</span>
             </div>
             <div>
-                <h1 class="text-xl font-bold tracking-tight leading-none">QuantyA</h1>
+                <h1 class="text-xl font-black tracking-tight leading-none text-white">QuantyA</h1>
                 <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Gestión Financiera</p>
             </div>
         </div>
         <nav class="space-y-1">
             <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
-                <span class="material-symbols-outlined text-[20px]">dashboard</span>
-                <span class="text-sm font-medium">Panel</span>
+                <span class="material-symbols-outlined">dashboard</span> 
+                <span class="font-semibold text-sm">Panel</span>
             </a>
             <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
-                <span class="material-symbols-outlined text-[20px]">swap_horiz</span>
-                <span class="text-sm font-medium">Movimientos</span>
+                <span class="material-symbols-outlined">swap_horiz</span> 
+                <span class="font-semibold text-sm">Movimientos</span>
             </a>
             <a href="analisis.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
-                <span class="material-symbols-outlined text-[20px]">analytics</span>
-                <span class="text-sm font-medium">Análisis</span>
+                <span class="material-symbols-outlined">analytics</span> 
+                <span class="font-semibold text-sm">Análisis</span>
             </a>
             <a href="metas.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
-                <span class="material-symbols-outlined text-[20px]">track_changes</span>
-                <span class="text-sm font-medium">Metas</span>
+                <span class="material-symbols-outlined">track_changes</span> 
+                <span class="font-semibold text-sm">Metas</span>
             </a>
             <a href="reportes.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
-                <span class="material-symbols-outlined text-[20px]">description</span>
-                <span class="text-sm font-medium">Reportes</span>
+                <span class="material-symbols-outlined">description</span> 
+                <span class="font-semibold text-sm">Reportes</span>
             </a>
             <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 transition-all">
-                <span class="material-symbols-outlined text-[20px]">settings</span>
-                <span class="text-sm font-medium">Configuración</span>
+                <span class="material-symbols-outlined fill">settings</span> 
+                <span class="font-bold text-sm">Configuración</span>
             </a>
         </nav>
     </div>
-    
-    <div class="mt-auto pt-10">
-        <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors">
-            <span class="material-symbols-outlined text-[20px]">logout</span>
-            <span class="text-sm font-medium">Cerrar Sesión</span>
+
+    <div class="pt-6 border-t border-slate-800">
+        <div class="bg-slate-800/50 p-4 rounded-2xl flex items-center gap-3 mb-2">
+            <div class="size-10 rounded-full bg-primary flex items-center justify-center font-bold text-xs text-white">QA</div>
+            <div class="flex-1 overflow-hidden">
+                <p id="user-name-display" class="text-sm font-bold truncate text-white">Cargando...</p>
+            </div>
+        </div>
+        <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors w-full">
+            <span class="material-symbols-outlined">logout</span> 
+            <span class="font-semibold text-sm">Cerrar Sesión</span>
         </a>
     </div>
 </aside>
 
-<main class="ml-64 flex-1 flex flex-col">
-    <header class="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-8 flex items-center justify-between sticky top-0 z-40">
-        <h2 class="text-lg font-bold text-slate-800 dark:text-white">Configuración del Sistema</h2>
-        <button onclick="guardarCambiosGlobales()" class="bg-primary hover:bg-primary/90 text-white text-xs font-bold px-6 py-2.5 rounded-xl transition-all shadow-lg shadow-primary/20">
-            Aplicar Cambios Globales
+<main class="flex-1 flex flex-col overflow-hidden">
+    <header class="h-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-10 flex items-center justify-between sticky top-0 z-40">
+        <div>
+            <h2 class="text-2xl font-black tracking-tight text-slate-800 dark:text-white">Configuración</h2>
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Preferencias y parámetros maestros</p>
+        </div>
+        <button onclick="guardarCambiosGlobales()" class="bg-primary hover:bg-primary/90 text-white text-[10px] font-black uppercase tracking-widest px-8 py-3 rounded-xl transition-all shadow-lg shadow-primary/20">
+            Guardar Cambios
         </button>
     </header>
 
-    <div class="p-8 space-y-8 max-w-[1200px] mx-auto w-full">
+    <div class="flex-1 overflow-y-auto p-10 space-y-8 max-w-[1400px] mx-auto w-full">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <section class="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
-                <div class="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
+            <section class="bg-white dark:bg-slate-900 p-8 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+                <div class="flex items-center gap-3 border-b border-slate-50 dark:border-slate-800 pb-4">
                     <span class="material-symbols-outlined text-primary">settings_applications</span>
-                    <h3 class="font-bold text-xl">Parámetros Globales</h3>
+                    <h3 class="font-black text-lg tracking-tight">Parámetros Globales</h3>
                 </div>
-                <div class="space-y-4">
-                    <div class="space-y-1.5">
-                        <label class="text-xs font-bold text-slate-500 uppercase">Moneda Predeterminada</label>
-                        <select id="conf-moneda" class="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:ring-primary">
+                <div class="space-y-6">
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Moneda del Sistema</label>
+                        <select id="conf-moneda" class="w-full rounded-2xl border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-sm font-semibold p-4 focus:ring-4 focus:ring-primary/5">
                             <option value="CLP">Peso Chileno (CLP)</option>
                             <option value="USD">Dólar Estadounidense (USD)</option>
                             <option value="EUR">Euro (EUR)</option>
                             <option value="MXN">Peso Mexicano (MXN)</option>
-                            <option value="ARS">Peso Argentino (ARS)</option>
-                            <option value="COP">Peso Colombiano (COP)</option>
-                            <option value="BRL">Real Brasileño (BRL)</option>
-                            <option value="PEN">Sol Peruano (PEN)</option>
-                            <option value="GBP">Libra Esterlina (GBP)</option>
                         </select>
                     </div>
-                    <div class="space-y-1.5">
-                        <label class="text-xs font-bold text-slate-500 uppercase">Zona Horaria</label>
-                        <select id="conf-zona" class="w-full rounded-xl border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:ring-primary">
-                            <option value="America/Santiago">(UTC-04:00) Santiago de Chile</option>
-                            <option value="America/Bogota">(UTC-05:00) Bogotá, Lima, Quito</option>
-                            <option value="America/Mexico_City">(UTC-06:00) Ciudad de México</option>
-                            <option value="America/Argentina/Buenos_Aires">(UTC-03:00) Buenos Aires</option>
-                            <option value="America/New_York">(UTC-05:00) Nueva York</option>
-                            <option value="Europe/Madrid">(UTC+01:00) Madrid, París, Roma</option>
-                            <option value="UTC">(UTC+00:00) Tiempo Universal Coordinado</option>
+                    <div class="space-y-2">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Zona Horaria</label>
+                        <select id="conf-zona" class="w-full rounded-2xl border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-sm font-semibold p-4 focus:ring-4 focus:ring-primary/5">
+                            <option value="America/Santiago">(UTC-04:00) Santiago</option>
+                            <option value="America/Bogota">(UTC-05:00) Bogotá/Lima</option>
+                            <option value="America/Mexico_City">(UTC-06:00) CDMX</option>
                         </select>
                     </div>
                 </div>
             </section>
 
-            <section class="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
-                <div class="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
+            <section class="bg-white dark:bg-slate-900 p-8 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+                <div class="flex items-center gap-3 border-b border-slate-50 dark:border-slate-800 pb-4">
                     <span class="material-symbols-outlined text-primary">palette</span>
-                    <h3 class="font-bold text-xl">Personalización</h3>
+                    <h3 class="font-black text-lg tracking-tight">Interfaz Visual</h3>
                 </div>
-                <div class="space-y-6">
-                    <div class="flex items-center justify-between">
+                <div class="space-y-8">
+                    <div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
                         <div>
-                            <p class="text-sm font-semibold">Modo Oscuro</p>
-                            <p class="text-xs text-slate-500">Apariencia del sistema</p>
+                            <p class="text-sm font-bold">Modo Oscuro</p>
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Cambiar tema de la aplicación</p>
                         </div>
                         <label class="relative inline-flex items-center cursor-pointer">
                             <input id="conf-darkmode" type="checkbox" class="sr-only peer">
-                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                            <div class="w-12 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
                         </label>
                     </div>
                     <div class="space-y-3">
-                        <p class="text-xs font-bold text-slate-500 uppercase">Color de Marca</p>
-                        <div class="flex gap-3">
-                            <div class="size-8 rounded-full bg-[#176282] ring-2 ring-offset-2 ring-primary cursor-pointer"></div>
-                            <div class="size-8 rounded-full bg-emerald-500 cursor-pointer"></div>
-                            <div class="size-8 rounded-full bg-indigo-500 cursor-pointer"></div>
-                            <div class="size-8 rounded-full bg-rose-500 cursor-pointer"></div>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Color de Identidad</p>
+                        <div class="flex gap-4">
+                            <div class="size-10 rounded-xl bg-[#176282] ring-4 ring-primary/20 cursor-pointer border-2 border-white"></div>
+                            <div class="size-10 rounded-xl bg-emerald-500 hover:scale-110 transition-transform cursor-pointer"></div>
+                            <div class="size-10 rounded-xl bg-indigo-500 hover:scale-110 transition-transform cursor-pointer"></div>
+                            <div class="size-10 rounded-xl bg-rose-500 hover:scale-110 transition-transform cursor-pointer"></div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <section class="lg:col-span-2 bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-8">
-                <div class="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
+            <section class="lg:col-span-2 bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm space-y-8">
+                <div class="flex items-center gap-3 border-b border-slate-50 dark:border-slate-800 pb-6">
                     <span class="material-symbols-outlined text-primary">list_alt</span>
-                    <h3 class="font-bold text-xl">Gestión de Listas Maestras</h3>
+                    <h3 class="font-black text-xl tracking-tight">Gestión de Listas Maestras</h3>
                 </div>
-                <div id="master-lists-container" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-8">
+                <div id="master-lists-container" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-10">
                     </div>
             </section>
         </div>
+        
+        <footer class="text-center py-10 border-t border-slate-100 dark:border-slate-800">
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">QuantyA Financial v2.0 • 2026</p>
+        </footer>
     </div>
 </main>
-</div>
-</body></html>
+
+</body>
+</html>
