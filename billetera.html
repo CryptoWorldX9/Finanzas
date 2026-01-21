@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>QuantyA - Billetera Pro</title>
+    <title>QuantyA - Billetera</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -55,11 +55,9 @@
                 const container = document.getElementById('cards-grid');
                 const tablaBody = document.getElementById('tabla-datos-body');
                 if(!container || !tablaBody) return;
-                
                 container.innerHTML = ''; 
                 tablaBody.innerHTML = '';
                 const data = snapshot.val();
-                
                 if (data) {
                     Object.keys(data).forEach(id => {
                         const card = data[id];
@@ -119,23 +117,19 @@
         }
 
         window.cargarDineroManual = async (id, saldoActual) => {
-            const monto = prompt("Ingrese el monto a cargar a esta cuenta:");
+            const monto = prompt("Ingrese el monto a cargar:");
             if (monto && !isNaN(monto)) {
                 await update(ref(db, `usuarios/${currentUser.uid}/tarjetas/${id}`), {
                     saldoDisponibleActual: saldoActual + parseFloat(monto)
                 });
-                alert("Saldo actualizado correctamente.");
             }
         };
 
         window.toggleCamposDebito = () => {
             const cat = document.getElementById('card-categoria').value;
             const camposCredito = document.getElementById('seccion-credito');
-            if (cat === 'Débito') {
-                camposCredito.classList.add('opacity-30', 'pointer-events-none');
-            } else {
-                camposCredito.classList.remove('opacity-30', 'pointer-events-none');
-            }
+            if (cat === 'Débito') camposCredito.classList.add('opacity-30', 'pointer-events-none');
+            else camposCredito.classList.remove('opacity-30', 'pointer-events-none');
         };
 
         window.saveCard = async () => {
@@ -154,7 +148,6 @@
                 estadoFactura: isDebito ? 'Pagado' : document.getElementById('card-estado').value,
                 fechaPago: document.getElementById('card-fecha-pago').value || ''
             };
-
             if (editingCardId) {
                 await update(ref(db, `usuarios/${currentUser.uid}/tarjetas/${editingCardId}`), cardData);
                 editingCardId = null;
@@ -194,12 +187,9 @@
 
         window.eliminarTarjeta = (id) => confirm("¿Eliminar?") && remove(ref(db, `usuarios/${currentUser.uid}/tarjetas/${id}`));
         window.toggleModal = (id) => document.getElementById(id).classList.toggle('hidden');
-        
         window.toggleSidebar = () => {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('overlay');
-            sidebar.classList.toggle('-translate-x-full');
-            overlay.classList.toggle('hidden');
+            document.getElementById('sidebar').classList.toggle('-translate-x-full');
+            document.getElementById('overlay').classList.toggle('hidden');
         };
     </script>
 
@@ -222,43 +212,85 @@
     <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 w-72 bg-[#0f172a] text-white flex flex-col shrink-0 border-r border-slate-800 p-6 z-50 transition-transform duration-300 -translate-x-full lg:translate-x-0">
         <div class="flex items-center justify-between mb-8">
             <div class="flex items-center gap-3 px-2">
-                <div class="size-10 bg-primary rounded-xl flex items-center justify-center text-white"><span class="material-symbols-outlined text-2xl font-fill">account_balance_wallet</span></div>
+                <div class="size-10 bg-primary rounded-xl flex items-center justify-center text-white">
+                    <span class="material-symbols-outlined text-2xl font-fill">account_balance_wallet</span>
+                </div>
                 <h1 class="text-xl font-black tracking-tight">QuantyA</h1>
             </div>
-            <button onclick="toggleSidebar()" class="lg:hidden p-2 text-slate-400"><span class="material-symbols-outlined">close</span></button>
+            <button onclick="toggleSidebar()" class="lg:hidden p-2 text-slate-400 hover:text-white transition-colors">
+                <span class="material-symbols-outlined">close</span>
+            </button>
         </div>
-        <nav class="space-y-1 flex-1">
-            <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">dashboard</span> <span class="font-semibold text-sm">Panel</span></a>
-            <a href="billetera.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg"><span class="material-symbols-outlined font-fill">wallet</span> <span class="font-bold text-sm">Billetera</span></a>
-            <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">swap_horiz</span> <span class="font-semibold text-sm">Movimientos</span></a>
-            <a href="reportes.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">description</span> <span class="font-semibold text-sm">Reportes</span></a>
-            <a href="analisis.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">analytics</span> <span class="font-semibold text-sm">Análisis</span></a>
-            <a href="metas.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">track_changes</span> <span class="font-semibold text-sm">Metas</span></a>
-            <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">settings</span> <span class="font-semibold text-sm">Configuración</span></a>
+
+        <nav class="flex-1 space-y-8 overflow-y-auto pr-2">
+            <div class="space-y-2">
+                <p class="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Gestión Financiera</p>
+                <div class="space-y-1">
+                    <a href="dashboard.html" class="group flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800/50 hover:text-white rounded-xl transition-all duration-200">
+                        <span class="material-symbols-outlined transition-transform group-hover:scale-110">dashboard</span>
+                        <span class="font-bold text-sm tracking-tight">Panel</span>
+                    </a>
+                    <a href="billetera.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 transition-all duration-200">
+                        <span class="material-symbols-outlined font-fill">wallet</span>
+                        <span class="font-bold text-sm tracking-tight">Billetera</span>
+                    </a>
+                    <a href="movimientos.html" class="group flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800/50 hover:text-white rounded-xl transition-all duration-200">
+                        <span class="material-symbols-outlined transition-transform group-hover:scale-110">swap_horiz</span>
+                        <span class="font-bold text-sm tracking-tight">Movimientos</span>
+                    </a>
+                    <a href="reportes.html" class="group flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800/50 hover:text-white rounded-xl transition-all duration-200">
+                        <span class="material-symbols-outlined transition-transform group-hover:scale-110">description</span>
+                        <span class="font-bold text-sm tracking-tight">Reportes</span>
+                    </a>
+                    <a href="analisis.html" class="group flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800/50 hover:text-white rounded-xl transition-all duration-200">
+                        <span class="material-symbols-outlined transition-transform group-hover:scale-110">analytics</span>
+                        <span class="font-bold text-sm tracking-tight">Análisis</span>
+                    </a>
+                    <a href="metas.html" class="group flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800/50 hover:text-white rounded-xl transition-all duration-200">
+                        <span class="material-symbols-outlined transition-transform group-hover:scale-110">track_changes</span>
+                        <span class="font-bold text-sm tracking-tight">Metas</span>
+                    </a>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <p class="px-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4">Preferencias</p>
+                <div class="space-y-1">
+                    <a href="configuracion.html" class="group flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800/50 hover:text-white rounded-xl transition-all duration-200">
+                        <span class="material-symbols-outlined transition-transform group-hover:scale-110">settings</span>
+                        <span class="font-bold text-sm tracking-tight">Configuración</span>
+                    </a>
+                </div>
+            </div>
         </nav>
-        <div class="pt-6 border-t border-slate-800">
+
+        <div class="pt-6 border-t border-slate-800 mt-auto">
             <div class="bg-slate-800/50 p-4 rounded-2xl flex items-center gap-3 mb-2">
-                <div class="size-10 rounded-full bg-primary flex items-center justify-center font-bold text-xs text-white">QA</div>
+                <div class="size-10 rounded-xl bg-primary flex items-center justify-center font-bold text-xs text-white shadow-inner">QA</div>
                 <div class="flex-1 overflow-hidden">
                     <p id="user-name-display" class="text-sm font-bold truncate text-white">Cargando...</p>
                 </div>
             </div>
-            <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl"><span class="material-symbols-outlined">logout</span> <span class="font-semibold text-sm">Salir</span></a>
+            <a href="index.html" class="group flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-all duration-200">
+                <span class="material-symbols-outlined transition-transform group-hover:translate-x-1">logout</span>
+                <span class="font-bold text-sm tracking-tight">Salir</span>
+            </a>
         </div>
     </aside>
 
     <main class="flex-1 overflow-y-auto">
         <header class="bg-white/70 backdrop-blur-xl border-b border-slate-200/50 h-20 px-6 md:px-10 flex items-center justify-between sticky top-0 z-40">
             <div class="flex items-center gap-4">
-                <button onclick="toggleSidebar()" class="lg:hidden p-2 text-slate-600"><span class="material-symbols-outlined">menu</span></button>
-                <h2 class="text-xl font-bold text-slate-800">Mi Billetera</h2>
+                <button onclick="toggleSidebar()" class="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg">
+                    <span class="material-symbols-outlined">menu</span>
+                </button>
+                <h2 class="text-xl font-bold text-slate-800 tracking-tight">Mi Billetera</h2>
             </div>
-            <button onclick="editingCardId=null; document.getElementById('form-tarjeta').reset(); toggleModal('modal-tarjeta')" class="bg-primary text-white text-[10px] font-black uppercase tracking-widest px-6 py-3.5 rounded-2xl shadow-xl">+ Nueva Tarjeta</button>
+            <button onclick="editingCardId=null; document.getElementById('form-tarjeta').reset(); toggleModal('modal-tarjeta')" class="bg-primary text-white text-[10px] font-black uppercase tracking-widest px-6 py-3.5 rounded-2xl shadow-xl hover:shadow-primary/20 transition-all">+ Nueva Tarjeta</button>
         </header>
 
         <div class="p-6 md:p-10 max-w-7xl mx-auto space-y-10">
             <div id="cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
-
             <div class="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl overflow-hidden">
                 <div class="p-8 border-b border-slate-50"><h3 class="font-black text-slate-800 text-sm uppercase tracking-widest">Resumen Financiero</h3></div>
                 <div class="overflow-x-auto">
@@ -296,12 +328,10 @@
                     <option>Falabella (Verde)</option><option>Falabella (Negro)</option><option>Falabella (Dorada)</option><option>Santander (Rojo)</option><option>Chile (Azul)</option><option>BCI (Azul)</option><option>Itau (Naranja)</option><option>Scotiabank (Rojo)</option><option>Estado (Pato)</option><option>General (Gris)</option>
                 </select>
             </div>
-            
             <div id="seccion-principal">
                 <label class="text-[11px] font-black text-primary uppercase mb-2 block ml-1">Saldo Disponible Actual (Monto Real)</label>
                 <input id="card-disponible" type="number" required class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold ring-2 ring-primary/20">
             </div>
-
             <div id="seccion-credito" class="space-y-6 transition-all">
                 <div class="grid grid-cols-3 gap-4">
                     <input id="card-limite" type="number" placeholder="Cupo Total" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold ring-1 ring-slate-200">
@@ -313,12 +343,10 @@
                     <input id="card-cierre" type="number" placeholder="Día Cierre" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold ring-1 ring-slate-200">
                 </div>
             </div>
-
             <select id="card-tipo" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold ring-1 ring-slate-200">
                 <option>Visa</option><option>Mastercard</option>
             </select>
             <input id="card-fecha-pago" type="date" class="hidden">
-            
             <button type="submit" class="w-full bg-primary text-white py-5 rounded-3xl font-black uppercase tracking-widest text-xs shadow-xl">Confirmar y Guardar</button>
         </form>
     </div>
