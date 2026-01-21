@@ -3,15 +3,15 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>QuantyA - Gestión de Movimientos</title>
+    <title>QuantyA - Movimientos</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-    
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCO6WXu9iZsyEUmNNxrE4oWToLYY8wl-y4",
@@ -26,93 +26,162 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getDatabase(app);
+        
         let currentUser = null;
-        let todosLosMovimientos = [];
-
-        window.toggleSidebar = () => {
-            document.getElementById('sidebar').classList.toggle('-translate-x-full');
-            document.getElementById('overlay').classList.toggle('hidden');
-        };
+        let movimientosBase = [];
+        let editNodeId = null;
+        let pagosConfiguracion = {};
+        let tarjetasBilletera = {};
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
                 document.getElementById('user-name-display').innerText = user.displayName || "Usuario";
-                cargarDatos();
+                iniciarSincronizacion();
             } else {
                 window.location.href = "index.html";
             }
         });
 
-        function cargarDatos() {
-            // Escucha global de movimientos (Ingresos, Gastos, Cuotas de Tarjeta)
+        function iniciarSincronizacion() {
+            // Sincronizar Listas para Filtros y Modal
+            onValue(ref(db, `usuarios/${currentUser.uid}/listas`), (snapshot) => {
+                if (snapshot.exists()) {
+                    const listas = snapshot.val();
+                    pagosConfiguracion = listas.pago || {};
+                    llenarSelect('filter-categoria', listas.categoria, "Todas las Categorías");
+                    llenarSelect('modal-categoria', listas.categoria);
+                    llenarSelect('modal-tipo', listas.tipo);
+                    llenarSelect('modal-subcategoria', listas.sub_categoria);
+                    llenarSelect('modal-recurrente', listas.recurrente);
+                    actualizarSelectsPagoMaestro();
+                }
+            });
+
+            // Sincronizar Tarjetas
+            onValue(ref(db, `usuarios/${currentUser.uid}/tarjetas`), (snapshot) => {
+                tarjetasBilletera = snapshot.val() || {};
+                actualizarSelectsPagoMaestro();
+            });
+
+            // Sincronizar Movimientos
             onValue(ref(db, `usuarios/${currentUser.uid}/movimientos`), (snapshot) => {
-                todosLosMovimientos = [];
-                snapshot.forEach((child) => {
-                    todosLosMovimientos.push({ id: child.key, ...child.val() });
+                movimientosBase = [];
+                snapshot.forEach(child => {
+                    movimientosBase.push({ id: child.key, ...child.val() });
                 });
-                // Ordenar por fecha descendente
-                todosLosMovimientos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-                filtrarYRenderizar();
+                movimientosBase.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+                filtrarMovimientos();
             });
         }
 
-        window.filtrarYRenderizar = () => {
-            const fMes = document.getElementById('filter-mes').value;
-            const fCat = document.getElementById('filter-categoria').value.toLowerCase();
-            const fPago = document.getElementById('filter-pago').value.toLowerCase();
-            const fBusqueda = document.getElementById('search-input').value.toLowerCase();
+        function llenarSelect(id, datos, defaultText = null) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            let html = defaultText ? `<option value="">${defaultText}</option>` : '';
+            Object.values(datos).forEach(d => {
+                html += `<option value="${d.nombre}">${d.nombre}</option>`;
+            });
+            el.innerHTML = html;
+        }
 
-            const filtrados = todosLosMovimientos.filter(m => {
-                const coincideMes = fMes ? m.fecha.startsWith(fMes) : true;
-                const coincideCat = fCat ? (m.categoria || "").toLowerCase().includes(fCat) : true;
-                const coincidePago = fPago ? (m.pago || "").toLowerCase().includes(fPago) : true;
-                const coincideBusqueda = fBusqueda ? (m.concepto || "").toLowerCase().includes(fBusqueda) : true;
-                return coincideMes && coincideCat && coincidePago && coincideBusqueda;
+        function actualizarSelectsPagoMaestro() {
+            const ids = ['filter-pago', 'modal-pago'];
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                let html = id.includes('filter') ? '<option value="">Todos los Pagos</option>' : '';
+                Object.values(pagosConfiguracion).forEach(p => { html += `<option value="${p.nombre}">${p.nombre}</option>`; });
+                Object.values(tarjetasBilletera).forEach(t => { html += `<option value="${t.nombre}">💳 ${t.nombre}</option>`; });
+                el.innerHTML = html;
+            });
+        }
+
+        window.filtrarMovimientos = () => {
+            const search = document.getElementById('search-input').value.toLowerCase();
+            const cat = document.getElementById('filter-categoria').value;
+            const pago = document.getElementById('filter-pago').value;
+
+            const filtrados = movimientosBase.filter(m => {
+                const matchSearch = m.concepto.toLowerCase().includes(search);
+                const matchCat = cat === "" || m.categoria === cat;
+                const matchPago = pago === "" || m.pago === pago || (pago.includes('💳') && m.pago === pago.replace('💳 ', ''));
+                return matchSearch && matchCat && matchPago;
             });
 
-            const body = document.getElementById('table-body');
-            if (filtrados.length === 0) {
-                body.innerHTML = `<tr><td colspan="4" class="py-10 text-center text-slate-400 italic">No se encontraron movimientos</td></tr>`;
-                return;
-            }
+            renderTable(filtrados);
+        };
 
-            body.innerHTML = filtrados.map(m => {
-                const esIngreso = m.tipo?.toLowerCase().includes('ingreso') || m.tipo?.toLowerCase().includes('venta');
-                const montoClase = esIngreso ? 'text-emerald-500' : 'text-red-500';
-                const simbolo = esIngreso ? '+' : '-';
-                
+        function renderTable(datos) {
+            const body = document.getElementById('table-body');
+            body.innerHTML = datos.map(m => {
+                const isIngreso = m.tipo.toLowerCase().includes('ingreso') || m.tipo.toLowerCase().includes('venta');
+                const dataString = encodeURIComponent(JSON.stringify(m));
                 return `
                     <tr class="hover:bg-slate-50 transition-colors border-b border-slate-100 group">
-                        <td class="px-4 md:px-8 py-5 text-[10px] md:text-sm font-medium text-slate-500">${m.fecha}</td>
-                        <td class="px-4 md:px-6 py-5">
-                            <div class="flex flex-col">
-                                <span class="text-xs md:text-sm font-bold text-slate-800">${m.concepto}</span>
-                                <span class="text-[8px] md:text-[10px] text-slate-400 uppercase font-black tracking-widest">${m.categoria || 'Sin Categoría'}</span>
-                            </div>
+                        <td class="px-6 py-4 text-xs font-semibold text-slate-500">${m.fecha}</td>
+                        <td class="px-6 py-4">
+                            <p class="text-sm font-bold text-slate-800">${m.concepto}</p>
+                            <p class="text-[9px] font-black text-primary uppercase">${m.pago}</p>
                         </td>
-                        <td class="px-4 md:px-6 py-5 text-right font-black text-xs md:text-sm ${montoClase}">
-                            ${simbolo} $${new Intl.NumberFormat('es-CL').format(m.monto)}
+                        <td class="px-6 py-4"><span class="bg-slate-100 text-slate-600 text-[9px] px-2 py-1 rounded-lg font-black uppercase">${m.categoria}</span></td>
+                        <td class="px-6 py-4 text-sm font-black text-right ${isIngreso ? 'text-emerald-500' : 'text-red-500'}">
+                            $${new Intl.NumberFormat('es-CL').format(m.monto)}
                         </td>
-                        <td class="px-4 md:px-8 py-5 text-right hidden sm:table-cell">
-                            <div class="flex items-center justify-end gap-2">
-                                <span class="inline-block px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter bg-slate-100 text-slate-600 border border-slate-200">
-                                    ${m.pago}
-                                </span>
-                                <button onclick="eliminarMovimiento('${m.id}')" class="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-all">
-                                    <span class="material-symbols-outlined text-sm">delete</span>
-                                </button>
-                            </div>
+                        <td class="px-6 py-4 text-right">
+                            <button onclick="abrirModalEditar('${m.id}', '${dataString}')" class="p-2 hover:bg-primary/10 text-slate-400 hover:text-primary rounded-xl transition-all">
+                                <span class="material-symbols-outlined text-lg">edit</span>
+                            </button>
                         </td>
                     </tr>
                 `;
             }).join('');
+        }
+
+        window.abrirModalEditar = (id, dataStr) => {
+            const m = JSON.parse(decodeURIComponent(dataStr));
+            editNodeId = id;
+            document.getElementById('modal-concepto').value = m.concepto;
+            document.getElementById('modal-monto').value = new Intl.NumberFormat('es-CL').format(m.monto);
+            document.getElementById('modal-fecha').value = m.fecha;
+            document.getElementById('modal-tipo').value = m.tipo;
+            document.getElementById('modal-categoria').value = m.categoria;
+            document.getElementById('modal-pago').value = m.pago;
+            document.getElementById('edit-modal').classList.remove('hidden', 'opacity-0');
+            document.getElementById('edit-modal-content').classList.remove('scale-95');
         };
 
-        window.eliminarMovimiento = (id) => {
-            if(confirm("¿Seguro que quieres eliminar este registro?")) {
-                remove(ref(db, `usuarios/${currentUser.uid}/movimientos/${id}`));
-            }
+        window.cerrarModal = () => {
+            document.getElementById('edit-modal').classList.add('hidden', 'opacity-0');
+            document.getElementById('edit-modal-content').classList.add('scale-95');
+            editNodeId = null;
+        };
+
+        window.guardarEdicion = async (e) => {
+            e.preventDefault();
+            const monto = parseInt(document.getElementById('modal-monto').value.replace(/\./g, ""));
+            const updateData = {
+                concepto: document.getElementById('modal-concepto').value,
+                monto: monto,
+                fecha: document.getElementById('modal-fecha').value,
+                tipo: document.getElementById('modal-tipo').value,
+                categoria: document.getElementById('modal-categoria').value,
+                pago: document.getElementById('modal-pago').value,
+                subcategoria: document.getElementById('modal-subcategoria').value,
+                recurrente: document.getElementById('modal-recurrente').value
+            };
+            await update(ref(db, `usuarios/${currentUser.uid}/movimientos/${editNodeId}`), updateData);
+            cerrarModal();
+        };
+
+        window.formatMoney = (input) => {
+            let val = input.value.replace(/\D/g, "");
+            if (val) input.value = new Intl.NumberFormat('es-CL').format(val);
+        };
+
+        window.toggleSidebar = () => {
+            document.getElementById('sidebar').classList.toggle('-translate-x-full');
+            document.getElementById('overlay').classList.toggle('hidden');
         };
     </script>
 
@@ -121,98 +190,136 @@
             theme: {
                 extend: {
                     colors: { "primary": "#176282" },
-                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                    fontFamily: { sans: ["Inter", "sans-serif"] },
                 }
             }
         }
     </script>
     <style type="text/tailwindcss">
-        body { -webkit-font-smoothing: antialiased; }
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300; }
-        .material-symbols-outlined.font-fill { font-variation-settings: 'FILL' 1, 'wght' 400; }
+        .material-symbols-outlined.fill { font-variation-settings: 'FILL' 1, 'wght' 400; }
     </style>
 </head>
 <body class="bg-[#fcfdfe] text-slate-700">
 
-<div id="overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/50 z-40 hidden lg:hidden backdrop-blur-sm"></div>
+<div id="overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/50 z-40 hidden backdrop-blur-sm"></div>
 
-<div class="flex h-screen overflow-hidden">
-    
+<div id="edit-modal" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm hidden transition-all duration-300">
+    <div id="edit-modal-content" class="bg-white w-full max-w-lg rounded-[2.5rem] p-8 md:p-10 shadow-2xl transform transition-all scale-95">
+        <div class="flex justify-between items-center mb-8">
+            <h3 class="text-xl font-black flex items-center gap-2"><span class="material-symbols-outlined text-primary">edit_note</span> Editar Movimiento</h3>
+            <button onclick="cerrarModal()" class="size-10 bg-slate-100 rounded-full flex items-center justify-center hover:bg-red-50 hover:text-red-500 transition-colors">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <form onsubmit="guardarEdicion(event)" class="space-y-4">
+            <div>
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Concepto</label>
+                <input id="modal-concepto" class="w-full bg-slate-50 border-slate-100 rounded-2xl text-sm p-4 font-medium" required/>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Monto</label>
+                    <input id="modal-monto" oninput="formatMoney(this)" class="w-full bg-slate-50 border-slate-100 rounded-2xl text-sm font-black p-4 text-primary" required/>
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Fecha</label>
+                    <input id="modal-fecha" type="date" class="w-full bg-slate-50 border-slate-100 rounded-2xl text-sm p-4" required/>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Tipo</label>
+                    <select id="modal-tipo" class="w-full bg-slate-50 border-slate-100 rounded-2xl text-xs font-bold p-4"></select>
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Pago</label>
+                    <select id="modal-pago" class="w-full bg-slate-50 border-slate-100 rounded-2xl text-xs font-bold p-4"></select>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Categoría</label>
+                    <select id="modal-categoria" class="w-full bg-slate-50 border-slate-100 rounded-2xl text-xs p-4"></select>
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Subcategoría</label>
+                    <select id="modal-subcategoria" class="w-full bg-slate-50 border-slate-100 rounded-2xl text-xs p-4"></select>
+                </div>
+            </div>
+            <div class="hidden">
+                <select id="modal-recurrente"></select>
+            </div>
+            <button type="submit" class="w-full bg-primary text-white font-black py-5 rounded-2xl text-[10px] uppercase tracking-widest shadow-lg hover:shadow-primary/20 transition-all mt-4">Actualizar Movimiento</button>
+        </form>
+    </div>
+</div>
+
+<div class="flex h-screen overflow-hidden relative">
     <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 w-72 bg-[#0f172a] text-white flex flex-col shrink-0 border-r border-slate-800 p-6 z-50 transition-transform duration-300 -translate-x-full lg:translate-x-0">
-        <div class="flex items-center justify-between mb-8">
+        <div class="flex items-center justify-between lg:block mb-8">
             <div class="flex items-center gap-3 px-2">
                 <div class="size-10 bg-primary rounded-xl flex items-center justify-center text-white">
-                    <span class="material-symbols-outlined text-2xl font-fill">account_balance_wallet</span>
+                    <span class="material-symbols-outlined text-2xl fill">account_balance_wallet</span>
                 </div>
                 <h1 class="text-xl font-black tracking-tight">QuantyA</h1>
             </div>
             <button onclick="toggleSidebar()" class="lg:hidden p-2 text-slate-400"><span class="material-symbols-outlined">close</span></button>
         </div>
-
         <nav class="space-y-1 flex-1">
-            <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">dashboard</span> <span class="font-semibold text-sm">Panel</span></a>
-            <a href="billetera.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">wallet</span> <span class="font-semibold text-sm">Billetera</span></a>
-            <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20"><span class="material-symbols-outlined font-fill">swap_horiz</span> <span class="font-bold text-sm">Movimientos</span></a>
-            <a href="analisis.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">analytics</span> <span class="font-semibold text-sm">Análisis</span></a>
-            <a href="metas.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">track_changes</span> <span class="font-semibold text-sm">Metas</span></a>
-            <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">settings</span> <span class="font-semibold text-sm">Configuración</span></a>
+            <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
+                <span class="material-symbols-outlined">dashboard</span> <span class="font-semibold text-sm">Panel</span>
+            </a>
+            <a href="billetera.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl">
+                <span class="material-symbols-outlined">wallet</span> <span class="font-semibold text-sm">Billetera</span>
+            </a>
+            <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20">
+                <span class="material-symbols-outlined fill">swap_horiz</span> <span class="font-bold text-sm">Movimientos</span>
+            </a>
+            <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl">
+                <span class="material-symbols-outlined">settings</span> <span class="font-semibold text-sm">Configuración</span>
+            </a>
         </nav>
-
         <div class="pt-6 border-t border-slate-800">
-            <div class="bg-slate-800/50 p-4 rounded-2xl flex items-center gap-3 mb-2">
-                <div class="size-10 rounded-full bg-primary flex items-center justify-center font-bold text-xs text-white">QA</div>
-                <div class="flex-1 overflow-hidden">
-                    <p id="user-name-display" class="text-sm font-bold truncate text-white">Usuario</p>
-                    <p class="text-[9px] text-slate-500 font-black uppercase">Mi Perfil</p>
-                </div>
+            <div class="bg-slate-800/50 p-4 rounded-2xl flex items-center gap-3">
+                <div id="user-name-display" class="text-sm font-bold truncate">Usuario</div>
             </div>
-            <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors"><span class="material-symbols-outlined">logout</span> <span class="font-semibold text-sm">Salir</span></a>
         </div>
     </aside>
 
     <main class="flex-1 overflow-y-auto">
         <header class="sticky top-0 z-40 h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 md:px-10 flex items-center justify-between">
             <div class="flex items-center gap-4">
-                <button onclick="toggleSidebar()" class="lg:hidden p-2 bg-slate-100 rounded-xl text-slate-600"><span class="material-symbols-outlined">menu</span></button>
-                <h2 class="text-lg md:text-2xl font-black tracking-tight text-slate-800">Historial de Movimientos</h2>
-            </div>
-            <div class="relative w-40 md:w-64">
-                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl font-light">search</span>
-                <input id="search-input" oninput="filtrarYRenderizar()" class="w-full pl-10 pr-4 py-2 bg-slate-100/50 border-none rounded-2xl text-sm font-medium" placeholder="Buscar concepto...">
+                <button onclick="toggleSidebar()" class="lg:hidden p-2 bg-slate-100 rounded-xl"><span class="material-symbols-outlined">menu</span></button>
+                <h2 class="text-lg md:text-2xl font-black tracking-tight text-slate-800">Historial</h2>
             </div>
         </header>
 
-        <div class="p-4 md:p-10 max-w-7xl mx-auto">
-            <section class="bg-white rounded-2xl border border-slate-200 shadow-sm mb-6 overflow-hidden">
-                <div class="p-6 md:p-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end">
-                    <div class="space-y-2">
-                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Mes</label>
-                        <input id="filter-mes" type="month" onchange="filtrarYRenderizar()" class="w-full rounded-xl border-slate-200 bg-slate-50 text-sm font-bold py-3 px-4 focus:ring-primary/20">
+        <div class="p-4 md:p-10 max-w-[1400px] mx-auto space-y-8">
+            <div class="bg-white p-6 md:p-8 rounded-[2rem] border border-slate-200 shadow-sm space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+                        <input id="search-input" oninput="filtrarMovimientos()" class="w-full pl-12 pr-4 py-4 bg-slate-50 border-none rounded-2xl text-sm font-medium focus:ring-4 focus:ring-primary/5" placeholder="Buscar concepto..."/>
                     </div>
-                    <div class="space-y-2">
-                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Categoría</label>
-                        <input id="filter-categoria" type="text" placeholder="Alimentación..." oninput="filtrarYRenderizar()" class="w-full rounded-xl border-slate-200 bg-slate-50 text-sm font-bold py-3 px-4">
-                    </div>
-                    <div class="space-y-2">
-                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Tarjeta / Método</label>
-                        <input id="filter-pago" type="text" placeholder="Visa, Efectivo..." oninput="filtrarYRenderizar()" class="w-full rounded-xl border-slate-200 bg-slate-50 text-sm font-bold py-3 px-4">
-                    </div>
-                    <button onclick="location.reload()" class="bg-slate-900 text-white text-[10px] font-black py-4 rounded-xl uppercase tracking-widest hover:bg-slate-800 transition-all">Limpiar</button>
+                    <select id="filter-categoria" onchange="filtrarMovimientos()" class="w-full bg-slate-50 border-none rounded-2xl text-sm font-bold p-4 focus:ring-4 focus:ring-primary/5"></select>
+                    <select id="filter-pago" onchange="filtrarMovimientos()" class="w-full bg-slate-50 border-none rounded-2xl text-sm font-bold p-4 focus:ring-4 focus:ring-primary/5"></select>
                 </div>
-            </section>
+            </div>
 
-            <div class="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden">
+            <div class="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left min-w-[500px]">
+                    <table class="w-full text-left min-w-[700px]">
                         <thead>
-                            <tr class="bg-slate-50/50 border-b border-slate-100">
-                                <th class="px-8 py-5 text-[9px] font-black text-slate-400 uppercase tracking-widest">Fecha</th>
-                                <th class="px-6 py-5 text-[9px] font-black text-slate-400 uppercase tracking-widest">Detalle y Categoría</th>
-                                <th class="px-6 py-5 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Monto</th>
-                                <th class="px-8 py-5 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right hidden sm:table-cell">Medio de Pago</th>
+                            <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                                <th class="px-8 py-6">Fecha</th>
+                                <th class="px-6 py-6">Detalle</th>
+                                <th class="px-6 py-6">Categoría</th>
+                                <th class="px-6 py-6 text-right">Monto</th>
+                                <th class="px-8 py-6 text-right">Acción</th>
                             </tr>
                         </thead>
-                        <tbody id="table-body" class="divide-y divide-slate-100">
+                        <tbody id="table-body" class="divide-y divide-slate-50">
                             </tbody>
                     </table>
                 </div>
@@ -220,6 +327,5 @@
         </div>
     </main>
 </div>
-
 </body>
 </html>
