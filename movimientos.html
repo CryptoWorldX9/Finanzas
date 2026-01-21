@@ -11,7 +11,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, onValue, push, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCO6WXu9iZsyEUmNNxrE4oWToLYY8wl-y4",
@@ -28,8 +28,8 @@
         const db = getDatabase(app);
         let currentUser = null;
         let todosLosMovimientos = [];
+        let misTarjetas = {};
 
-        // NAVEGACIÓN MÓVIL
         window.toggleSidebar = () => {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('overlay');
@@ -41,11 +41,49 @@
             if (user) {
                 currentUser = user;
                 document.getElementById('user-name-display').innerText = user.displayName || "Usuario";
+                cargarTarjetas(); // Nueva función
                 cargarDatos();
             } else {
                 window.location.href = "index.html";
             }
         });
+
+        // CARGAR TARJETAS PARA EL SELECTOR
+        function cargarTarjetas() {
+            onValue(ref(db, `usuarios/${currentUser.uid}/tarjetas`), (snapshot) => {
+                const select = document.getElementById('m-pago');
+                const data = snapshot.val();
+                misTarjetas = data || {};
+                
+                // Mantener opciones base y agregar tarjetas
+                select.innerHTML = `
+                    <option value="Efectivo">Efectivo</option>
+                    <option value="Debito">Débito / Transferencia</option>
+                `;
+                
+                if (data) {
+                    Object.keys(data).forEach(id => {
+                        const option = document.createElement('option');
+                        option.value = id; 
+                        option.textContent = `💳 ${data[id].nombre}`;
+                        select.appendChild(option);
+                    });
+                }
+            });
+        }
+
+        // LÓGICA DE CUOTAS (Se activa al cambiar el método de pago)
+        window.checkMetodo = () => {
+            const metodo = document.getElementById('m-pago').value;
+            const cuotasDiv = document.getElementById('div-cuotas');
+            // Si el valor seleccionado es un ID de tarjeta (existe en misTarjetas)
+            if (misTarjetas[metodo]) {
+                cuotasDiv.classList.remove('hidden');
+            } else {
+                cuotasDiv.classList.add('hidden');
+                document.getElementById('m-cuotas').value = "1";
+            }
+        };
 
         function cargarDatos() {
             onValue(ref(db, `usuarios/${currentUser.uid}/movimientos`), (snapshot) => {
@@ -57,6 +95,54 @@
                 filtrarYRenderizar();
             });
         }
+
+        // AGREGAR MOVIMIENTO CON LÓGICA DE TARJETAS Y CUOTAS
+        window.saveMovimiento = async () => {
+            const monto = parseFloat(document.getElementById('m-monto').value);
+            const concepto = document.getElementById('m-concepto').value;
+            const categoria = document.getElementById('m-categoria').value;
+            const fechaStr = document.getElementById('m-fecha').value;
+            const metodoId = document.getElementById('m-pago').value;
+            const numCuotas = parseInt(document.getElementById('m-cuotas').value) || 1;
+
+            if (!monto || !concepto) return alert("Completa los campos");
+
+            const nombrePago = misTarjetas[metodoId] ? misTarjetas[metodoId].nombre : metodoId;
+            const montoPorCuota = monto / numCuotas;
+
+            for (let i = 0; i < numCuotas; i++) {
+                const fechaCouta = new Date(fechaStr);
+                fechaCouta.setMonth(fechaCouta.getMonth() + i);
+                
+                const movimiento = {
+                    monto: montoPorCuota,
+                    concepto: numCuotas > 1 ? `${concepto} (${i + 1}/${numCuotas})` : concepto,
+                    categoria,
+                    fecha: fechaCouta.toISOString().split('T')[0],
+                    pago: nombrePago,
+                    tipo: 'Gasto'
+                };
+                await push(ref(db, `usuarios/${currentUser.uid}/movimientos`), movimiento);
+            }
+
+            // Si es tarjeta, actualizar el saldo usado de la tarjeta (Monto Total)
+            if (misTarjetas[metodoId]) {
+                const nuevoSaldo = (misTarjetas[metodoId].saldoUsado || 0) + monto;
+                await update(ref(db, `usuarios/${currentUser.uid}/tarjetas/${metodoId}`), {
+                    saldoUsado: nuevoSaldo
+                });
+            }
+
+            toggleModal('modal-movimiento');
+            document.getElementById('form-movimiento').reset();
+            document.getElementById('div-cuotas').classList.add('hidden');
+        };
+
+        window.toggleModal = (id) => {
+            const m = document.getElementById(id);
+            m.classList.toggle('hidden');
+            m.classList.toggle('flex');
+        };
 
         window.filtrarYRenderizar = () => {
             const fMes = document.getElementById('filter-mes').value;
@@ -74,7 +160,7 @@
 
             const body = document.getElementById('table-body');
             body.innerHTML = filtrados.map(m => {
-                const isIngreso = m.tipo.toLowerCase().includes('ingreso') || m.tipo.toLowerCase().includes('venta');
+                const isIngreso = m.tipo?.toLowerCase().includes('ingreso') || m.tipo?.toLowerCase().includes('venta');
                 return `
                     <tr class="hover:bg-slate-50 transition-colors border-b border-slate-100">
                         <td class="px-4 md:px-8 py-5 text-[10px] md:text-sm font-medium text-slate-500">${m.fecha}</td>
@@ -136,21 +222,19 @@
 
         <nav class="space-y-1 flex-1">
             <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">dashboard</span> <span class="font-semibold text-sm">Panel</span></a>
+            <a href="billetera.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">wallet</span> <span class="font-semibold text-sm">Billetera</span></a>
             <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 transition-all"><span class="material-symbols-outlined font-fill">swap_horiz</span> <span class="font-bold text-sm">Movimientos</span></a>
-            <a href="analisis.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">analytics</span> <span class="font-semibold text-sm">Análisis</span></a>
-            <a href="metas.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">track_changes</span> <span class="font-semibold text-sm">Metas</span></a>
-            <a href="reportes.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">description</span> <span class="font-semibold text-sm">Reportes</span></a>
             <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">settings</span> <span class="font-semibold text-sm">Configuración</span></a>
         </nav>
 
         <div class="pt-6 border-t border-slate-800">
-            <a href="cuenta.html" class="bg-slate-800/50 p-4 rounded-2xl flex items-center gap-3 mb-2 hover:bg-slate-800 transition-all border border-transparent group">
+            <div class="bg-slate-800/50 p-4 rounded-2xl flex items-center gap-3 mb-2">
                 <div class="size-10 rounded-full bg-primary flex items-center justify-center font-bold text-xs text-white">QA</div>
                 <div class="flex-1 overflow-hidden">
                     <p id="user-name-display" class="text-sm font-bold truncate text-white">Usuario</p>
                     <p class="text-[9px] text-slate-500 font-black uppercase tracking-tighter">Mi Perfil</p>
                 </div>
-            </a>
+            </div>
             <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors w-full"><span class="material-symbols-outlined">logout</span> <span class="font-semibold text-sm">Salir</span></a>
         </div>
     </aside>
@@ -163,60 +247,82 @@
                 </button>
                 <div>
                     <h2 class="text-lg md:text-2xl font-black tracking-tight text-slate-800">Movimientos</h2>
-                    <p class="hidden md:block text-xs font-bold text-slate-400 uppercase tracking-widest italic leading-none mt-1">Registros Pro</p>
                 </div>
             </div>
-            <div class="flex items-center gap-4">
-                <div class="relative w-40 md:w-64 lg:w-80">
-                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl font-light">search</span>
-                    <input id="search-input" oninput="filtrarYRenderizar()" class="w-full pl-10 pr-4 py-2 bg-slate-100/50 border-none rounded-2xl text-sm focus:ring-4 focus:ring-primary/5 transition-all font-medium" placeholder="Buscar..."/>
-                </div>
-            </div>
+            <button onclick="toggleModal('modal-movimiento')" class="bg-primary text-white text-[10px] font-black uppercase tracking-widest px-6 py-3 rounded-xl shadow-lg shadow-primary/20">+ Nuevo</button>
         </header>
 
         <div class="p-4 md:p-10 max-w-7xl mx-auto">
             <section class="bg-white rounded-2xl border border-slate-200 shadow-sm mb-6 md:mb-12 overflow-hidden">
-                <div class="bg-slate-50 border-b border-slate-100 px-6 py-3 flex items-center gap-3">
-                    <span class="material-symbols-outlined text-primary text-xl">filter_list</span>
-                    <span class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Filtros Rápidos</span>
-                </div>
                 <div class="p-6 md:p-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 items-end">
                     <div class="space-y-2">
-                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Período</label>
-                        <input id="filter-mes" type="month" onchange="filtrarYRenderizar()" class="w-full rounded-xl border-slate-200 bg-slate-50 text-sm font-bold py-2.5 md:py-3 px-4 focus:border-primary transition-all">
+                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Buscar</label>
+                        <input id="search-input" oninput="filtrarYRenderizar()" class="w-full rounded-xl border-slate-200 bg-slate-50 text-sm font-bold py-3 px-4" placeholder="Concepto...">
                     </div>
                     <div class="space-y-2">
-                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Categoría</label>
-                        <input id="filter-categoria" type="text" placeholder="Ej: Alimentación" oninput="filtrarYRenderizar()" class="w-full rounded-xl border-slate-200 bg-slate-50 text-sm font-bold py-2.5 md:py-3 px-4 focus:border-primary transition-all">
+                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Período</label>
+                        <input id="filter-mes" type="month" onchange="filtrarYRenderizar()" class="w-full rounded-xl border-slate-200 bg-slate-50 text-sm font-bold py-3 px-4">
                     </div>
                     <div class="space-y-2">
                         <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Método</label>
-                        <input id="filter-pago" type="text" placeholder="Ej: Tarjeta" oninput="filtrarYRenderizar()" class="w-full rounded-xl border-slate-200 bg-slate-50 text-sm font-bold py-2.5 md:py-3 px-4 focus:border-primary transition-all">
+                        <input id="filter-pago" type="text" placeholder="Ej: Visa" oninput="filtrarYRenderizar()" class="w-full rounded-xl border-slate-200 bg-slate-50 text-sm font-bold py-3 px-4">
                     </div>
-                    <button onclick="location.reload()" class="bg-[#0f172a] hover:bg-slate-800 text-white text-[10px] font-black py-3 md:py-4 rounded-xl transition-all uppercase tracking-widest">
-                        Resetear
-                    </button>
+                    <button onclick="location.reload()" class="bg-[#0f172a] text-white text-[10px] font-black py-4 rounded-xl uppercase tracking-widest">Reset</button>
                 </div>
             </section>
 
-            <div class="bg-white rounded-[1.5rem] md:rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden">
+            <div class="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="w-full text-left min-w-[400px]">
                         <thead>
-                            <tr class="bg-slate-50/50 border-b border-slate-100">
-                                <th class="px-4 md:px-8 py-5 text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">Fecha</th>
-                                <th class="px-4 md:px-6 py-5 text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">Detalle</th>
-                                <th class="px-4 md:px-6 py-5 text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Monto</th>
-                                <th class="px-4 md:px-8 py-5 text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest text-right hidden sm:table-cell">Método</th>
+                            <tr class="bg-slate-50/50 border-b border-slate-100 uppercase text-[9px] font-black text-slate-400">
+                                <th class="px-8 py-5">Fecha</th>
+                                <th class="px-6 py-5">Detalle</th>
+                                <th class="px-6 py-5 text-right">Monto</th>
+                                <th class="px-8 py-5 text-right hidden sm:table-cell">Método</th>
                             </tr>
                         </thead>
-                        <tbody id="table-body" class="divide-y divide-slate-100">
-                        </tbody>
+                        <tbody id="table-body" class="divide-y divide-slate-100"></tbody>
                     </table>
                 </div>
             </div>
         </div>
     </main>
 </div>
+
+<div id="modal-movimiento" class="fixed inset-0 z-[60] hidden items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+    <div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl border border-slate-200">
+        <h3 class="text-xl font-black mb-6">Registrar Gasto</h3>
+        <form id="form-movimiento" class="space-y-4" onsubmit="event.preventDefault(); saveMovimiento();">
+            <input id="m-concepto" type="text" placeholder="Concepto" required class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-sm">
+            <div class="grid grid-cols-2 gap-4">
+                <input id="m-monto" type="number" placeholder="Monto" required class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-sm">
+                <input id="m-fecha" type="date" required class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-sm">
+            </div>
+            <input id="m-categoria" type="text" placeholder="Categoría (Ej: Hogar)" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-sm">
+            
+            <div class="space-y-2">
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Método de Pago</label>
+                <select id="m-pago" onchange="checkMetodo()" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-sm">
+                    </select>
+            </div>
+
+            <div id="div-cuotas" class="hidden space-y-2 bg-primary/5 p-4 rounded-2xl border border-primary/10">
+                <label class="text-[10px] font-black text-primary uppercase tracking-widest px-1">Plan de Cuotas</label>
+                <select id="m-cuotas" class="w-full rounded-xl bg-white border-none p-3 font-bold text-sm">
+                    <option value="1">1 Cuota (Sin diferir)</option>
+                    <option value="3">3 Cuotas</option>
+                    <option value="6">6 Cuotas</option>
+                    <option value="12">12 Cuotas</option>
+                    <option value="24">24 Cuotas</option>
+                </select>
+            </div>
+
+            <button type="submit" class="w-full bg-primary text-white py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] mt-4 shadow-lg shadow-primary/30">Guardar Movimiento</button>
+            <button type="button" onclick="toggleModal('modal-movimiento')" class="w-full text-slate-400 text-[10px] font-black uppercase py-2">Cancelar</button>
+        </form>
+    </div>
+</div>
+
 </body>
 </html>
