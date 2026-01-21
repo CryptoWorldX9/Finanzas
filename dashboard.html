@@ -36,6 +36,14 @@
             "Usa transferencias para evitar comisiones.", "Mantén un fondo de emergencia de 3 meses.", "Evita compras impulsivas esperando 24h."
         ];
 
+        // FUNCIONES DE NAVEGACIÓN MÓVIL
+        window.toggleSidebar = () => {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        };
+
         function iniciarCarruselSugerencias() {
             const textEl = document.getElementById('sugerencia-texto');
             let i = 0;
@@ -114,18 +122,17 @@
                 const dataString = encodeURIComponent(JSON.stringify(data));
                 return `
                     <tr class="hover:bg-slate-50 transition-colors border-b border-slate-100">
-                        <td class="px-8 py-4 text-xs font-medium text-slate-400">${data.fecha}</td>
-                        <td class="px-6 py-4">
-                            <p class="text-sm font-bold text-slate-800 truncate max-w-[150px]">${data.concepto}</p>
-                            <p class="text-[9px] font-black uppercase text-primary tracking-tighter">${data.pago}</p>
+                        <td class="px-4 md:px-8 py-4 text-[10px] md:text-xs font-medium text-slate-400">${data.fecha}</td>
+                        <td class="px-4 md:px-6 py-4">
+                            <p class="text-xs md:text-sm font-bold text-slate-800 truncate max-w-[100px] md:max-w-[150px]">${data.concepto}</p>
+                            <p class="text-[8px] md:text-[9px] font-black uppercase text-primary tracking-tighter">${data.pago}</p>
                         </td>
-                        <td class="px-6 py-4"><span class="bg-slate-100 text-slate-600 text-[9px] px-2 py-1 rounded-lg font-black uppercase">${data.categoria}</span></td>
-                        <td class="px-6 py-4 text-sm font-black text-right ${isIngreso ? 'text-emerald-500' : 'text-red-500'}">
+                        <td class="px-4 md:px-6 py-4 hidden md:table-cell"><span class="bg-slate-100 text-slate-600 text-[9px] px-2 py-1 rounded-lg font-black uppercase">${data.categoria}</span></td>
+                        <td class="px-4 md:px-6 py-4 text-xs md:text-sm font-black text-right ${isIngreso ? 'text-emerald-500' : 'text-red-500'}">
                             ${isIngreso ? '+' : '-'} $${new Intl.NumberFormat('es-CL').format(data.monto)}
                         </td>
-                        <td class="px-8 py-4 text-right space-x-1">
+                        <td class="px-4 md:px-8 py-4 text-right space-x-1">
                             <button onclick="prepararEdicion('${data.id}', '${dataString}')" class="p-1.5 hover:bg-primary/10 text-slate-400 hover:text-primary rounded-lg transition-colors"><span class="material-symbols-outlined text-lg">edit</span></button>
-                            <button onclick="eliminarMovimiento('${data.id}')" class="p-1.5 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-lg transition-colors"><span class="material-symbols-outlined text-lg">delete</span></button>
                         </td>
                     </tr>`;
             }).join('');
@@ -170,10 +177,6 @@
             e.target.reset();
         };
 
-        window.eliminarMovimiento = async (id) => {
-            if(confirm("¿Eliminar este registro?")) await remove(ref(db, `usuarios/${currentUser.uid}/movimientos/${id}`));
-        };
-
         window.prepararEdicion = (id, dataStr) => {
             const d = JSON.parse(decodeURIComponent(dataStr));
             editNodeId = id;
@@ -186,6 +189,7 @@
             document.getElementById('op-recurrente').value = d.recurrente;
             document.getElementById('op-fecha').value = d.fecha;
             document.getElementById('btn-submit').innerText = "Actualizar Registro";
+            window.scrollTo({ top: 0, behavior: 'smooth' });
             document.getElementById('op-concepto').focus();
         };
     </script>
@@ -205,13 +209,19 @@
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300; }
         .material-symbols-outlined.fill { font-variation-settings: 'FILL' 1, 'wght' 400; }
         #sugerencia-texto { transition: opacity 0.5s ease-in-out; }
+        /* Scrollbar suave para móvil */
+        .overflow-x-auto::-webkit-scrollbar { height: 4px; }
+        .overflow-x-auto::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
     </style>
 </head>
 <body class="bg-[#fcfdfe] text-slate-700">
 
-<div class="flex h-screen overflow-hidden">
-    <aside class="w-72 bg-[#0f172a] text-white flex flex-col shrink-0 border-r border-slate-800 p-6">
-        <div class="space-y-8 flex-1">
+<div id="overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/50 z-40 hidden lg:hidden backdrop-blur-sm"></div>
+
+<div class="flex h-screen overflow-hidden relative">
+    
+    <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 w-72 bg-[#0f172a] text-white flex flex-col shrink-0 border-r border-slate-800 p-6 z-50 transition-transform duration-300 -translate-x-full lg:translate-x-0">
+        <div class="flex items-center justify-between lg:block mb-8">
             <div class="flex items-center gap-3 px-2">
                 <div class="size-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
                     <span class="material-symbols-outlined text-2xl fill">account_balance_wallet</span>
@@ -221,143 +231,157 @@
                     <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Gestión Financiera</p>
                 </div>
             </div>
-            <nav class="space-y-1">
-                <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 transition-all">
-                    <span class="material-symbols-outlined fill">dashboard</span> 
-                    <span class="font-bold text-sm">Panel</span>
-                </a>
-                <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
-                    <span class="material-symbols-outlined">swap_horiz</span> 
-                    <span class="font-semibold text-sm">Movimientos</span>
-                </a>
-                <a href="analisis.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
-                    <span class="material-symbols-outlined">analytics</span> 
-                    <span class="font-semibold text-sm">Análisis</span>
-                </a>
-                <a href="metas.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
-                    <span class="material-symbols-outlined">track_changes</span> 
-                    <span class="font-semibold text-sm">Metas</span>
-                </a>
-                <a href="reportes.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
-                    <span class="material-symbols-outlined">description</span> 
-                    <span class="font-semibold text-sm">Reportes</span>
-                </a>
-                <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
-                    <span class="material-symbols-outlined">settings</span> 
-                    <span class="font-semibold text-sm">Configuración</span>
-                </a>
-            </nav>
+            <button onclick="toggleSidebar()" class="lg:hidden p-2 text-slate-400 hover:text-white">
+                <span class="material-symbols-outlined">close</span>
+            </button>
         </div>
+
+        <nav class="space-y-1 flex-1">
+            <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 transition-all">
+                <span class="material-symbols-outlined fill">dashboard</span> 
+                <span class="font-bold text-sm">Panel</span>
+            </a>
+            <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
+                <span class="material-symbols-outlined">swap_horiz</span> 
+                <span class="font-semibold text-sm">Movimientos</span>
+            </a>
+            <a href="analisis.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
+                <span class="material-symbols-outlined">analytics</span> 
+                <span class="font-semibold text-sm">Análisis</span>
+            </a>
+            <a href="metas.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
+                <span class="material-symbols-outlined">track_changes</span> 
+                <span class="font-semibold text-sm">Metas</span>
+            </a>
+            <a href="reportes.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
+                <span class="material-symbols-outlined">description</span> 
+                <span class="font-semibold text-sm">Reportes</span>
+            </a>
+            <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
+                <span class="material-symbols-outlined">settings</span> 
+                <span class="font-semibold text-sm">Configuración</span>
+            </a>
+        </nav>
+
         <div class="pt-6 border-t border-slate-800">
-            <a href="cuenta.html" class="bg-slate-800/50 p-4 rounded-2xl flex items-center gap-3 mb-2 hover:bg-slate-800 transition-all border border-transparent hover:border-primary/30 group">
-                <div class="size-10 rounded-full bg-primary flex items-center justify-center font-bold text-xs text-white shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">QA</div>
+            <a href="cuenta.html" class="bg-slate-800/50 p-4 rounded-2xl flex items-center gap-3 mb-2 hover:bg-slate-800 transition-all group">
+                <div class="size-10 rounded-full bg-primary flex items-center justify-center font-bold text-xs text-white">QA</div>
                 <div class="flex-1 overflow-hidden">
-                    <p id="user-name-display" class="text-sm font-bold truncate text-white">Cargando...</p>
+                    <p id="user-name-display" class="text-sm font-bold truncate text-white">Usuario</p>
                     <p class="text-[9px] text-slate-500 font-black uppercase tracking-tighter">Mi Perfil</p>
                 </div>
-                <span class="material-symbols-outlined text-slate-600 text-sm group-hover:text-primary transition-colors">chevron_right</span>
             </a>
-            
-            <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors w-full">
+            <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors">
                 <span class="material-symbols-outlined">logout</span> 
-                <span class="font-semibold text-sm">Cerrar Sesión</span>
+                <span class="font-semibold text-sm">Salir</span>
             </a>
         </div>
     </aside>
 
     <main class="flex-1 overflow-y-auto">
-        <header class="sticky top-0 z-40 h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 px-10 flex items-center justify-between">
-            <div>
-                <h2 class="text-2xl font-black tracking-tight text-slate-800">Panel Financiero</h2>
-                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest italic leading-none mt-1">Resumen Global de Activos</p>
-            </div>
+        <header class="sticky top-0 z-40 h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 md:px-10 flex items-center justify-between">
             <div class="flex items-center gap-4">
-                <div class="relative w-64 lg:w-80">
+                <button onclick="toggleSidebar()" class="lg:hidden p-2 bg-slate-100 rounded-xl text-slate-600">
+                    <span class="material-symbols-outlined">menu</span>
+                </button>
+                <div>
+                    <h2 class="text-lg md:text-2xl font-black tracking-tight text-slate-800">Panel</h2>
+                    <p class="hidden md:block text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Resumen Global</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button class="p-2.5 bg-slate-100 rounded-2xl text-slate-400 md:hidden">
+                    <span class="material-symbols-outlined">search</span>
+                </button>
+                <div class="relative hidden md:block w-64 lg:w-80">
                     <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl font-light">search</span>
-                    <input class="w-full pl-11 pr-4 py-2.5 bg-slate-100/50 border-none rounded-2xl text-sm focus:ring-4 focus:ring-primary/5 transition-all font-medium" placeholder="Buscar transacción..."/>
+                    <input class="w-full pl-11 pr-4 py-2 bg-slate-100/50 border-none rounded-2xl text-sm focus:ring-4 focus:ring-primary/5 font-medium" placeholder="Buscar..."/>
                 </div>
             </div>
         </header>
 
-        <div class="p-10 max-w-[1600px] mx-auto space-y-10">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div class="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-xl hover:shadow-emerald-500/5 transition-all group">
-                    <div class="flex items-center justify-between mb-6">
-                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ingresos Totales</p>
-                        <div class="p-3 bg-emerald-50 text-emerald-500 rounded-2xl group-hover:scale-110 transition-transform"><span class="material-symbols-outlined fill">trending_up</span></div>
+        <div class="p-4 md:p-10 max-w-[1600px] mx-auto space-y-6 md:space-y-10">
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8">
+                <div class="bg-white p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] border border-slate-200 shadow-sm">
+                    <div class="flex items-center justify-between mb-4 md:mb-6">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ingresos</p>
+                        <span class="text-emerald-500 material-symbols-outlined fill">trending_up</span>
                     </div>
-                    <p id="display-ingresos" class="text-3xl font-black text-slate-900 tracking-tighter">$ 0</p>
-                    <div class="mt-6 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden"><div id="bar-ingresos" class="h-full bg-emerald-500 w-0 transition-all duration-1000"></div></div>
+                    <p id="display-ingresos" class="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter">$ 0</p>
+                    <div class="mt-4 h-1 w-full bg-slate-100 rounded-full overflow-hidden"><div id="bar-ingresos" class="h-full bg-emerald-500 w-0 transition-all duration-1000"></div></div>
                 </div>
 
-                <div class="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-xl hover:shadow-red-500/5 transition-all group">
-                    <div class="flex items-center justify-between mb-6">
-                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gastos del Mes</p>
-                        <div class="p-3 bg-red-50 text-red-500 rounded-2xl group-hover:scale-110 transition-transform"><span class="material-symbols-outlined fill">trending_down</span></div>
+                <div class="bg-white p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] border border-slate-200 shadow-sm">
+                    <div class="flex items-center justify-between mb-4 md:mb-6">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gastos</p>
+                        <span class="text-red-500 material-symbols-outlined fill">trending_down</span>
                     </div>
-                    <p id="display-gastos" class="text-3xl font-black text-slate-900 tracking-tighter">$ 0</p>
-                    <div class="mt-6 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden"><div id="bar-gastos" class="h-full bg-red-500 w-0 transition-all duration-1000"></div></div>
+                    <p id="display-gastos" class="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter">$ 0</p>
+                    <div class="mt-4 h-1 w-full bg-slate-100 rounded-full overflow-hidden"><div id="bar-gastos" class="h-full bg-red-500 w-0 transition-all duration-1000"></div></div>
                 </div>
 
-                <div class="bg-white p-8 rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-xl hover:shadow-primary/5 transition-all group">
-                    <div class="flex items-center justify-between mb-6">
-                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Saldo Disponible</p>
-                        <div class="p-3 bg-primary/5 text-primary rounded-2xl group-hover:scale-110 transition-transform"><span class="material-symbols-outlined fill">account_balance</span></div>
+                <div class="bg-white p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] border border-slate-200 shadow-sm">
+                    <div class="flex items-center justify-between mb-4 md:mb-6">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Saldo</p>
+                        <span class="text-primary material-symbols-outlined fill">account_balance</span>
                     </div>
-                    <p id="display-saldo" class="text-3xl font-black text-slate-900 tracking-tighter">$ 0</p>
-                    <div class="mt-6 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden"><div id="bar-saldo" class="h-full bg-primary w-0 transition-all duration-1000"></div></div>
+                    <p id="display-saldo" class="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter">$ 0</p>
+                    <div class="mt-4 h-1 w-full bg-slate-100 rounded-full overflow-hidden"><div id="bar-saldo" class="h-full bg-primary w-0 transition-all duration-1000"></div></div>
                 </div>
             </div>
 
-            <div class="bg-gradient-to-r from-primary/10 to-transparent p-6 rounded-[2rem] border border-primary/10 flex items-center gap-6">
-                <div class="size-14 bg-white rounded-2xl flex items-center justify-center shadow-sm text-primary shrink-0">
-                    <span class="material-symbols-outlined text-3xl fill">lightbulb</span>
+            <div class="bg-gradient-to-r from-primary/10 to-transparent p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border border-primary/10 flex items-center gap-4 md:gap-6">
+                <div class="size-10 md:size-14 bg-white rounded-xl md:rounded-2xl flex items-center justify-center shadow-sm text-primary shrink-0">
+                    <span class="material-symbols-outlined text-2xl md:text-3xl fill">lightbulb</span>
                 </div>
                 <div>
-                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-1">QuantyA Smart AI</p>
-                    <p id="sugerencia-texto" class="text-sm font-semibold text-slate-600">Calculando tus indicadores financieros clave...</p>
+                    <p class="text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] text-primary">Smart AI</p>
+                    <p id="sugerencia-texto" class="text-xs md:text-sm font-semibold text-slate-600">Calculando indicadores...</p>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-5 gap-10">
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 md:gap-10">
                 <div class="lg:col-span-2">
-                    <div class="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-sm sticky top-28">
-                        <h3 class="text-xl font-black mb-8 flex items-center gap-3 tracking-tight"><span class="material-symbols-outlined text-primary fill">add_circle</span> Operación Rápida</h3>
-                        <form id="form-operacion" onsubmit="registrarOperacion(event)" class="space-y-5">
-                            <input id="op-concepto" class="w-full bg-slate-50 border-slate-100 rounded-2xl text-sm p-4 focus:ring-4 focus:ring-primary/5 transition-all font-medium" placeholder="¿En qué consistió?" required/>
-                            <input id="op-fecha" class="w-full bg-slate-50 border-slate-100 rounded-2xl text-sm p-4" type="date" required/>
-                            <div class="grid grid-cols-2 gap-4">
-                                <select id="op-tipo" class="w-full bg-slate-50 border-slate-100 rounded-2xl text-xs font-bold p-4 focus:ring-4 focus:ring-primary/5"></select>
-                                <input id="op-monto" oninput="formatMoneyInput(this)" class="w-full bg-slate-50 border-slate-100 rounded-2xl text-sm font-black p-4 text-primary focus:ring-4 focus:ring-primary/5" placeholder="$ 0" required/>
+                    <div class="bg-white p-6 md:p-10 rounded-[2rem] md:rounded-[2.5rem] border border-slate-200 shadow-sm">
+                        <h3 class="text-lg md:text-xl font-black mb-6 md:mb-8 flex items-center gap-3 tracking-tight">
+                            <span class="material-symbols-outlined text-primary fill">add_circle</span> Operación Rápida
+                        </h3>
+                        <form id="form-operacion" onsubmit="registrarOperacion(event)" class="space-y-4 md:space-y-5">
+                            <input id="op-concepto" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-sm p-4 font-medium" placeholder="¿Concepto?" required/>
+                            <input id="op-fecha" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-sm p-4" type="date" required/>
+                            <div class="grid grid-cols-2 gap-3 md:gap-4">
+                                <select id="op-tipo" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-xs font-bold p-4"></select>
+                                <input id="op-monto" oninput="formatMoneyInput(this)" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-sm font-black p-4 text-primary" placeholder="$ 0" required/>
                             </div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <select id="op-categoria" class="w-full bg-slate-50 border-slate-100 rounded-2xl text-xs p-4"></select>
-                                <select id="op-subcategoria" class="w-full bg-slate-50 border-slate-100 rounded-2xl text-xs p-4"></select>
+                            <div class="grid grid-cols-2 gap-3 md:gap-4">
+                                <select id="op-categoria" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-xs p-4"></select>
+                                <select id="op-subcategoria" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-xs p-4"></select>
                             </div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <select id="op-pago" class="w-full bg-slate-50 border-slate-100 rounded-2xl text-xs p-4"></select>
-                                <select id="op-recurrente" class="w-full bg-slate-50 border-slate-100 rounded-2xl text-xs p-4"></select>
+                            <div class="grid grid-cols-2 gap-3 md:gap-4">
+                                <select id="op-pago" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-xs p-4"></select>
+                                <select id="op-recurrente" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-xs p-4"></select>
                             </div>
-                            <button id="btn-submit" type="submit" class="w-full bg-[#0f172a] text-white font-black py-5 rounded-2xl text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-slate-900/10 hover:bg-slate-800 transition-all active:scale-95 mt-4">Registrar Movimiento</button>
+                            <button id="btn-submit" type="submit" class="w-full bg-[#0f172a] text-white font-black py-4 md:py-5 rounded-xl md:rounded-2xl text-[10px] uppercase tracking-widest shadow-lg hover:bg-slate-800 transition-all active:scale-95">Registrar</button>
                         </form>
                     </div>
                 </div>
 
                 <div class="lg:col-span-3">
-                    <div class="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden h-full">
-                        <div class="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                            <h3 class="font-black text-slate-800 uppercase tracking-widest text-[10px]">Movimientos Recientes</h3>
-                            <a href="movimientos.html" class="bg-white px-4 py-2 border border-slate-200 rounded-xl text-primary text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-white transition-all">Ver Historial</a>
+                    <div class="bg-white rounded-[2rem] md:rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="px-6 md:px-8 py-5 md:py-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                            <h3 class="font-black text-slate-800 uppercase tracking-widest text-[10px]">Recientes</h3>
+                            <a href="movimientos.html" class="bg-white px-3 py-1.5 border border-slate-200 rounded-lg text-primary text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-white transition-all">Ver Todo</a>
                         </div>
                         <div class="overflow-x-auto">
-                            <table class="w-full text-left">
+                            <table class="w-full text-left min-w-[500px]">
                                 <thead>
-                                    <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
-                                        <th class="px-8 py-5">Fecha</th>
-                                        <th class="px-6 py-5">Detalle</th>
-                                        <th class="px-6 py-5">Categoría</th>
-                                        <th class="px-6 py-5 text-right">Importe</th>
-                                        <th class="px-8 py-5 text-right"></th>
+                                    <tr class="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                                        <th class="px-4 md:px-8 py-4">Fecha</th>
+                                        <th class="px-4 md:px-6 py-4">Detalle</th>
+                                        <th class="px-4 md:px-6 py-4 hidden md:table-cell">Categoría</th>
+                                        <th class="px-4 md:px-6 py-4 text-right">Monto</th>
+                                        <th class="px-4 md:px-8 py-4 text-right"></th>
                                     </tr>
                                 </thead>
                                 <tbody id="recent-moves-body"></tbody>
