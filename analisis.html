@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
@@ -86,7 +87,6 @@
                 if (m.tipo.toLowerCase().includes('ingreso')) ingresos += monto;
                 else { gastos += monto; listaGastos.push(m); }
             });
-
             const saldo = ingresos - gastos;
             document.getElementById('centro-monto').innerText = `$${new Intl.NumberFormat('es-CL').format(Math.abs(saldo))}`;
             document.getElementById('centro-monto').className = `text-3xl font-black ${saldo >= 0 ? 'text-emerald-500' : 'text-red-500'}`;
@@ -131,7 +131,7 @@
                 const objetivo = Number(meta.objetivo) || 1;
                 const porcentaje = Math.min(Math.round((actual / objetivo) * 100), 100);
                 return `
-                    <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-100 dark:border-slate-700 transition-all hover:shadow-md">
+                    <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-100 dark:border-slate-700">
                         <div class="flex items-center justify-between mb-4">
                             <h4 class="font-bold text-slate-800 dark:text-white">${meta.nombre}</h4>
                             <span class="font-black text-primary">${porcentaje}%</span>
@@ -142,16 +142,6 @@
                     </div>`;
             }).join('');
         }
-
-        window.generarReportePDF = async () => {
-            const { jsPDF } = window.jspdf;
-            const element = document.getElementById('pdf-capture-area');
-            const canvas = await html2canvas(element, { scale: 2 });
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            pdf.addImage(imgData, 'PNG', 0, 0, 210, (canvas.height * 210) / canvas.width);
-            pdf.save("Reporte_QuantyA.pdf");
-        };
     </script>
 
     <script id="tailwind-config">
@@ -240,7 +230,7 @@
                 <h2 class="text-2xl font-black tracking-tighter text-slate-800 dark:text-white">Análisis Operativo</h2>
                 <p class="text-slate-400 text-[10px] font-black uppercase tracking-[0.2em]">Inteligencia de Datos QuantyA</p>
             </div>
-            <button onclick="generarReportePDF()" class="bg-primary text-white px-6 h-12 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20 flex items-center gap-2 hover:scale-105 active:scale-95 transition-all">
+            <button onclick="window.print()" class="bg-primary text-white px-6 h-12 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-primary/20 flex items-center gap-2 hover:scale-105 active:scale-95 transition-all">
                 <span class="material-symbols-outlined text-sm">download</span> Reporte PDF
             </button>
         </header>
@@ -268,7 +258,6 @@
                     </div>
                 </div>
             </section>
-
             <section class="flex-1 space-y-6">
                 <h3 class="text-xl font-black tracking-tight uppercase text-xs">Metas en Proceso</h3>
                 <div id="contenedor-metas-dinamicas" class="grid grid-cols-1 gap-5"></div>
