@@ -30,7 +30,7 @@
         let editNodeId = null; 
         let cacheListas = JSON.parse(localStorage.getItem('cache_listas')) || {};
         let cacheMovimientos = JSON.parse(localStorage.getItem('cache_movimientos_panel')) || [];
-        let tarjetasLocal = {}; // NUEVO: Para vincular con Billetera
+        let tarjetasLocal = {}; 
 
         const consejos = [
             "Revisa tus suscripciones activas este mes.", "El 30% de tus gastos son en comida rápida.", "Ahorra el 10% de cada ingreso extra.",
@@ -80,7 +80,6 @@
                 }
             });
 
-            // NUEVO: Sincronizar Tarjetas de la Billetera
             onValue(ref(db, `usuarios/${currentUser.uid}/tarjetas`), (snapshot) => {
                 tarjetasLocal = snapshot.val() || {};
                 actualizarSelectorPago();
@@ -102,7 +101,6 @@
             llenarSelect('op-categoria', listas.categoria);
             llenarSelect('op-subcategoria', listas.sub_categoria);
             llenarSelect('op-recurrente', listas.recurrente);
-            // El de pago se llena por separado con las tarjetas
         }
 
         function llenarSelect(elementId, datos) {
@@ -119,18 +117,21 @@
             select.appendChild(fragment);
         }
 
-        // NUEVO: Llena el select de pago con Efectivo/Débito + Tus Tarjetas
         function actualizarSelectorPago() {
             const select = document.getElementById('op-pago');
             if(!select) return;
-            let opciones = `<option value="Efectivo">Efectivo</option><option value="Debito">Débito</option>`;
+            // Opciones de configuración + Tarjetas dinámicas
+            let opciones = `
+                <option value="Efectivo">Efectivo</option>
+                <option value="Débito">Débito</option>
+                <option value="Transferencia">Transferencia</option>`;
+            
             Object.keys(tarjetasLocal).forEach(id => {
                 opciones += `<option value="${id}">💳 ${tarjetasLocal[id].nombre}</option>`;
             });
             select.innerHTML = opciones;
         }
 
-        // NUEVO: Muestra/Oculta cuotas si el pago seleccionado es una tarjeta
         window.checkMetodoPago = () => {
             const val = document.getElementById('op-pago').value;
             const divCuotas = document.getElementById('div-cuotas-dinamico');
@@ -188,7 +189,6 @@
             const cuotas = parseInt(document.getElementById('op-cuotas')?.value) || 1;
             const esTarjeta = tarjetasLocal[metodoId];
             
-            // Lógica de Registro (Soporta cuotas si es tarjeta)
             for(let i=0; i<cuotas; i++){
                 let f = new Date(document.getElementById('op-fecha').value);
                 f.setMonth(f.getMonth() + i);
@@ -212,7 +212,6 @@
                 }
             }
 
-            // Actualizar saldo de la tarjeta si aplica
             if (esTarjeta) {
                 const nuevoSaldo = (esTarjeta.saldoUsado || 0) + montoRaw;
                 await update(ref(db, `usuarios/${currentUser.uid}/tarjetas/${metodoId}`), { saldoUsado: nuevoSaldo });
@@ -232,7 +231,7 @@
             document.getElementById('op-monto').value = new Intl.NumberFormat('es-CL').format(d.monto);
             document.getElementById('op-categoria').value = d.categoria;
             document.getElementById('op-subcategoria').value = d.subcategoria;
-            document.getElementById('op-pago').value = d.pago; // Nota: si era tarjeta, el ID podría no coincidir si se cambió
+            document.getElementById('op-pago').value = d.pago; 
             document.getElementById('op-recurrente').value = d.recurrente;
             document.getElementById('op-fecha').value = d.fecha;
             document.getElementById('btn-submit').innerText = "Actualizar Registro";
@@ -391,25 +390,54 @@
                             <span class="material-symbols-outlined text-primary fill">add_circle</span> Operación Rápida
                         </h3>
                         <form id="form-operacion" onsubmit="registrarOperacion(event)" class="space-y-4 md:space-y-5">
-                            <input id="op-concepto" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-sm p-4 font-medium" placeholder="¿Concepto?" required/>
-                            <input id="op-fecha" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-sm p-4" type="date" required/>
-                            <div class="grid grid-cols-2 gap-3 md:gap-4">
-                                <select id="op-tipo" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-xs font-bold p-4"></select>
-                                <input id="op-monto" oninput="formatMoneyInput(this)" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-sm font-black p-4 text-primary" placeholder="$ 0" required/>
+                            <div>
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Concepto</label>
+                                <input id="op-concepto" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-sm p-4 font-medium" placeholder="Ej: Supermercado" required/>
                             </div>
-                            <div class="grid grid-cols-2 gap-3 md:gap-4">
-                                <select id="op-categoria" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-xs p-4"></select>
-                                <select id="op-pago" onchange="checkMetodoPago()" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-xs font-bold p-4"></select>
+                            
+                            <div>
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Fecha</label>
+                                <input id="op-fecha" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-sm p-4" type="date" required/>
                             </div>
+
+                            <div class="grid grid-cols-2 gap-3 md:gap-4">
+                                <div>
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Tipo</label>
+                                    <select id="op-tipo" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-xs font-bold p-4"></select>
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Monto</label>
+                                    <input id="op-monto" oninput="formatMoneyInput(this)" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-sm font-black p-4 text-primary" placeholder="$ 0" required/>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3 md:gap-4">
+                                <div>
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Categoría</label>
+                                    <select id="op-categoria" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-xs p-4"></select>
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Método de Pago</label>
+                                    <select id="op-pago" onchange="checkMetodoPago()" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-xs font-bold p-4"></select>
+                                </div>
+                            </div>
+
                             <div id="div-cuotas-dinamico" class="hidden bg-slate-50 p-4 rounded-xl border border-primary/10">
-                                <label class="text-[9px] font-black text-primary uppercase block mb-2">Cuotas</label>
+                                <label class="text-[9px] font-black text-primary uppercase block mb-2">Diferir en Cuotas</label>
                                 <select id="op-cuotas" class="w-full bg-white border-slate-200 rounded-lg p-3 text-xs font-bold">
                                     <option value="1">1 (Sin cuotas)</option><option value="3">3 Cuotas</option><option value="6">6 Cuotas</option><option value="12">12 Cuotas</option>
                                 </select>
                             </div>
+
                             <div class="grid grid-cols-2 gap-3 md:gap-4">
-                                <select id="op-subcategoria" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-xs p-4"></select>
-                                <select id="op-recurrente" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-xs p-4"></select>
+                                <div>
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Subcategoría</label>
+                                    <select id="op-subcategoria" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-xs p-4"></select>
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Recurrencia</label>
+                                    <select id="op-recurrente" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-xs p-4"></select>
+                                </div>
                             </div>
                             <button id="btn-submit" type="submit" class="w-full bg-[#0f172a] text-white font-black py-4 md:py-5 rounded-xl md:rounded-2xl text-[10px] uppercase tracking-widest shadow-lg hover:bg-slate-800 transition-all active:scale-95">Registrar</button>
                         </form>
