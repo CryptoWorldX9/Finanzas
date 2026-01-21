@@ -29,6 +29,14 @@
         let currentUser = null;
         let todosLosMovimientos = [];
 
+        // NAVEGACIÓN MÓVIL
+        window.toggleSidebar = () => {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        };
+
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
@@ -54,12 +62,14 @@
             const fMes = document.getElementById('filter-mes').value;
             const fCat = document.getElementById('filter-categoria').value.toLowerCase();
             const fPago = document.getElementById('filter-pago').value.toLowerCase();
+            const fBusqueda = document.getElementById('search-input').value.toLowerCase();
 
             const filtrados = todosLosMovimientos.filter(m => {
                 const coincideMes = fMes ? m.fecha.startsWith(fMes) : true;
                 const coincideCat = fCat ? m.categoria.toLowerCase().includes(fCat) : true;
                 const coincidePago = fPago ? m.pago.toLowerCase().includes(fPago) : true;
-                return coincideMes && coincideCat && coincidePago;
+                const coincideBusqueda = fBusqueda ? m.concepto.toLowerCase().includes(fBusqueda) : true;
+                return coincideMes && coincideCat && coincidePago && coincideBusqueda;
             });
 
             const body = document.getElementById('table-body');
@@ -67,15 +77,15 @@
                 const isIngreso = m.tipo.toLowerCase().includes('ingreso') || m.tipo.toLowerCase().includes('venta');
                 return `
                     <tr class="hover:bg-slate-50 transition-colors border-b border-slate-100">
-                        <td class="px-8 py-5 text-sm font-medium text-slate-500">${m.fecha}</td>
-                        <td class="px-6 py-5">
-                            <p class="text-sm font-bold text-slate-800">${m.concepto}</p>
-                            <p class="text-[10px] text-slate-400 uppercase font-black tracking-widest">${m.categoria} • ${m.subcategoria || 'General'}</p>
+                        <td class="px-4 md:px-8 py-5 text-[10px] md:text-sm font-medium text-slate-500">${m.fecha}</td>
+                        <td class="px-4 md:px-6 py-5">
+                            <p class="text-xs md:text-sm font-bold text-slate-800 truncate max-w-[120px] md:max-w-none">${m.concepto}</p>
+                            <p class="text-[8px] md:text-[10px] text-slate-400 uppercase font-black tracking-widest">${m.categoria}</p>
                         </td>
-                        <td class="px-6 py-5 text-right font-black text-sm ${isIngreso ? 'text-emerald-500' : 'text-red-500'}">
+                        <td class="px-4 md:px-6 py-5 text-right font-black text-xs md:text-sm ${isIngreso ? 'text-emerald-500' : 'text-red-500'}">
                             ${isIngreso ? '+' : '-'} $${new Intl.NumberFormat('es-CL').format(m.monto)}
                         </td>
-                        <td class="px-8 py-5 text-right">
+                        <td class="px-4 md:px-8 py-5 text-right hidden sm:table-cell">
                             <span class="inline-block px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter bg-slate-100 text-slate-600 border border-slate-200">
                                 ${m.pago}
                             </span>
@@ -103,12 +113,15 @@
     </style>
 </head>
 <body class="bg-[#fcfdfe] text-slate-700">
+
+<div id="overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/50 z-40 hidden lg:hidden backdrop-blur-sm"></div>
+
 <div class="flex h-screen overflow-hidden">
     
-    <aside class="w-72 bg-[#0f172a] text-white flex flex-col shrink-0 border-r border-slate-800 p-6">
-        <div class="space-y-8 flex-1">
+    <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 w-72 bg-[#0f172a] text-white flex flex-col shrink-0 border-r border-slate-800 p-6 z-50 transition-transform duration-300 -translate-x-full lg:translate-x-0">
+        <div class="flex items-center justify-between lg:block mb-8">
             <div class="flex items-center gap-3 px-2">
-                <div class="size-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
+                <div class="size-10 bg-primary rounded-xl flex items-center justify-center text-white">
                     <span class="material-symbols-outlined text-2xl font-fill">account_balance_wallet</span>
                 </div>
                 <div>
@@ -116,81 +129,89 @@
                     <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Gestión Financiera</p>
                 </div>
             </div>
-            <nav class="space-y-1">
-                <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">dashboard</span> <span class="font-semibold text-sm">Panel</span></a>
-                <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 transition-all"><span class="material-symbols-outlined font-fill">swap_horiz</span> <span class="font-bold text-sm">Movimientos</span></a>
-                <a href="analisis.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">analytics</span> <span class="font-semibold text-sm">Análisis</span></a>
-                <a href="metas.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">track_changes</span> <span class="font-semibold text-sm">Metas</span></a>
-                <a href="reportes.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">description</span> <span class="font-semibold text-sm">Reportes</span></a>
-                <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">settings</span> <span class="font-semibold text-sm">Configuración</span></a>
-            </nav>
+            <button onclick="toggleSidebar()" class="lg:hidden p-2 text-slate-400">
+                <span class="material-symbols-outlined">close</span>
+            </button>
         </div>
+
+        <nav class="space-y-1 flex-1">
+            <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">dashboard</span> <span class="font-semibold text-sm">Panel</span></a>
+            <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 transition-all"><span class="material-symbols-outlined font-fill">swap_horiz</span> <span class="font-bold text-sm">Movimientos</span></a>
+            <a href="analisis.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">analytics</span> <span class="font-semibold text-sm">Análisis</span></a>
+            <a href="metas.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">track_changes</span> <span class="font-semibold text-sm">Metas</span></a>
+            <a href="reportes.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">description</span> <span class="font-semibold text-sm">Reportes</span></a>
+            <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">settings</span> <span class="font-semibold text-sm">Configuración</span></a>
+        </nav>
+
         <div class="pt-6 border-t border-slate-800">
-            <a href="cuenta.html" class="bg-slate-800/50 p-4 rounded-2xl flex items-center gap-3 mb-2 hover:bg-slate-800 transition-all border border-transparent hover:border-primary/30 group">
-                <div class="size-10 rounded-full bg-primary flex items-center justify-center font-bold text-xs text-white shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">QA</div>
+            <a href="cuenta.html" class="bg-slate-800/50 p-4 rounded-2xl flex items-center gap-3 mb-2 hover:bg-slate-800 transition-all border border-transparent group">
+                <div class="size-10 rounded-full bg-primary flex items-center justify-center font-bold text-xs text-white">QA</div>
                 <div class="flex-1 overflow-hidden">
-                    <p id="user-name-display" class="text-sm font-bold truncate text-white">Cargando...</p>
+                    <p id="user-name-display" class="text-sm font-bold truncate text-white">Usuario</p>
                     <p class="text-[9px] text-slate-500 font-black uppercase tracking-tighter">Mi Perfil</p>
                 </div>
-                <span class="material-symbols-outlined text-slate-600 text-sm group-hover:text-primary transition-colors">chevron_right</span>
             </a>
-
-            <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors w-full"><span class="material-symbols-outlined">logout</span> <span class="font-semibold text-sm">Cerrar Sesión</span></a>
+            <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors w-full"><span class="material-symbols-outlined">logout</span> <span class="font-semibold text-sm">Salir</span></a>
         </div>
     </aside>
 
     <main class="flex-1 overflow-y-auto">
-        <header class="sticky top-0 z-40 h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 px-10 flex items-center justify-between">
-            <div>
-                <h2 class="text-2xl font-black tracking-tight text-slate-800">Historial de Movimientos</h2>
-                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest italic leading-none mt-1">Management / Registros Pro</p>
+        <header class="sticky top-0 z-40 h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 md:px-10 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <button onclick="toggleSidebar()" class="lg:hidden p-2 bg-slate-100 rounded-xl text-slate-600">
+                    <span class="material-symbols-outlined">menu</span>
+                </button>
+                <div>
+                    <h2 class="text-lg md:text-2xl font-black tracking-tight text-slate-800">Movimientos</h2>
+                    <p class="hidden md:block text-xs font-bold text-slate-400 uppercase tracking-widest italic leading-none mt-1">Registros Pro</p>
+                </div>
             </div>
             <div class="flex items-center gap-4">
-                <div class="relative w-64 lg:w-80">
+                <div class="relative w-40 md:w-64 lg:w-80">
                     <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl font-light">search</span>
-                    <input class="w-full pl-11 pr-4 py-2.5 bg-slate-100/50 border-none rounded-2xl text-sm focus:ring-4 focus:ring-primary/5 transition-all font-medium" placeholder="Buscar concepto..."/>
+                    <input id="search-input" oninput="filtrarYRenderizar()" class="w-full pl-10 pr-4 py-2 bg-slate-100/50 border-none rounded-2xl text-sm focus:ring-4 focus:ring-primary/5 transition-all font-medium" placeholder="Buscar..."/>
                 </div>
             </div>
         </header>
 
-        <div class="p-10 max-w-7xl mx-auto">
-            <section class="bg-white rounded-2xl border border-slate-200 shadow-sm mb-12 overflow-hidden">
-                <div class="bg-slate-50 border-b border-slate-100 px-8 py-4 flex items-center gap-3">
-                    <span class="material-symbols-outlined text-primary text-2xl">filter_list</span>
-                    <span class="text-xs font-black text-slate-500 uppercase tracking-[0.2em]">Filtros de Auditoría</span>
+        <div class="p-4 md:p-10 max-w-7xl mx-auto">
+            <section class="bg-white rounded-2xl border border-slate-200 shadow-sm mb-6 md:mb-12 overflow-hidden">
+                <div class="bg-slate-50 border-b border-slate-100 px-6 py-3 flex items-center gap-3">
+                    <span class="material-symbols-outlined text-primary text-xl">filter_list</span>
+                    <span class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Filtros Rápidos</span>
                 </div>
-                <div class="p-8 grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+                <div class="p-6 md:p-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 items-end">
                     <div class="space-y-2">
-                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Período (Mes)</label>
-                        <input id="filter-mes" type="month" onchange="filtrarYRenderizar()" class="w-full rounded-xl border-slate-200 bg-slate-50 text-sm font-bold py-3 px-4 focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all">
+                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Período</label>
+                        <input id="filter-mes" type="month" onchange="filtrarYRenderizar()" class="w-full rounded-xl border-slate-200 bg-slate-50 text-sm font-bold py-2.5 md:py-3 px-4 focus:border-primary transition-all">
                     </div>
                     <div class="space-y-2">
-                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Categoría</label>
-                        <input id="filter-categoria" type="text" placeholder="Ej: Alimentación" oninput="filtrarYRenderizar()" class="w-full rounded-xl border-slate-200 bg-slate-50 text-sm font-bold py-3 px-4 focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all">
+                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Categoría</label>
+                        <input id="filter-categoria" type="text" placeholder="Ej: Alimentación" oninput="filtrarYRenderizar()" class="w-full rounded-xl border-slate-200 bg-slate-50 text-sm font-bold py-2.5 md:py-3 px-4 focus:border-primary transition-all">
                     </div>
                     <div class="space-y-2">
-                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Método de Pago</label>
-                        <input id="filter-pago" type="text" placeholder="Ej: Tarjeta" oninput="filtrarYRenderizar()" class="w-full rounded-xl border-slate-200 bg-slate-50 text-sm font-bold py-3 px-4 focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all">
+                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Método</label>
+                        <input id="filter-pago" type="text" placeholder="Ej: Tarjeta" oninput="filtrarYRenderizar()" class="w-full rounded-xl border-slate-200 bg-slate-50 text-sm font-bold py-2.5 md:py-3 px-4 focus:border-primary transition-all">
                     </div>
-                    <button onclick="location.reload()" class="bg-[#0f172a] hover:bg-slate-800 text-white text-[10px] font-black py-4 rounded-xl transition-all uppercase tracking-widest shadow-lg shadow-slate-900/10">
-                        Limpiar Búsqueda
+                    <button onclick="location.reload()" class="bg-[#0f172a] hover:bg-slate-800 text-white text-[10px] font-black py-3 md:py-4 rounded-xl transition-all uppercase tracking-widest">
+                        Resetear
                     </button>
                 </div>
             </section>
 
-            <div class="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden">
+            <div class="bg-white rounded-[1.5rem] md:rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden">
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left">
+                    <table class="w-full text-left min-w-[400px]">
                         <thead>
                             <tr class="bg-slate-50/50 border-b border-slate-100">
-                                <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Fecha</th>
-                                <th class="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Detalle del Movimiento</th>
-                                <th class="px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Monto Consolidado</th>
-                                <th class="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Método</th>
+                                <th class="px-4 md:px-8 py-5 text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">Fecha</th>
+                                <th class="px-4 md:px-6 py-5 text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">Detalle</th>
+                                <th class="px-4 md:px-6 py-5 text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Monto</th>
+                                <th class="px-4 md:px-8 py-5 text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest text-right hidden sm:table-cell">Método</th>
                             </tr>
                         </thead>
                         <tbody id="table-body" class="divide-y divide-slate-100">
-                            </tbody>
+                        </tbody>
                     </table>
                 </div>
             </div>
