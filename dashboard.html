@@ -30,13 +30,13 @@
         let editNodeId = null; 
         let cacheListas = JSON.parse(localStorage.getItem('cache_listas')) || {};
         let cacheMovimientos = JSON.parse(localStorage.getItem('cache_movimientos_panel')) || [];
+        let tarjetasLocal = {}; // NUEVO: Para vincular con Billetera
 
         const consejos = [
             "Revisa tus suscripciones activas este mes.", "El 30% de tus gastos son en comida rápida.", "Ahorra el 10% de cada ingreso extra.",
             "Usa transferencias para evitar comisiones.", "Mantén un fondo de emergencia de 3 meses.", "Evita compras impulsivas esperando 24h."
         ];
 
-        // FUNCIONES DE NAVEGACIÓN MÓVIL
         window.toggleSidebar = () => {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('overlay');
@@ -80,6 +80,12 @@
                 }
             });
 
+            // NUEVO: Sincronizar Tarjetas de la Billetera
+            onValue(ref(db, `usuarios/${currentUser.uid}/tarjetas`), (snapshot) => {
+                tarjetasLocal = snapshot.val() || {};
+                actualizarSelectorPago();
+            });
+
             onValue(ref(db, `usuarios/${currentUser.uid}/movimientos`), (snapshot) => {
                 const dataFull = [];
                 snapshot.forEach((child) => {
@@ -92,12 +98,11 @@
         }
 
         function llenarTodosLosSelects(listas) {
-            const selects = {
-                'op-tipo': listas.tipo, 'op-categoria': listas.categoria,
-                'op-subcategoria': listas.sub_categoria, 'op-pago': listas.pago,
-                'op-recurrente': listas.recurrente
-            };
-            Object.entries(selects).forEach(([id, data]) => llenarSelect(id, data));
+            llenarSelect('op-tipo', listas.tipo);
+            llenarSelect('op-categoria', listas.categoria);
+            llenarSelect('op-subcategoria', listas.sub_categoria);
+            llenarSelect('op-recurrente', listas.recurrente);
+            // El de pago se llena por separado con las tarjetas
         }
 
         function llenarSelect(elementId, datos) {
@@ -113,6 +118,24 @@
             select.innerHTML = '';
             select.appendChild(fragment);
         }
+
+        // NUEVO: Llena el select de pago con Efectivo/Débito + Tus Tarjetas
+        function actualizarSelectorPago() {
+            const select = document.getElementById('op-pago');
+            if(!select) return;
+            let opciones = `<option value="Efectivo">Efectivo</option><option value="Debito">Débito</option>`;
+            Object.keys(tarjetasLocal).forEach(id => {
+                opciones += `<option value="${id}">💳 ${tarjetasLocal[id].nombre}</option>`;
+            });
+            select.innerHTML = opciones;
+        }
+
+        // NUEVO: Muestra/Oculta cuotas si el pago seleccionado es una tarjeta
+        window.checkMetodoPago = () => {
+            const val = document.getElementById('op-pago').value;
+            const divCuotas = document.getElementById('div-cuotas-dinamico');
+            divCuotas.classList.toggle('hidden', !tarjetasLocal[val]);
+        };
 
         function renderizarTodo(datos) {
             const container = document.getElementById('recent-moves-body');
@@ -160,21 +183,45 @@
 
         window.registrarOperacion = async (e) => {
             e.preventDefault();
-            const montoRaw = document.getElementById('op-monto').value.replace(/\./g, "");
-            const data = {
-                concepto: document.getElementById('op-concepto').value, tipo: document.getElementById('op-tipo').value,
-                categoria: document.getElementById('op-categoria').value, subcategoria: document.getElementById('op-subcategoria').value,
-                pago: document.getElementById('op-pago').value, recurrente: document.getElementById('op-recurrente').value,
-                fecha: document.getElementById('op-fecha').value, monto: parseInt(montoRaw), timestamp: Date.now()
-            };
-            if(editNodeId) {
-                await update(ref(db, `usuarios/${currentUser.uid}/movimientos/${editNodeId}`), data);
-                editNodeId = null;
-                document.getElementById('btn-submit').innerText = "Registrar Operación";
-            } else {
-                await push(ref(db, `usuarios/${currentUser.uid}/movimientos`), data);
+            const montoRaw = parseInt(document.getElementById('op-monto').value.replace(/\./g, ""));
+            const metodoId = document.getElementById('op-pago').value;
+            const cuotas = parseInt(document.getElementById('op-cuotas')?.value) || 1;
+            const esTarjeta = tarjetasLocal[metodoId];
+            
+            // Lógica de Registro (Soporta cuotas si es tarjeta)
+            for(let i=0; i<cuotas; i++){
+                let f = new Date(document.getElementById('op-fecha').value);
+                f.setMonth(f.getMonth() + i);
+                
+                const data = {
+                    concepto: cuotas > 1 ? `${document.getElementById('op-concepto').value} (${i+1}/${cuotas})` : document.getElementById('op-concepto').value,
+                    tipo: document.getElementById('op-tipo').value,
+                    categoria: document.getElementById('op-categoria').value,
+                    subcategoria: document.getElementById('op-subcategoria').value,
+                    pago: esTarjeta ? esTarjeta.nombre : metodoId,
+                    recurrente: document.getElementById('op-recurrente').value,
+                    fecha: f.toISOString().split('T')[0],
+                    monto: montoRaw / cuotas,
+                    timestamp: Date.now()
+                };
+
+                if(editNodeId && i === 0) {
+                    await update(ref(db, `usuarios/${currentUser.uid}/movimientos/${editNodeId}`), data);
+                } else {
+                    await push(ref(db, `usuarios/${currentUser.uid}/movimientos`), data);
+                }
             }
+
+            // Actualizar saldo de la tarjeta si aplica
+            if (esTarjeta) {
+                const nuevoSaldo = (esTarjeta.saldoUsado || 0) + montoRaw;
+                await update(ref(db, `usuarios/${currentUser.uid}/tarjetas/${metodoId}`), { saldoUsado: nuevoSaldo });
+            }
+
+            editNodeId = null;
+            document.getElementById('btn-submit').innerText = "Registrar Operación";
             e.target.reset();
+            document.getElementById('div-cuotas-dinamico').classList.add('hidden');
         };
 
         window.prepararEdicion = (id, dataStr) => {
@@ -185,7 +232,7 @@
             document.getElementById('op-monto').value = new Intl.NumberFormat('es-CL').format(d.monto);
             document.getElementById('op-categoria').value = d.categoria;
             document.getElementById('op-subcategoria').value = d.subcategoria;
-            document.getElementById('op-pago').value = d.pago;
+            document.getElementById('op-pago').value = d.pago; // Nota: si era tarjeta, el ID podría no coincidir si se cambió
             document.getElementById('op-recurrente').value = d.recurrente;
             document.getElementById('op-fecha').value = d.fecha;
             document.getElementById('btn-submit').innerText = "Actualizar Registro";
@@ -209,7 +256,6 @@
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300; }
         .material-symbols-outlined.fill { font-variation-settings: 'FILL' 1, 'wght' 400; }
         #sugerencia-texto { transition: opacity 0.5s ease-in-out; }
-        /* Scrollbar suave para móvil */
         .overflow-x-auto::-webkit-scrollbar { height: 4px; }
         .overflow-x-auto::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
     </style>
@@ -241,6 +287,10 @@
                 <span class="material-symbols-outlined fill">dashboard</span> 
                 <span class="font-bold text-sm">Panel</span>
             </a>
+            <a href="billetera.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
+                <span class="material-symbols-outlined">wallet</span> 
+                <span class="font-semibold text-sm">Billetera</span>
+            </a>
             <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
                 <span class="material-symbols-outlined">swap_horiz</span> 
                 <span class="font-semibold text-sm">Movimientos</span>
@@ -253,10 +303,6 @@
                 <span class="material-symbols-outlined">track_changes</span> 
                 <span class="font-semibold text-sm">Metas</span>
             </a>
-            <a href="reportes.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
-                <span class="material-symbols-outlined">description</span> 
-                <span class="font-semibold text-sm">Reportes</span>
-            </a>
             <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
                 <span class="material-symbols-outlined">settings</span> 
                 <span class="font-semibold text-sm">Configuración</span>
@@ -264,13 +310,13 @@
         </nav>
 
         <div class="pt-6 border-t border-slate-800">
-            <a href="cuenta.html" class="bg-slate-800/50 p-4 rounded-2xl flex items-center gap-3 mb-2 hover:bg-slate-800 transition-all group">
+            <div class="bg-slate-800/50 p-4 rounded-2xl flex items-center gap-3 mb-2">
                 <div class="size-10 rounded-full bg-primary flex items-center justify-center font-bold text-xs text-white">QA</div>
                 <div class="flex-1 overflow-hidden">
                     <p id="user-name-display" class="text-sm font-bold truncate text-white">Usuario</p>
                     <p class="text-[9px] text-slate-500 font-black uppercase tracking-tighter">Mi Perfil</p>
                 </div>
-            </a>
+            </div>
             <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors">
                 <span class="material-symbols-outlined">logout</span> 
                 <span class="font-semibold text-sm">Salir</span>
@@ -290,9 +336,6 @@
                 </div>
             </div>
             <div class="flex items-center gap-2">
-                <button class="p-2.5 bg-slate-100 rounded-2xl text-slate-400 md:hidden">
-                    <span class="material-symbols-outlined">search</span>
-                </button>
                 <div class="relative hidden md:block w-64 lg:w-80">
                     <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl font-light">search</span>
                     <input class="w-full pl-11 pr-4 py-2 bg-slate-100/50 border-none rounded-2xl text-sm focus:ring-4 focus:ring-primary/5 font-medium" placeholder="Buscar..."/>
@@ -356,10 +399,16 @@
                             </div>
                             <div class="grid grid-cols-2 gap-3 md:gap-4">
                                 <select id="op-categoria" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-xs p-4"></select>
-                                <select id="op-subcategoria" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-xs p-4"></select>
+                                <select id="op-pago" onchange="checkMetodoPago()" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-xs font-bold p-4"></select>
+                            </div>
+                            <div id="div-cuotas-dinamico" class="hidden bg-slate-50 p-4 rounded-xl border border-primary/10">
+                                <label class="text-[9px] font-black text-primary uppercase block mb-2">Cuotas</label>
+                                <select id="op-cuotas" class="w-full bg-white border-slate-200 rounded-lg p-3 text-xs font-bold">
+                                    <option value="1">1 (Sin cuotas)</option><option value="3">3 Cuotas</option><option value="6">6 Cuotas</option><option value="12">12 Cuotas</option>
+                                </select>
                             </div>
                             <div class="grid grid-cols-2 gap-3 md:gap-4">
-                                <select id="op-pago" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-xs p-4"></select>
+                                <select id="op-subcategoria" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-xs p-4"></select>
                                 <select id="op-recurrente" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-xs p-4"></select>
                             </div>
                             <button id="btn-submit" type="submit" class="w-full bg-[#0f172a] text-white font-black py-4 md:py-5 rounded-xl md:rounded-2xl text-[10px] uppercase tracking-widest shadow-lg hover:bg-slate-800 transition-all active:scale-95">Registrar</button>
