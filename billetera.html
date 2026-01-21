@@ -54,6 +54,8 @@
             onValue(ref(db, `usuarios/${currentUser.uid}/tarjetas`), (snapshot) => {
                 const container = document.getElementById('cards-grid');
                 const tablaBody = document.getElementById('tabla-datos-body');
+                if(!container || !tablaBody) return;
+                
                 container.innerHTML = ''; 
                 tablaBody.innerHTML = '';
                 const data = snapshot.val();
@@ -66,7 +68,6 @@
                         const disp = Number(card.saldoDisponibleActual) || 0;
                         const isDebito = card.categoria === 'Débito';
 
-                        // TARJETA
                         container.innerHTML += `
                             <div class="relative group h-60 rounded-[2rem] p-8 text-white bg-gradient-to-br ${degradado} shadow-2xl overflow-hidden flex flex-col justify-between transition-transform hover:-translate-y-1">
                                 <div class="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl"></div>
@@ -96,7 +97,6 @@
                                 </div>
                             </div>`;
 
-                        // TABLA
                         tablaBody.innerHTML += `
                             <tr class="border-b border-slate-50 hover:bg-slate-50/50 transition-all">
                                 <td class="px-6 py-5 font-bold text-slate-800">${card.nombre}</td>
@@ -147,7 +147,6 @@
                 tipo: document.getElementById('card-tipo').value,
                 categoria: document.getElementById('card-categoria').value,
                 saldoDisponibleActual: parseFloat(document.getElementById('card-disponible').value) || 0,
-                // Si es débito, estos valores van a 0 por defecto
                 limite: isDebito ? 0 : parseFloat(document.getElementById('card-limite').value || 0),
                 montoUtilizado: isDebito ? 0 : parseFloat(document.getElementById('card-utilizado').value || 0),
                 montoFacturado: isDebito ? 0 : parseFloat(document.getElementById('card-facturado').value || 0),
@@ -195,9 +194,12 @@
 
         window.eliminarTarjeta = (id) => confirm("¿Eliminar?") && remove(ref(db, `usuarios/${currentUser.uid}/tarjetas/${id}`));
         window.toggleModal = (id) => document.getElementById(id).classList.toggle('hidden');
+        
         window.toggleSidebar = () => {
-            document.getElementById('sidebar').classList.toggle('-translate-x-full');
-            document.getElementById('overlay').classList.toggle('hidden');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
         };
     </script>
 
@@ -246,7 +248,10 @@
 
     <main class="flex-1 overflow-y-auto">
         <header class="bg-white/70 backdrop-blur-xl border-b border-slate-200/50 h-20 px-6 md:px-10 flex items-center justify-between sticky top-0 z-40">
-            <h2 class="text-xl font-bold text-slate-800">Mi Billetera</h2>
+            <div class="flex items-center gap-4">
+                <button onclick="toggleSidebar()" class="lg:hidden p-2 text-slate-600"><span class="material-symbols-outlined">menu</span></button>
+                <h2 class="text-xl font-bold text-slate-800">Mi Billetera</h2>
+            </div>
             <button onclick="editingCardId=null; document.getElementById('form-tarjeta').reset(); toggleModal('modal-tarjeta')" class="bg-primary text-white text-[10px] font-black uppercase tracking-widest px-6 py-3.5 rounded-2xl shadow-xl">+ Nueva Tarjeta</button>
         </header>
 
