@@ -80,16 +80,16 @@
                 if (snapshot.exists()) {
                     const listas = snapshot.val();
                     localStorage.setItem('cache_listas', JSON.stringify(listas));
-                    pagosConfiguracion = listas.pago || {}; // Guardamos los pagos de configuración
+                    pagosConfiguracion = listas.pago || {}; 
                     llenarTodosLosSelects(listas);
-                    actualizarSelectorPagoMaestro(); // Refrescar el selector mixto
+                    actualizarSelectorPagoMaestro(); 
                 }
             });
 
             // 2. Sincronizar Tarjetas de la Billetera
             onValue(ref(db, `usuarios/${currentUser.uid}/tarjetas`), (snapshot) => {
                 tarjetasBilletera = snapshot.val() || {};
-                actualizarSelectorPagoMaestro(); // Refrescar el selector mixto
+                actualizarSelectorPagoMaestro(); 
             });
 
             // 3. Sincronizar Movimientos
@@ -125,32 +125,25 @@
             select.appendChild(fragment);
         }
 
-        // FUNCIÓN CLAVE: Mezcla Pagos de Configuración + Tarjetas de Billetera
         function actualizarSelectorPagoMaestro() {
             const select = document.getElementById('op-pago');
             if(!select) return;
             
             let opciones = '';
-
-            // Primero: Lo que el usuario definió en CONFIGURACIÓN (Efectivo, Debito, etc)
             Object.keys(pagosConfiguracion).forEach(key => {
                 const nombre = pagosConfiguracion[key].nombre;
                 opciones += `<option value="${nombre}">${nombre}</option>`;
             });
-
-            // Segundo: Las TARJETAS de la BILLETERA
             Object.keys(tarjetasBilletera).forEach(id => {
                 const t = tarjetasBilletera[id];
                 opciones += `<option value="${id}">💳 ${t.nombre}</option>`;
             });
-
             select.innerHTML = opciones;
         }
 
         window.checkMetodoPago = () => {
             const val = document.getElementById('op-pago').value;
             const divCuotas = document.getElementById('div-cuotas-dinamico');
-            // Si el valor coincide con un ID de tarjeta en billetera, mostrar cuotas
             divCuotas.classList.toggle('hidden', !tarjetasBilletera[val]);
         };
 
@@ -298,7 +291,7 @@
         </div>
 
         <nav class="space-y-1 flex-1">
-            <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 transition-all">
+            <a href="panel.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 transition-all">
                 <span class="material-symbols-outlined fill">dashboard</span> 
                 <span class="font-bold text-sm">Panel</span>
             </a>
