@@ -135,7 +135,7 @@
         }
 
         window.eliminarMovimiento = async (id) => {
-            if(confirm('¿Estás seguro de eliminar este registro? Esta acción no se puede deshacer.')) {
+            if(confirm('¿Estás seguro de eliminar este registro?')) {
                 await remove(ref(db, `usuarios/${currentUser.uid}/movimientos/${id}`));
             }
         };
@@ -180,8 +180,10 @@
         };
 
         window.toggleSidebar = () => {
-            document.getElementById('sidebar').classList.toggle('-translate-x-full');
-            document.getElementById('overlay').classList.toggle('hidden');
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
         };
     </script>
 
@@ -190,6 +192,7 @@
     </script>
     <style type="text/tailwindcss">
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300; }
+        .material-symbols-outlined.fill { font-variation-settings: 'FILL' 1, 'wght' 400; }
     </style>
 </head>
 <body class="bg-[#fcfdfe] text-slate-700">
@@ -247,28 +250,62 @@
 
 <div class="flex h-screen overflow-hidden relative">
     <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 w-72 bg-[#0f172a] text-white flex flex-col shrink-0 border-r border-slate-800 p-6 z-50 transition-transform duration-300 -translate-x-full lg:translate-x-0">
-        <div class="flex items-center gap-3 px-2 mb-8">
-            <div class="size-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20"><span class="material-symbols-outlined text-2xl fill">account_balance_wallet</span></div>
-            <h1 class="text-xl font-black tracking-tight">QuantyA</h1>
+        <div class="flex items-center justify-between lg:block mb-8">
+            <div class="flex items-center gap-3 px-2">
+                <div class="size-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
+                    <span class="material-symbols-outlined text-2xl fill">account_balance_wallet</span>
+                </div>
+                <div>
+                    <h1 class="text-xl font-black tracking-tight leading-none">QuantyA</h1>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Gestión Financiera</p>
+                </div>
+            </div>
+            <button onclick="toggleSidebar()" class="lg:hidden p-2 text-slate-400">
+                <span class="material-symbols-outlined">close</span>
+            </button>
         </div>
+
         <nav class="space-y-1 flex-1">
             <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
                 <span class="material-symbols-outlined">dashboard</span> <span class="font-semibold text-sm">Panel</span>
             </a>
-            <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20">
+            <a href="billetera.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
+                <span class="material-symbols-outlined">wallet</span> <span class="font-semibold text-sm">Billetera</span>
+            </a>
+            <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 transition-all">
                 <span class="material-symbols-outlined fill">swap_horiz</span> <span class="font-bold text-sm">Movimientos</span>
             </a>
-            <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl">
+            <a href="analisis.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
+                <span class="material-symbols-outlined">analytics</span> <span class="font-semibold text-sm">Análisis</span>
+            </a>
+            <a href="metas.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
+                <span class="material-symbols-outlined">track_changes</span> <span class="font-semibold text-sm">Metas</span>
+            </a>
+            <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
                 <span class="material-symbols-outlined">settings</span> <span class="font-semibold text-sm">Configuración</span>
             </a>
         </nav>
-        <div class="pt-6 border-t border-slate-800"><p id="user-name-display" class="text-sm font-bold text-center"></p></div>
+
+        <div class="pt-6 border-t border-slate-800">
+            <div class="bg-slate-800/50 p-4 rounded-2xl flex items-center gap-3 mb-2">
+                <div class="size-10 rounded-full bg-primary flex items-center justify-center font-bold text-xs text-white">QA</div>
+                <div class="flex-1 overflow-hidden">
+                    <p id="user-name-display" class="text-sm font-bold truncate text-white">Usuario</p>
+                    <p class="text-[9px] text-slate-500 font-black uppercase tracking-tighter">Mi Perfil</p>
+                </div>
+            </div>
+            <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors">
+                <span class="material-symbols-outlined">logout</span> <span class="font-semibold text-sm">Salir</span>
+            </a>
+        </div>
     </aside>
 
     <main class="flex-1 overflow-y-auto">
         <header class="sticky top-0 z-40 h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 md:px-10 flex items-center justify-between">
             <div class="flex items-center gap-4">
-                <button onclick="toggleSidebar()" class="lg:hidden p-2 bg-slate-100 rounded-xl text-slate-600"><span class="material-symbols-outlined">menu</span></button>
+                <button onclick="toggleSidebar()" class="lg:hidden p-2 bg-slate-100 rounded-xl text-slate-600">
+                    <span class="material-symbols-outlined">menu</span>
+                </button>
                 <h2 class="text-lg md:text-2xl font-black tracking-tight text-slate-800">Movimientos</h2>
             </div>
         </header>
