@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>QuantyA - Billetera Premium</title>
+    <title>QuantyA - Billetera Pro</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -54,7 +54,8 @@
             onValue(ref(db, `usuarios/${currentUser.uid}/tarjetas`), (snapshot) => {
                 const container = document.getElementById('cards-grid');
                 const tablaBody = document.getElementById('tabla-datos-body');
-                container.innerHTML = ''; tablaBody.innerHTML = '';
+                container.innerHTML = ''; 
+                tablaBody.innerHTML = '';
                 const data = snapshot.val();
                 
                 if (data) {
@@ -62,65 +63,54 @@
                         const card = data[id];
                         const degradado = variantesColor[card.estilo] || 'from-slate-700 to-slate-900';
                         const logoMarca = card.tipo === 'Visa' ? 'https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg' : 'https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg';
-                        
                         const disp = Number(card.saldoDisponibleActual) || 0;
-                        const fact = Number(card.montoFacturado) || 0;
-                        const utilizado = Number(card.montoUtilizado) || 0;
+                        const isDebito = card.categoria === 'Débito';
 
-                        // DISEÑO DE TARJETA CORPORATIVA
+                        // TARJETA
                         container.innerHTML += `
                             <div class="relative group h-60 rounded-[2rem] p-8 text-white bg-gradient-to-br ${degradado} shadow-2xl overflow-hidden flex flex-col justify-between transition-transform hover:-translate-y-1">
                                 <div class="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl"></div>
-                                <div class="absolute bottom-0 left-0 w-32 h-32 bg-black/10 rounded-full -ml-16 -mb-16 blur-2xl"></div>
-                                
                                 <div class="relative z-10 flex justify-between items-start">
                                     <div class="space-y-1">
                                         <p class="text-[10px] uppercase font-black tracking-[0.2em] text-white/50">${card.banco}</p>
-                                        <h3 class="text-xl font-bold tracking-tight">${card.nombre}</h3>
+                                        <h3 class="text-xl font-bold tracking-tight">${card.nombre} ${isDebito ? '(Débito)' : ''}</h3>
                                     </div>
                                     <div class="flex flex-col items-end gap-3">
-                                        <img src="${logoMarca}" class="h-6 object-contain brightness-0 invert opacity-80" alt="marca">
-                                        <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
-                                            <button onclick="prepararEdicion('${id}', ${JSON.stringify(card).replace(/"/g, '&quot;')})" class="size-8 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center hover:bg-white/30 border border-white/20"><span class="material-symbols-outlined text-sm">edit</span></button>
-                                            <button onclick="eliminarTarjeta('${id}')" class="size-8 bg-red-500/20 backdrop-blur-md rounded-full flex items-center justify-center hover:bg-red-500 border border-red-500/30"><span class="material-symbols-outlined text-sm text-red-200">delete</span></button>
+                                        <img src="${logoMarca}" class="h-6 object-contain brightness-0 invert opacity-80">
+                                        <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
+                                            <button onclick="prepararEdicion('${id}', ${JSON.stringify(card).replace(/"/g, '&quot;')})" class="size-8 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center border border-white/20"><span class="material-symbols-outlined text-sm">edit</span></button>
+                                            <button onclick="eliminarTarjeta('${id}')" class="size-8 bg-red-500/20 backdrop-blur-md rounded-full flex items-center justify-center border border-red-500/30"><span class="material-symbols-outlined text-sm">delete</span></button>
                                         </div>
                                     </div>
                                 </div>
-
                                 <div class="relative z-10">
-                                    <p class="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-1">Disponible para uso</p>
+                                    <p class="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-1">Saldo Disponible</p>
                                     <div class="flex items-baseline gap-1">
                                         <span class="text-2xl font-medium opacity-60">$</span>
                                         <span class="text-4xl font-extrabold tracking-tighter">${disp.toLocaleString('es-CL')}</span>
                                     </div>
                                 </div>
-
                                 <div class="relative z-10 flex justify-between items-center bg-black/20 backdrop-blur-sm rounded-2xl px-4 py-3 border border-white/5 text-[10px] font-black uppercase tracking-wider">
-                                    <div class="flex flex-col"><span class="text-white/40">Utilizado</span><span class="text-white">$${utilizado.toLocaleString()}</span></div>
-                                    <div class="h-6 w-[1px] bg-white/10"></div>
-                                    <div class="flex flex-col text-right"><span class="text-white/40">Cierre</span><span class="text-white">Día ${card.diaCierre}</span></div>
+                                    <span>${isDebito ? 'Cuenta Vista/Corriente' : 'Cupo: $' + Number(card.limite).toLocaleString()}</span>
+                                    <span>${isDebito ? 'Líquido' : 'Día ' + card.diaCierre}</span>
                                 </div>
                             </div>`;
 
-                        // FILA TABLA
+                        // TABLA
                         tablaBody.innerHTML += `
-                            <tr class="group border-b border-slate-50 hover:bg-slate-50/50 transition-all">
-                                <td class="px-6 py-5">
-                                    <div class="flex items-center gap-3">
-                                        <div class="size-2 rounded-full bg-gradient-to-br ${degradado}"></div>
-                                        <span class="font-bold text-slate-800">${card.nombre}</span>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-5 text-slate-500 font-medium">$${utilizado.toLocaleString()}</td>
-                                <td class="px-6 py-5 font-black text-red-500">$${fact.toLocaleString()}</td>
+                            <tr class="border-b border-slate-50 hover:bg-slate-50/50 transition-all">
+                                <td class="px-6 py-5 font-bold text-slate-800">${card.nombre}</td>
                                 <td class="px-6 py-5 font-black text-emerald-600">$${disp.toLocaleString()}</td>
+                                <td class="px-6 py-5 text-slate-500">${isDebito ? '---' : '$' + (Number(card.montoFacturado) || 0).toLocaleString()}</td>
                                 <td class="px-6 py-5">
-                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${card.estadoFactura === 'Pagado' ? 'bg-emerald-50 text-emerald-600' : 'bg-orange-50 text-orange-600'}">
-                                        ${card.estadoFactura || 'Pendiente'}
+                                    <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase ${isDebito ? 'bg-blue-50 text-blue-600' : (card.estadoFactura === 'Pagado' ? 'bg-emerald-50 text-emerald-600' : 'bg-orange-50 text-orange-600')}">
+                                        ${isDebito ? 'Débito' : (card.estadoFactura || 'Pendiente')}
                                     </span>
                                 </td>
                                 <td class="px-6 py-5 text-right">
-                                    ${card.estadoFactura !== 'Pagado' ? `<button onclick="confirmarPagoFactura('${id}', ${fact}, ${disp}, ${utilizado})" class="bg-[#176282] text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-[#176282]/20 hover:scale-105 transition-transform">Marcar Pago</button>` : `<span class="text-emerald-500 font-bold text-[10px] uppercase flex items-center justify-end gap-1"><span class="material-symbols-outlined text-sm">check_circle</span> Procesado</span>`}
+                                    ${isDebito ? 
+                                        `<button onclick="cargarDineroManual('${id}', ${disp})" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest">+ Cargar</button>` : 
+                                        `<button onclick="confirmarPagoFactura('${id}', ${card.montoFacturado}, ${disp}, ${card.montoUtilizado})" class="bg-[#176282] text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest">Pagar</button>`}
                                 </td>
                             </tr>`;
                     });
@@ -128,37 +118,63 @@
             });
         }
 
-        window.confirmarPagoFactura = async (id, fact, disp, utilizado) => {
-            if (fact <= 0) return alert("Debe haber un monto facturado.");
-            if (confirm(`¿Saldar deuda de $${fact.toLocaleString()}?`)) {
+        window.cargarDineroManual = async (id, saldoActual) => {
+            const monto = prompt("Ingrese el monto a cargar a esta cuenta:");
+            if (monto && !isNaN(monto)) {
                 await update(ref(db, `usuarios/${currentUser.uid}/tarjetas/${id}`), {
-                    montoFacturado: 0,
-                    montoUtilizado: Math.max(0, utilizado - fact),
-                    saldoDisponibleActual: disp + fact,
-                    estadoFactura: 'Pagado',
-                    fechaPago: new Date().toISOString().split('T')[0]
+                    saldoDisponibleActual: saldoActual + parseFloat(monto)
                 });
+                alert("Saldo actualizado correctamente.");
+            }
+        };
+
+        window.toggleCamposDebito = () => {
+            const cat = document.getElementById('card-categoria').value;
+            const camposCredito = document.getElementById('seccion-credito');
+            if (cat === 'Débito') {
+                camposCredito.classList.add('opacity-30', 'pointer-events-none');
+            } else {
+                camposCredito.classList.remove('opacity-30', 'pointer-events-none');
             }
         };
 
         window.saveCard = async () => {
+            const isDebito = document.getElementById('card-categoria').value === 'Débito';
             const cardData = {
                 nombre: document.getElementById('card-nombre').value,
                 banco: document.getElementById('card-banco').value,
                 estilo: document.getElementById('card-estilo').value,
                 tipo: document.getElementById('card-tipo').value,
                 categoria: document.getElementById('card-categoria').value,
-                limite: parseFloat(document.getElementById('card-limite').value),
-                montoUtilizado: parseFloat(document.getElementById('card-utilizado').value) || 0,
-                saldoDisponibleActual: parseFloat(document.getElementById('card-disponible').value),
-                montoFacturado: parseFloat(document.getElementById('card-facturado').value) || 0,
-                diaCierre: document.getElementById('card-cierre').value,
-                estadoFactura: document.getElementById('card-estado').value,
-                fechaPago: document.getElementById('card-fecha-pago').value
+                saldoDisponibleActual: parseFloat(document.getElementById('card-disponible').value) || 0,
+                // Si es débito, estos valores van a 0 por defecto
+                limite: isDebito ? 0 : parseFloat(document.getElementById('card-limite').value || 0),
+                montoUtilizado: isDebito ? 0 : parseFloat(document.getElementById('card-utilizado').value || 0),
+                montoFacturado: isDebito ? 0 : parseFloat(document.getElementById('card-facturado').value || 0),
+                diaCierre: isDebito ? 0 : document.getElementById('card-cierre').value,
+                estadoFactura: isDebito ? 'Pagado' : document.getElementById('card-estado').value,
+                fechaPago: document.getElementById('card-fecha-pago').value || ''
             };
-            if (editingCardId) { await update(ref(db, `usuarios/${currentUser.uid}/tarjetas/${editingCardId}`), cardData); }
-            else { await push(ref(db, `usuarios/${currentUser.uid}/tarjetas`), cardData); }
+
+            if (editingCardId) {
+                await update(ref(db, `usuarios/${currentUser.uid}/tarjetas/${editingCardId}`), cardData);
+                editingCardId = null;
+            } else {
+                await push(ref(db, `usuarios/${currentUser.uid}/tarjetas`), cardData);
+            }
             toggleModal('modal-tarjeta');
+        };
+
+        window.confirmarPagoFactura = async (id, fact, disp, utilizado) => {
+            if (fact <= 0) return alert("No hay monto facturado.");
+            if (confirm(`¿Pagar factura de $${fact.toLocaleString()}?`)) {
+                await update(ref(db, `usuarios/${currentUser.uid}/tarjetas/${id}`), {
+                    montoFacturado: 0,
+                    montoUtilizado: Math.max(0, utilizado - fact),
+                    saldoDisponibleActual: disp + fact,
+                    estadoFactura: 'Pagado'
+                });
+            }
         };
 
         window.prepararEdicion = (id, card) => {
@@ -168,17 +184,16 @@
             document.getElementById('card-estilo').value = card.estilo;
             document.getElementById('card-tipo').value = card.tipo;
             document.getElementById('card-categoria').value = card.categoria;
-            document.getElementById('card-limite').value = card.limite;
-            document.getElementById('card-utilizado').value = card.montoUtilizado || 0;
             document.getElementById('card-disponible').value = card.saldoDisponibleActual;
-            document.getElementById('card-facturado').value = card.montoFacturado;
-            document.getElementById('card-cierre').value = card.diaCierre;
-            document.getElementById('card-estado').value = card.estadoFactura || 'Pendiente';
-            document.getElementById('card-fecha-pago').value = card.fechaPago || '';
+            document.getElementById('card-limite').value = card.limite || 0;
+            document.getElementById('card-utilizado').value = card.montoUtilizado || 0;
+            document.getElementById('card-facturado').value = card.montoFacturado || 0;
+            document.getElementById('card-cierre').value = card.diaCierre || 0;
+            toggleCamposDebito();
             toggleModal('modal-tarjeta');
         };
 
-        window.eliminarTarjeta = (id) => confirm("¿Eliminar tarjeta?") && remove(ref(db, `usuarios/${currentUser.uid}/tarjetas/${id}`));
+        window.eliminarTarjeta = (id) => confirm("¿Eliminar?") && remove(ref(db, `usuarios/${currentUser.uid}/tarjetas/${id}`));
         window.toggleModal = (id) => document.getElementById(id).classList.toggle('hidden');
         window.toggleSidebar = () => {
             document.getElementById('sidebar').classList.toggle('-translate-x-full');
@@ -195,7 +210,6 @@
         @layer base { body { @apply bg-[#f8fafc] text-slate-800 antialiased; } }
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300; }
         .material-symbols-outlined.font-fill { font-variation-settings: 'FILL' 1, 'wght' 400; }
-        .glass-header { @apply bg-white/70 backdrop-blur-xl border-b border-slate-200/50 sticky top-0 z-40; }
     </style>
 </head>
 <body>
@@ -213,7 +227,7 @@
         </div>
         <nav class="space-y-1 flex-1">
             <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">dashboard</span> <span class="font-semibold text-sm">Panel</span></a>
-            <a href="billetera.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20"><span class="material-symbols-outlined font-fill">wallet</span> <span class="font-bold text-sm">Billetera</span></a>
+            <a href="billetera.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg"><span class="material-symbols-outlined font-fill">wallet</span> <span class="font-bold text-sm">Billetera</span></a>
             <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">swap_horiz</span> <span class="font-semibold text-sm">Movimientos</span></a>
             <a href="analisis.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">analytics</span> <span class="font-semibold text-sm">Análisis</span></a>
             <a href="metas.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">track_changes</span> <span class="font-semibold text-sm">Metas</span></a>
@@ -224,42 +238,32 @@
                 <div class="size-10 rounded-full bg-primary flex items-center justify-center font-bold text-xs text-white">QA</div>
                 <div class="flex-1 overflow-hidden">
                     <p id="user-name-display" class="text-sm font-bold truncate text-white">Cargando...</p>
-                    <p class="text-[9px] text-slate-500 font-black uppercase tracking-widest">Premium User</p>
                 </div>
             </div>
-            <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors"><span class="material-symbols-outlined">logout</span> <span class="font-semibold text-sm">Cerrar Sesión</span></a>
+            <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl"><span class="material-symbols-outlined">logout</span> <span class="font-semibold text-sm">Salir</span></a>
         </div>
     </aside>
 
     <main class="flex-1 overflow-y-auto">
-        <header class="glass-header h-20 px-6 md:px-10 flex items-center justify-between">
-            <div class="flex items-center gap-4">
-                <button onclick="toggleSidebar()" class="lg:hidden p-2 bg-slate-100 rounded-xl"><span class="material-symbols-outlined">menu</span></button>
-                <h2 class="text-xl font-bold text-slate-800">Mi Billetera</h2>
-            </div>
-            <button onclick="editingCardId=null; document.getElementById('form-tarjeta').reset(); toggleModal('modal-tarjeta')" class="bg-primary text-white text-[10px] font-black uppercase tracking-[0.15em] px-6 py-3.5 rounded-2xl shadow-xl hover:shadow-primary/40 transition-all">+ Nueva Tarjeta</button>
+        <header class="bg-white/70 backdrop-blur-xl border-b border-slate-200/50 h-20 px-6 md:px-10 flex items-center justify-between sticky top-0 z-40">
+            <h2 class="text-xl font-bold text-slate-800">Mi Billetera</h2>
+            <button onclick="editingCardId=null; document.getElementById('form-tarjeta').reset(); toggleModal('modal-tarjeta')" class="bg-primary text-white text-[10px] font-black uppercase tracking-widest px-6 py-3.5 rounded-2xl shadow-xl">+ Nueva Tarjeta</button>
         </header>
 
-        <div class="p-6 md:p-10 max-w-7xl mx-auto space-y-12">
+        <div class="p-6 md:p-10 max-w-7xl mx-auto space-y-10">
             <div id="cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
 
-            <div class="bg-white rounded-[2.5rem] border border-slate-200/60 shadow-xl shadow-slate-200/30 overflow-hidden">
-                <div class="p-8 border-b border-slate-50 flex justify-between items-center">
-                    <div>
-                        <h3 class="font-black text-slate-800 text-sm uppercase tracking-widest">Resumen Financiero</h3>
-                        <p class="text-xs text-slate-400 font-medium">Sincronización en tiempo real con sus activos</p>
-                    </div>
-                </div>
+            <div class="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl overflow-hidden">
+                <div class="p-8 border-b border-slate-50"><h3 class="font-black text-slate-800 text-sm uppercase tracking-widest">Resumen Financiero</h3></div>
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
+                    <table class="w-full text-left border-collapse text-sm">
                         <thead>
-                            <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/50 border-b border-slate-100">
-                                <th class="px-6 py-5">Tarjeta Bancaria</th>
-                                <th class="px-6 py-5">Uso de Cupo</th>
-                                <th class="px-6 py-5 text-red-400">Deuda Facturada</th>
-                                <th class="px-6 py-5 text-emerald-500">Saldo Disponible</th>
+                            <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/50">
+                                <th class="px-6 py-5">Tarjeta / Cuenta</th>
+                                <th class="px-6 py-5">Disponible</th>
+                                <th class="px-6 py-5">Facturado Mes</th>
                                 <th class="px-6 py-5">Estado</th>
-                                <th class="px-6 py-5 text-right">Acciones</th>
+                                <th class="px-6 py-5 text-right">Acción</th>
                             </tr>
                         </thead>
                         <tbody id="tabla-datos-body" class="divide-y divide-slate-50"></tbody>
@@ -271,81 +275,45 @@
 </div>
 
 <div id="modal-tarjeta" class="fixed inset-0 z-[60] hidden flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4">
-    <div class="bg-white w-full max-w-xl rounded-[3rem] p-10 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto">
-        <div class="flex justify-between items-center mb-8">
-            <h3 class="text-2xl font-black text-slate-800">Ajustar Parámetros</h3>
-            <button onclick="toggleModal('modal-tarjeta')" class="size-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-800 transition-colors">×</button>
-        </div>
+    <div class="bg-white w-full max-w-xl rounded-[3rem] p-10 shadow-2xl max-h-[90vh] overflow-y-auto">
+        <h3 class="text-2xl font-black mb-8">Parámetros de Cuenta</h3>
         <form id="form-tarjeta" class="space-y-6" onsubmit="event.preventDefault(); saveCard();">
-            <div class="grid grid-cols-2 gap-6">
-                <div>
-                    <label class="text-[11px] font-black text-slate-400 uppercase mb-2 block ml-1">Alias de Tarjeta</label>
-                    <input id="card-nombre" type="text" required class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-slate-700 ring-1 ring-slate-200 focus:ring-2 focus:ring-primary transition-all">
-                </div>
-                <div>
-                    <label class="text-[11px] font-black text-slate-400 uppercase mb-2 block ml-1">Entidad Bancaria</label>
-                    <input id="card-banco" type="text" required class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-slate-700 ring-1 ring-slate-200 focus:ring-2 focus:ring-primary transition-all">
-                </div>
+            <div class="grid grid-cols-2 gap-4">
+                <input id="card-nombre" type="text" placeholder="Alias Tarjeta" required class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold ring-1 ring-slate-200">
+                <input id="card-banco" type="text" placeholder="Banco" required class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold ring-1 ring-slate-200">
             </div>
-            <div>
-                <label class="text-[11px] font-black text-slate-400 uppercase mb-2 block ml-1">Perfil Visual (Emisor)</label>
-                <select id="card-estilo" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-slate-700 ring-1 ring-slate-200 focus:ring-2 focus:ring-primary">
-                    <option>Falabella (Verde)</option><option>Falabella (Negro)</option><option>Falabella (Dorada)</option>
-                    <option>Santander (Rojo)</option><option>Chile (Azul)</option><option>BCI (Azul)</option>
-                    <option>Itau (Naranja)</option><option>Scotiabank (Rojo)</option><option>Estado (Pato)</option><option>General (Gris)</option>
+            <div class="grid grid-cols-2 gap-4">
+                <select id="card-categoria" onchange="toggleCamposDebito()" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold ring-1 ring-slate-200">
+                    <option>Crédito</option><option>Débito</option>
+                </select>
+                <select id="card-estilo" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold ring-1 ring-slate-200">
+                    <option>Falabella (Verde)</option><option>Falabella (Negro)</option><option>Falabella (Dorada)</option><option>Santander (Rojo)</option><option>Chile (Azul)</option><option>BCI (Azul)</option><option>Itau (Naranja)</option><option>Scotiabank (Rojo)</option><option>Estado (Pato)</option><option>General (Gris)</option>
                 </select>
             </div>
-            <div class="grid grid-cols-2 gap-6">
-                <div>
-                    <label class="text-[11px] font-black text-slate-400 uppercase mb-2 block ml-1">Categoría</label>
-                    <select id="card-categoria" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-slate-700 ring-1 ring-slate-200 focus:ring-2 focus:ring-primary">
-                        <option>Crédito</option><option>Débito</option>
-                    </select>
+            
+            <div id="seccion-principal">
+                <label class="text-[11px] font-black text-primary uppercase mb-2 block ml-1">Saldo Disponible Actual (Monto Real)</label>
+                <input id="card-disponible" type="number" required class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold ring-2 ring-primary/20">
+            </div>
+
+            <div id="seccion-credito" class="space-y-6 transition-all">
+                <div class="grid grid-cols-3 gap-4">
+                    <input id="card-limite" type="number" placeholder="Cupo Total" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold ring-1 ring-slate-200">
+                    <input id="card-utilizado" type="number" placeholder="M. Utilizado" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold ring-1 ring-slate-200">
+                    <input id="card-facturado" type="number" placeholder="M. Facturado" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold ring-1 ring-slate-200">
                 </div>
-                <div>
-                    <label class="text-[11px] font-black text-slate-400 uppercase mb-2 block ml-1">Franquicia</label>
-                    <select id="card-tipo" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-slate-700 ring-1 ring-slate-200 focus:ring-2 focus:ring-primary">
-                        <option>Visa</option><option>Mastercard</option>
-                    </select>
+                <div class="grid grid-cols-2 gap-4">
+                    <select id="card-estado" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold ring-1 ring-slate-200"><option>Pendiente</option><option>Pagado</option></select>
+                    <input id="card-cierre" type="number" placeholder="Día Cierre" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold ring-1 ring-slate-200">
                 </div>
             </div>
-            <div class="grid grid-cols-3 gap-6">
-                <div>
-                    <label class="text-[11px] font-black text-slate-400 uppercase mb-2 block ml-1">Cupo Total</label>
-                    <input id="card-limite" type="number" required class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-slate-700 ring-1 ring-slate-200 focus:ring-primary">
-                </div>
-                <div>
-                    <label class="text-[11px] font-black text-red-400 uppercase mb-2 block ml-1">Uso Actual</label>
-                    <input id="card-utilizado" type="number" required class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-slate-700 ring-1 ring-red-100">
-                </div>
-                <div>
-                    <label class="text-[11px] font-black text-primary uppercase mb-2 block ml-1">Disponible</label>
-                    <input id="card-disponible" type="number" required class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-slate-700 ring-2 ring-primary/20">
-                </div>
-            </div>
-            <div class="grid grid-cols-2 gap-6">
-                <div>
-                    <label class="text-[11px] font-black text-slate-400 uppercase mb-2 block ml-1">Monto Facturado</label>
-                    <input id="card-facturado" type="number" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-slate-700 ring-1 ring-slate-200">
-                </div>
-                <div>
-                    <label class="text-[11px] font-black text-slate-400 uppercase mb-2 block ml-1">Estado de Pago</label>
-                    <select id="card-estado" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-slate-700 ring-1 ring-slate-200">
-                        <option>Pendiente</option><option>Pagado</option>
-                    </select>
-                </div>
-            </div>
-            <div class="grid grid-cols-2 gap-6">
-                <div>
-                    <label class="text-[11px] font-black text-slate-400 uppercase mb-2 block ml-1">Día de Cierre</label>
-                    <input id="card-cierre" type="number" min="1" max="31" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-slate-700 ring-1 ring-slate-200">
-                </div>
-                <div>
-                    <label class="text-[11px] font-black text-slate-400 uppercase mb-2 block ml-1">Fecha de Pago</label>
-                    <input id="card-fecha-pago" type="date" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-slate-700 ring-1 ring-slate-200">
-                </div>
-            </div>
-            <button type="submit" class="w-full bg-primary text-white py-5 rounded-3xl font-black uppercase tracking-widest text-xs shadow-2xl shadow-primary/30 transition-all hover:scale-[1.02]">Confirmar y Sincronizar</button>
+
+            <select id="card-tipo" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold ring-1 ring-slate-200">
+                <option>Visa</option><option>Mastercard</option>
+            </select>
+            <input id="card-fecha-pago" type="date" class="hidden">
+            
+            <button type="submit" class="w-full bg-primary text-white py-5 rounded-3xl font-black uppercase tracking-widest text-xs shadow-xl">Confirmar y Guardar</button>
         </form>
     </div>
 </div>
