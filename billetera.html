@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>QuantyA - Billetera</title>
+    <title>QuantyA - Billetera Pro</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -30,16 +30,9 @@
         let editingCardId = null;
 
         const variantesColor = {
-            'Falabella (Verde)': 'bg-[#00a74a]',
-            'Falabella (Negro)': 'bg-slate-900',
-            'Falabella (Dorada)': 'bg-[#b59410]',
-            'Santander (Rojo)': 'bg-[#ec0000]',
-            'Chile (Azul)': 'bg-[#002464]',
-            'BCI (Azul)': 'bg-[#007cc3]',
-            'Itau (Naranja)': 'bg-[#ff5f00]',
-            'Scotiabank (Rojo)': 'bg-[#ed0722]',
-            'Estado (Pato)': 'bg-[#ff8200]',
-            'General (Gris)': 'bg-slate-700'
+            'Falabella (Verde)': 'bg-[#00a74a]', 'Falabella (Negro)': 'bg-slate-900', 'Falabella (Dorada)': 'bg-[#b59410]',
+            'Santander (Rojo)': 'bg-[#ec0000]', 'Chile (Azul)': 'bg-[#002464]', 'BCI (Azul)': 'bg-[#007cc3]',
+            'Itau (Naranja)': 'bg-[#ff5f00]', 'Scotiabank (Rojo)': 'bg-[#ed0722]', 'Estado (Pato)': 'bg-[#ff8200]', 'General (Gris)': 'bg-slate-700'
         };
 
         onAuthStateChanged(auth, (user) => {
@@ -54,8 +47,7 @@
             onValue(ref(db, `usuarios/${currentUser.uid}/tarjetas`), (snapshot) => {
                 const container = document.getElementById('cards-grid');
                 const tablaBody = document.getElementById('tabla-datos-body');
-                container.innerHTML = '';
-                tablaBody.innerHTML = '';
+                container.innerHTML = ''; tablaBody.innerHTML = '';
                 const data = snapshot.val();
                 
                 if (data) {
@@ -63,12 +55,13 @@
                         const card = data[id];
                         const colorClase = variantesColor[card.estilo] || 'bg-slate-800';
                         const logoMarca = card.tipo === 'Visa' ? 'https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg' : 'https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg';
+                        
                         const disp = Number(card.saldoDisponibleActual) || 0;
                         const fact = Number(card.montoFacturado) || 0;
+                        const utilizado = Number(card.montoUtilizado) || 0;
 
-                        // RENDER TARJETA
                         container.innerHTML += `
-                            <div class="${colorClase} rounded-[2rem] p-6 text-white shadow-xl border border-slate-800 relative overflow-hidden h-56 flex flex-col justify-between group">
+                            <div class="${colorClase} rounded-[2rem] p-6 text-white shadow-xl border border-slate-800 relative overflow-hidden h-60 flex flex-col justify-between group">
                                 <div class="flex justify-between items-start z-10">
                                     <div class="space-y-1">
                                         <p class="text-[9px] uppercase tracking-widest opacity-60 font-bold">${card.banco}</p>
@@ -82,20 +75,22 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="z-10">
-                                    <p class="text-[10px] font-bold uppercase opacity-60 mb-1">Disponible Actual</p>
-                                    <p class="text-3xl font-black tracking-tighter">$${disp.toLocaleString('es-CL')}</p>
-                                    <div class="flex justify-between text-[9px] font-bold uppercase mt-4 opacity-70">
-                                        <span>Cupo: $${Number(card.limite).toLocaleString()}</span>
-                                        <span>Cierre: D${card.diaCierre}</span>
+                                <div class="z-10 space-y-3">
+                                    <div>
+                                        <p class="text-[9px] font-bold uppercase opacity-60 mb-1">Disponible Actual</p>
+                                        <p class="text-3xl font-black tracking-tighter">$${disp.toLocaleString('es-CL')}</p>
+                                    </div>
+                                    <div class="flex justify-between text-[9px] font-bold uppercase p-2 bg-black/20 rounded-xl">
+                                        <span class="text-red-300">Utilizado: $${utilizado.toLocaleString()}</span>
+                                        <span class="text-emerald-300">Cupo: $${Number(card.limite).toLocaleString()}</span>
                                     </div>
                                 </div>
                             </div>`;
 
-                        // RENDER TABLA
                         tablaBody.innerHTML += `
-                            <tr class="border-b border-slate-50 text-sm">
+                            <tr class="border-b border-slate-50 text-sm hover:bg-slate-50/50 transition-colors">
                                 <td class="px-6 py-4 font-bold text-slate-800">${card.nombre}</td>
+                                <td class="px-6 py-4 font-black text-slate-600">$${utilizado.toLocaleString()}</td>
                                 <td class="px-6 py-4 font-black text-red-500">$${fact.toLocaleString()}</td>
                                 <td class="px-6 py-4 font-black text-emerald-600">$${disp.toLocaleString()}</td>
                                 <td class="px-6 py-4">
@@ -103,15 +98,41 @@
                                         ${card.estadoFactura || 'Pendiente'}
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 text-[10px] font-bold text-slate-400">${card.fechaPago || '--/--/--'}</td>
                                 <td class="px-6 py-4 text-right">
-                                    <button onclick="procesarPago('${id}', ${fact}, ${disp})" class="text-primary font-black text-[10px] uppercase hover:underline">Acción</button>
+                                    ${card.estadoFactura !== 'Pagado' ? `<button onclick="confirmarPagoFactura('${id}', ${fact}, ${disp}, ${utilizado})" class="bg-primary text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase shadow-md shadow-primary/20">Marcar Pagado</button>` : `<span class="text-emerald-500 material-symbols-outlined font-fill">check_circle</span>`}
                                 </td>
                             </tr>`;
                     });
                 }
             });
         }
+
+        window.confirmarPagoFactura = async (id, fact, disp, utilizado) => {
+            if (fact <= 0) return alert("El monto facturado debe ser mayor a 0 para pagar.");
+            
+            if (confirm(`¿Confirmas el pago de $${fact.toLocaleString()}? \nEsto sumará el monto al disponible y restará del utilizado.`)) {
+                const hoy = new Date().toISOString().split('T')[0];
+                const nuevoDisponible = disp + fact;
+                const nuevoUtilizado = Math.max(0, utilizado - fact);
+
+                await update(ref(db, `usuarios/${currentUser.uid}/tarjetas/${id}`), {
+                    montoFacturado: 0,
+                    montoUtilizado: nuevoUtilizado,
+                    saldoDisponibleActual: nuevoDisponible,
+                    estadoFactura: 'Pagado',
+                    fechaPago: hoy
+                });
+
+                // Registrar el movimiento de salida de dinero (Gasto)
+                await push(ref(db, `usuarios/${currentUser.uid}/movimientos`), {
+                    concepto: "Pago de Factura: " + id,
+                    monto: fact,
+                    tipo: "Gasto",
+                    categoria: "Billetera",
+                    fecha: new Date().toISOString()
+                });
+            }
+        };
 
         window.saveCard = async () => {
             const cardData = {
@@ -121,6 +142,7 @@
                 tipo: document.getElementById('card-tipo').value,
                 categoria: document.getElementById('card-categoria').value,
                 limite: parseFloat(document.getElementById('card-limite').value),
+                montoUtilizado: parseFloat(document.getElementById('card-utilizado').value) || 0,
                 saldoDisponibleActual: parseFloat(document.getElementById('card-disponible').value),
                 montoFacturado: parseFloat(document.getElementById('card-facturado').value) || 0,
                 diaCierre: document.getElementById('card-cierre').value,
@@ -138,27 +160,6 @@
             document.getElementById('form-tarjeta').reset();
         };
 
-        window.procesarPago = async (id, fact, disp) => {
-            if (fact <= 0) return alert("Sin deuda facturada.");
-            if (confirm("¿Marcar como PAGADO y sumar al disponible actual?")) {
-                const hoy = new Date().toISOString().split('T')[0];
-                await update(ref(db, `usuarios/${currentUser.uid}/tarjetas/${id}`), {
-                    montoFacturado: 0,
-                    saldoDisponibleActual: disp + fact,
-                    estadoFactura: 'Pagado',
-                    fechaPago: hoy
-                });
-                // Registro en Movimientos
-                await push(ref(db, `usuarios/${currentUser.uid}/movimientos`), {
-                    concepto: "Pago Factura Tarjeta",
-                    monto: fact,
-                    tipo: "Gasto",
-                    fecha: new Date().toISOString(),
-                    categoria: "Billetera"
-                });
-            }
-        };
-
         window.prepararEdicion = (id, card) => {
             editingCardId = id;
             document.getElementById('card-nombre').value = card.nombre;
@@ -167,12 +168,13 @@
             document.getElementById('card-tipo').value = card.tipo;
             document.getElementById('card-categoria').value = card.categoria;
             document.getElementById('card-limite').value = card.limite;
+            document.getElementById('card-utilizado').value = card.montoUtilizado || 0;
             document.getElementById('card-disponible').value = card.saldoDisponibleActual;
             document.getElementById('card-facturado').value = card.montoFacturado;
             document.getElementById('card-cierre').value = card.diaCierre;
             document.getElementById('card-estado').value = card.estadoFactura || 'Pendiente';
             document.getElementById('card-fecha-pago').value = card.fechaPago || '';
-            document.getElementById('modal-title').innerText = "Ajustar Tarjeta";
+            document.getElementById('modal-title').innerText = "Editar Parámetros";
             toggleModal('modal-tarjeta');
         };
 
@@ -186,12 +188,7 @@
 
     <script id="tailwind-config">
         tailwind.config = {
-            theme: {
-                extend: {
-                    colors: { "primary": "#176282" },
-                    fontFamily: { sans: ['Inter', 'sans-serif'] }
-                }
-            }
+            theme: { extend: { colors: { "primary": "#176282" }, fontFamily: { sans: ['Inter', 'sans-serif'] } } }
         }
     </script>
     <style type="text/tailwindcss">
@@ -207,23 +204,17 @@
     <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 w-72 bg-[#0f172a] text-white flex flex-col shrink-0 border-r border-slate-800 p-6 z-50 transition-transform duration-300 -translate-x-full lg:translate-x-0">
         <div class="flex items-center justify-between mb-8">
             <div class="flex items-center gap-3 px-2">
-                <div class="size-10 bg-primary rounded-xl flex items-center justify-center text-white">
-                    <span class="material-symbols-outlined text-2xl font-fill">account_balance_wallet</span>
-                </div>
+                <div class="size-10 bg-primary rounded-xl flex items-center justify-center text-white"><span class="material-symbols-outlined text-2xl font-fill">account_balance_wallet</span></div>
                 <h1 class="text-xl font-black tracking-tight">QuantyA</h1>
             </div>
             <button onclick="toggleSidebar()" class="lg:hidden p-2 text-slate-400"><span class="material-symbols-outlined">close</span></button>
         </div>
-
         <nav class="space-y-1 flex-1">
             <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">dashboard</span> <span class="font-semibold text-sm">Panel</span></a>
             <a href="billetera.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20"><span class="material-symbols-outlined font-fill">wallet</span> <span class="font-bold text-sm">Billetera</span></a>
             <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">swap_horiz</span> <span class="font-semibold text-sm">Movimientos</span></a>
             <a href="analisis.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">analytics</span> <span class="font-semibold text-sm">Análisis</span></a>
-            <a href="metas.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">track_changes</span> <span class="font-semibold text-sm">Metas</span></a>
-            <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">settings</span> <span class="font-semibold text-sm">Configuración</span></a>
         </nav>
-
         <div class="pt-6 border-t border-slate-800">
             <div class="bg-slate-800/50 p-4 rounded-2xl flex items-center gap-3 mb-2">
                 <div class="size-10 rounded-full bg-primary flex items-center justify-center font-bold text-xs text-white">QA</div>
@@ -249,19 +240,19 @@
             <div id="cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
 
             <div class="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
-                <div class="p-6 border-b border-slate-50">
-                    <h3 class="font-black text-slate-800 uppercase text-xs tracking-widest">Resumen General de Cuentas</h3>
+                <div class="p-6 border-b border-slate-50 flex justify-between items-center">
+                    <h3 class="font-black text-slate-800 uppercase text-xs tracking-widest">Estado Contable de Cuentas</h3>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/50">
-                                <th class="px-6 py-4">Tarjeta / Cuenta</th>
-                                <th class="px-6 py-4">Deuda Mes</th>
-                                <th class="px-6 py-4">Saldo Disp.</th>
+                                <th class="px-6 py-4">Tarjeta</th>
+                                <th class="px-6 py-4">Monto Utilizado</th>
+                                <th class="px-6 py-4">Por Pagar (Mes)</th>
+                                <th class="px-6 py-4">Disponible</th>
                                 <th class="px-6 py-4">Estado</th>
-                                <th class="px-6 py-4">Fecha Pago</th>
-                                <th class="px-6 py-4 text-right">Controles</th>
+                                <th class="px-6 py-4 text-right">Acción</th>
                             </tr>
                         </thead>
                         <tbody id="tabla-datos-body" class="divide-y divide-slate-50"></tbody>
@@ -281,16 +272,16 @@
         <form id="form-tarjeta" class="space-y-4" onsubmit="event.preventDefault(); saveCard();">
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block px-1">Nombre Tarjeta</label>
+                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">Nombre</label>
                     <input id="card-nombre" type="text" required class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-sm">
                 </div>
                 <div>
-                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block px-1">Banco / Emisor</label>
+                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">Banco</label>
                     <input id="card-banco" type="text" required class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-sm">
                 </div>
             </div>
             <div>
-                <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block px-1">Diseño Tarjeta</label>
+                <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">Diseño (Color)</label>
                 <select id="card-estilo" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-sm">
                     <option>Falabella (Verde)</option><option>Falabella (Negro)</option><option>Falabella (Dorada)</option>
                     <option>Santander (Rojo)</option><option>Chile (Azul)</option><option>BCI (Azul)</option>
@@ -299,35 +290,39 @@
             </div>
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block px-1">Categoría</label>
+                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">Categoría</label>
                     <select id="card-categoria" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-sm">
                         <option>Crédito</option><option>Débito</option>
                     </select>
                 </div>
                 <div>
-                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block px-1">Franquicia</label>
+                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">Franquicia</label>
                     <select id="card-tipo" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-sm">
                         <option>Visa</option><option>Mastercard</option>
                     </select>
                 </div>
             </div>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-3 gap-4">
                 <div>
-                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block px-1">Cupo Total</label>
+                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">Cupo Total</label>
                     <input id="card-limite" type="number" required class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-sm">
                 </div>
                 <div>
-                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block px-1 text-primary">Saldo Disponible Actual</label>
-                    <input id="card-disponible" type="number" required class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-sm border-2 border-primary/10">
+                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">M. Utilizado</label>
+                    <input id="card-utilizado" type="number" required class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-sm">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-primary uppercase mb-2 block">M. Disponible</label>
+                    <input id="card-disponible" type="number" required class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-sm border-2 border-primary/20">
                 </div>
             </div>
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block px-1">Monto Facturado Mes</label>
-                    <input id="card-facturado" type="number" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-sm">
+                    <label class="text-[10px] font-black text-red-400 uppercase mb-2 block">M. Facturado Mes</label>
+                    <input id="card-facturado" type="number" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-sm border-2 border-red-50/50">
                 </div>
                 <div>
-                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block px-1">Estado Pago</label>
+                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">Estado Factura</label>
                     <select id="card-estado" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-sm">
                         <option>Pendiente</option><option>Pagado</option>
                     </select>
@@ -335,15 +330,15 @@
             </div>
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block px-1">Día de Cierre</label>
-                    <input id="card-cierre" type="number" min="1" max="31" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-sm">
+                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">Día Cierre</label>
+                    <input id="card-cierre" type="number" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-sm">
                 </div>
                 <div>
-                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block px-1">Fecha de Pago</label>
+                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">Fecha de Pago</label>
                     <input id="card-fecha-pago" type="date" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-sm">
                 </div>
             </div>
-            <button type="submit" class="w-full bg-primary text-white py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] mt-4 shadow-lg shadow-primary/30">Confirmar Cambios</button>
+            <button type="submit" class="w-full bg-primary text-white py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] mt-4 shadow-lg">Confirmar y Sincronizar</button>
         </form>
     </div>
 </div>
