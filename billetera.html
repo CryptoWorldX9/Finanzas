@@ -3,9 +3,9 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>QuantyA - Billetera Pro</title>
+    <title>QuantyA - Billetera Premium</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
 
     <script type="module">
@@ -30,9 +30,16 @@
         let editingCardId = null;
 
         const variantesColor = {
-            'Falabella (Verde)': 'bg-[#00a74a]', 'Falabella (Negro)': 'bg-slate-900', 'Falabella (Dorada)': 'bg-[#b59410]',
-            'Santander (Rojo)': 'bg-[#ec0000]', 'Chile (Azul)': 'bg-[#002464]', 'BCI (Azul)': 'bg-[#007cc3]',
-            'Itau (Naranja)': 'bg-[#ff5f00]', 'Scotiabank (Rojo)': 'bg-[#ed0722]', 'Estado (Pato)': 'bg-[#ff8200]', 'General (Gris)': 'bg-slate-700'
+            'Falabella (Verde)': 'from-[#00a74a] to-[#007d38]',
+            'Falabella (Negro)': 'from-[#1a1a1a] to-[#000000]',
+            'Falabella (Dorada)': 'from-[#d4af37] to-[#aa8a2e]',
+            'Santander (Rojo)': 'from-[#ec0000] to-[#b30000]',
+            'Chile (Azul)': 'from-[#002464] to-[#00143a]',
+            'BCI (Azul)': 'from-[#007cc3] to-[#005a8e]',
+            'Itau (Naranja)': 'from-[#ff5f00] to-[#cc4c00]',
+            'Scotiabank (Rojo)': 'from-[#ed0722] to-[#b5051a]',
+            'Estado (Pato)': 'from-[#ff8200] to-[#cc6800]',
+            'General (Gris)': 'from-[#475569] to-[#1e293b]'
         };
 
         onAuthStateChanged(auth, (user) => {
@@ -53,53 +60,67 @@
                 if (data) {
                     Object.keys(data).forEach(id => {
                         const card = data[id];
-                        const colorClase = variantesColor[card.estilo] || 'bg-slate-800';
+                        const degradado = variantesColor[card.estilo] || 'from-slate-700 to-slate-900';
                         const logoMarca = card.tipo === 'Visa' ? 'https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg' : 'https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg';
                         
                         const disp = Number(card.saldoDisponibleActual) || 0;
                         const fact = Number(card.montoFacturado) || 0;
                         const utilizado = Number(card.montoUtilizado) || 0;
 
+                        // DISEÑO DE TARJETA CORPORATIVA
                         container.innerHTML += `
-                            <div class="${colorClase} rounded-[2rem] p-6 text-white shadow-xl border border-slate-800 relative overflow-hidden h-60 flex flex-col justify-between group">
-                                <div class="flex justify-between items-start z-10">
+                            <div class="relative group h-60 rounded-[2rem] p-8 text-white bg-gradient-to-br ${degradado} shadow-2xl overflow-hidden flex flex-col justify-between transition-transform hover:-translate-y-1">
+                                <div class="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl"></div>
+                                <div class="absolute bottom-0 left-0 w-32 h-32 bg-black/10 rounded-full -ml-16 -mb-16 blur-2xl"></div>
+                                
+                                <div class="relative z-10 flex justify-between items-start">
                                     <div class="space-y-1">
-                                        <p class="text-[9px] uppercase tracking-widest opacity-60 font-bold">${card.banco}</p>
-                                        <h3 class="text-xl font-black">${card.nombre}</h3>
+                                        <p class="text-[10px] uppercase font-black tracking-[0.2em] text-white/50">${card.banco}</p>
+                                        <h3 class="text-xl font-bold tracking-tight">${card.nombre}</h3>
                                     </div>
-                                    <div class="flex flex-col items-end gap-2">
-                                        <img src="${logoMarca}" class="h-6 opacity-90">
-                                        <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button onclick="prepararEdicion('${id}', ${JSON.stringify(card).replace(/"/g, '&quot;')})" class="p-1.5 bg-white/10 rounded-lg hover:bg-white/20"><span class="material-symbols-outlined text-sm">edit</span></button>
-                                            <button onclick="eliminarTarjeta('${id}')" class="p-1.5 bg-red-500/20 rounded-lg hover:bg-red-500"><span class="material-symbols-outlined text-sm">delete</span></button>
+                                    <div class="flex flex-col items-end gap-3">
+                                        <img src="${logoMarca}" class="h-6 object-contain brightness-0 invert opacity-80" alt="marca">
+                                        <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
+                                            <button onclick="prepararEdicion('${id}', ${JSON.stringify(card).replace(/"/g, '&quot;')})" class="size-8 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center hover:bg-white/30 border border-white/20"><span class="material-symbols-outlined text-sm">edit</span></button>
+                                            <button onclick="eliminarTarjeta('${id}')" class="size-8 bg-red-500/20 backdrop-blur-md rounded-full flex items-center justify-center hover:bg-red-500 border border-red-500/30"><span class="material-symbols-outlined text-sm text-red-200">delete</span></button>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="z-10 space-y-3">
-                                    <div>
-                                        <p class="text-[9px] font-bold uppercase opacity-60 mb-1">Disponible Actual</p>
-                                        <p class="text-3xl font-black tracking-tighter">$${disp.toLocaleString('es-CL')}</p>
+
+                                <div class="relative z-10">
+                                    <p class="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-1">Disponible para uso</p>
+                                    <div class="flex items-baseline gap-1">
+                                        <span class="text-2xl font-medium opacity-60">$</span>
+                                        <span class="text-4xl font-extrabold tracking-tighter">${disp.toLocaleString('es-CL')}</span>
                                     </div>
-                                    <div class="flex justify-between text-[9px] font-bold uppercase p-2 bg-black/20 rounded-xl">
-                                        <span class="text-red-300">Utilizado: $${utilizado.toLocaleString()}</span>
-                                        <span class="text-emerald-300">Cupo: $${Number(card.limite).toLocaleString()}</span>
-                                    </div>
+                                </div>
+
+                                <div class="relative z-10 flex justify-between items-center bg-black/20 backdrop-blur-sm rounded-2xl px-4 py-3 border border-white/5 text-[10px] font-black uppercase tracking-wider">
+                                    <div class="flex flex-col"><span class="text-white/40">Utilizado</span><span class="text-white">$${utilizado.toLocaleString()}</span></div>
+                                    <div class="h-6 w-[1px] bg-white/10"></div>
+                                    <div class="flex flex-col text-right"><span class="text-white/40">Cierre</span><span class="text-white">Día ${card.diaCierre}</span></div>
                                 </div>
                             </div>`;
 
+                        // FILA TABLA
                         tablaBody.innerHTML += `
-                            <tr class="border-b border-slate-50 text-sm hover:bg-slate-50/50 transition-colors">
-                                <td class="px-6 py-4 font-bold text-slate-800">${card.nombre}</td>
-                                <td class="px-6 py-4 font-black text-slate-600">$${utilizado.toLocaleString()}</td>
-                                <td class="px-6 py-4 font-black text-red-500">$${fact.toLocaleString()}</td>
-                                <td class="px-6 py-4 font-black text-emerald-600">$${disp.toLocaleString()}</td>
-                                <td class="px-6 py-4">
-                                    <span class="px-3 py-1 rounded-full text-[9px] font-black uppercase ${card.estadoFactura === 'Pagado' ? 'bg-emerald-100 text-emerald-600' : 'bg-orange-100 text-orange-600'}">
+                            <tr class="group border-b border-slate-50 hover:bg-slate-50/50 transition-all">
+                                <td class="px-6 py-5">
+                                    <div class="flex items-center gap-3">
+                                        <div class="size-2 rounded-full bg-gradient-to-br ${degradado}"></div>
+                                        <span class="font-bold text-slate-800">${card.nombre}</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-5 text-slate-500 font-medium">$${utilizado.toLocaleString()}</td>
+                                <td class="px-6 py-5 font-black text-red-500">$${fact.toLocaleString()}</td>
+                                <td class="px-6 py-5 font-black text-emerald-600">$${disp.toLocaleString()}</td>
+                                <td class="px-6 py-5">
+                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${card.estadoFactura === 'Pagado' ? 'bg-emerald-50 text-emerald-600' : 'bg-orange-50 text-orange-600'}">
                                         ${card.estadoFactura || 'Pendiente'}
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 text-right">
-                                    ${card.estadoFactura !== 'Pagado' ? `<button onclick="confirmarPagoFactura('${id}', ${fact}, ${disp}, ${utilizado})" class="bg-primary text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase shadow-md shadow-primary/20">Marcar Pagado</button>` : `<span class="text-emerald-500 material-symbols-outlined font-fill">check_circle</span>`}
+                                <td class="px-6 py-5 text-right">
+                                    ${card.estadoFactura !== 'Pagado' ? `<button onclick="confirmarPagoFactura('${id}', ${fact}, ${disp}, ${utilizado})" class="bg-[#176282] text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-[#176282]/20 hover:scale-105 transition-transform">Marcar Pago</button>` : `<span class="text-emerald-500 font-bold text-[10px] uppercase flex items-center justify-end gap-1"><span class="material-symbols-outlined text-sm">check_circle</span> Procesado</span>`}
                                 </td>
                             </tr>`;
                     });
@@ -108,28 +129,14 @@
         }
 
         window.confirmarPagoFactura = async (id, fact, disp, utilizado) => {
-            if (fact <= 0) return alert("El monto facturado debe ser mayor a 0 para pagar.");
-            
-            if (confirm(`¿Confirmas el pago de $${fact.toLocaleString()}? \nEsto sumará el monto al disponible y restará del utilizado.`)) {
-                const hoy = new Date().toISOString().split('T')[0];
-                const nuevoDisponible = disp + fact;
-                const nuevoUtilizado = Math.max(0, utilizado - fact);
-
+            if (fact <= 0) return alert("Debe haber un monto facturado.");
+            if (confirm(`¿Saldar deuda de $${fact.toLocaleString()}?`)) {
                 await update(ref(db, `usuarios/${currentUser.uid}/tarjetas/${id}`), {
                     montoFacturado: 0,
-                    montoUtilizado: nuevoUtilizado,
-                    saldoDisponibleActual: nuevoDisponible,
+                    montoUtilizado: Math.max(0, utilizado - fact),
+                    saldoDisponibleActual: disp + fact,
                     estadoFactura: 'Pagado',
-                    fechaPago: hoy
-                });
-
-                // Registrar el movimiento de salida de dinero (Gasto)
-                await push(ref(db, `usuarios/${currentUser.uid}/movimientos`), {
-                    concepto: "Pago de Factura: " + id,
-                    monto: fact,
-                    tipo: "Gasto",
-                    categoria: "Billetera",
-                    fecha: new Date().toISOString()
+                    fechaPago: new Date().toISOString().split('T')[0]
                 });
             }
         };
@@ -149,15 +156,9 @@
                 estadoFactura: document.getElementById('card-estado').value,
                 fechaPago: document.getElementById('card-fecha-pago').value
             };
-
-            if (editingCardId) {
-                await update(ref(db, `usuarios/${currentUser.uid}/tarjetas/${editingCardId}`), cardData);
-                editingCardId = null;
-            } else {
-                await push(ref(db, `usuarios/${currentUser.uid}/tarjetas`), cardData);
-            }
+            if (editingCardId) { await update(ref(db, `usuarios/${currentUser.uid}/tarjetas/${editingCardId}`), cardData); }
+            else { await push(ref(db, `usuarios/${currentUser.uid}/tarjetas`), cardData); }
             toggleModal('modal-tarjeta');
-            document.getElementById('form-tarjeta').reset();
         };
 
         window.prepararEdicion = (id, card) => {
@@ -174,7 +175,6 @@
             document.getElementById('card-cierre').value = card.diaCierre;
             document.getElementById('card-estado').value = card.estadoFactura || 'Pendiente';
             document.getElementById('card-fecha-pago').value = card.fechaPago || '';
-            document.getElementById('modal-title').innerText = "Editar Parámetros";
             toggleModal('modal-tarjeta');
         };
 
@@ -188,15 +188,17 @@
 
     <script id="tailwind-config">
         tailwind.config = {
-            theme: { extend: { colors: { "primary": "#176282" }, fontFamily: { sans: ['Inter', 'sans-serif'] } } }
+            theme: { extend: { colors: { "primary": "#176282" }, fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] } } }
         }
     </script>
     <style type="text/tailwindcss">
+        @layer base { body { @apply bg-[#f8fafc] text-slate-800 antialiased; } }
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300; }
         .material-symbols-outlined.font-fill { font-variation-settings: 'FILL' 1, 'wght' 400; }
+        .glass-header { @apply bg-white/70 backdrop-blur-xl border-b border-slate-200/50 sticky top-0 z-40; }
     </style>
 </head>
-<body class="bg-[#fcfdfe] text-slate-700 font-sans">
+<body>
 
 <div id="overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/50 z-40 hidden lg:hidden backdrop-blur-sm"></div>
 
@@ -214,45 +216,50 @@
             <a href="billetera.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20"><span class="material-symbols-outlined font-fill">wallet</span> <span class="font-bold text-sm">Billetera</span></a>
             <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">swap_horiz</span> <span class="font-semibold text-sm">Movimientos</span></a>
             <a href="analisis.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">analytics</span> <span class="font-semibold text-sm">Análisis</span></a>
+            <a href="metas.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">track_changes</span> <span class="font-semibold text-sm">Metas</span></a>
+            <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">settings</span> <span class="font-semibold text-sm">Configuración</span></a>
         </nav>
         <div class="pt-6 border-t border-slate-800">
             <div class="bg-slate-800/50 p-4 rounded-2xl flex items-center gap-3 mb-2">
                 <div class="size-10 rounded-full bg-primary flex items-center justify-center font-bold text-xs text-white">QA</div>
                 <div class="flex-1 overflow-hidden">
                     <p id="user-name-display" class="text-sm font-bold truncate text-white">Cargando...</p>
-                    <p class="text-[9px] text-slate-500 font-black uppercase tracking-widest">Mi Perfil</p>
+                    <p class="text-[9px] text-slate-500 font-black uppercase tracking-widest">Premium User</p>
                 </div>
             </div>
-            <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors"><span class="material-symbols-outlined">logout</span> <span class="font-semibold text-sm">Salir</span></a>
+            <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors"><span class="material-symbols-outlined">logout</span> <span class="font-semibold text-sm">Cerrar Sesión</span></a>
         </div>
     </aside>
 
     <main class="flex-1 overflow-y-auto">
-        <header class="sticky top-0 z-40 h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 md:px-10 flex items-center justify-between">
+        <header class="glass-header h-20 px-6 md:px-10 flex items-center justify-between">
             <div class="flex items-center gap-4">
                 <button onclick="toggleSidebar()" class="lg:hidden p-2 bg-slate-100 rounded-xl"><span class="material-symbols-outlined">menu</span></button>
-                <h2 class="text-lg md:text-2xl font-black text-slate-800 tracking-tight">Billetera</h2>
+                <h2 class="text-xl font-bold text-slate-800">Mi Billetera</h2>
             </div>
-            <button onclick="editingCardId=null; document.getElementById('form-tarjeta').reset(); toggleModal('modal-tarjeta')" class="bg-primary text-white text-[10px] font-black uppercase tracking-widest px-6 py-3 rounded-xl shadow-lg">+ Nueva Tarjeta</button>
+            <button onclick="editingCardId=null; document.getElementById('form-tarjeta').reset(); toggleModal('modal-tarjeta')" class="bg-primary text-white text-[10px] font-black uppercase tracking-[0.15em] px-6 py-3.5 rounded-2xl shadow-xl hover:shadow-primary/40 transition-all">+ Nueva Tarjeta</button>
         </header>
 
-        <div class="p-4 md:p-10 max-w-7xl mx-auto space-y-10">
-            <div id="cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        <div class="p-6 md:p-10 max-w-7xl mx-auto space-y-12">
+            <div id="cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
 
-            <div class="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
-                <div class="p-6 border-b border-slate-50 flex justify-between items-center">
-                    <h3 class="font-black text-slate-800 uppercase text-xs tracking-widest">Estado Contable de Cuentas</h3>
+            <div class="bg-white rounded-[2.5rem] border border-slate-200/60 shadow-xl shadow-slate-200/30 overflow-hidden">
+                <div class="p-8 border-b border-slate-50 flex justify-between items-center">
+                    <div>
+                        <h3 class="font-black text-slate-800 text-sm uppercase tracking-widest">Resumen Financiero</h3>
+                        <p class="text-xs text-slate-400 font-medium">Sincronización en tiempo real con sus activos</p>
+                    </div>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead>
-                            <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/50">
-                                <th class="px-6 py-4">Tarjeta</th>
-                                <th class="px-6 py-4">Monto Utilizado</th>
-                                <th class="px-6 py-4">Por Pagar (Mes)</th>
-                                <th class="px-6 py-4">Disponible</th>
-                                <th class="px-6 py-4">Estado</th>
-                                <th class="px-6 py-4 text-right">Acción</th>
+                            <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-50/50 border-b border-slate-100">
+                                <th class="px-6 py-5">Tarjeta Bancaria</th>
+                                <th class="px-6 py-5">Uso de Cupo</th>
+                                <th class="px-6 py-5 text-red-400">Deuda Facturada</th>
+                                <th class="px-6 py-5 text-emerald-500">Saldo Disponible</th>
+                                <th class="px-6 py-5">Estado</th>
+                                <th class="px-6 py-5 text-right">Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="tabla-datos-body" class="divide-y divide-slate-50"></tbody>
@@ -263,82 +270,82 @@
     </main>
 </div>
 
-<div id="modal-tarjeta" class="fixed inset-0 z-[60] hidden flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-    <div class="bg-white w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto">
-        <div class="flex justify-between items-center mb-6">
-            <h3 id="modal-title" class="text-xl font-black">Ajustar Parámetros</h3>
-            <button onclick="toggleModal('modal-tarjeta')" class="text-slate-400 hover:text-slate-600 text-2xl">×</button>
+<div id="modal-tarjeta" class="fixed inset-0 z-[60] hidden flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4">
+    <div class="bg-white w-full max-w-xl rounded-[3rem] p-10 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-8">
+            <h3 class="text-2xl font-black text-slate-800">Ajustar Parámetros</h3>
+            <button onclick="toggleModal('modal-tarjeta')" class="size-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-800 transition-colors">×</button>
         </div>
-        <form id="form-tarjeta" class="space-y-4" onsubmit="event.preventDefault(); saveCard();">
-            <div class="grid grid-cols-2 gap-4">
+        <form id="form-tarjeta" class="space-y-6" onsubmit="event.preventDefault(); saveCard();">
+            <div class="grid grid-cols-2 gap-6">
                 <div>
-                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">Nombre</label>
-                    <input id="card-nombre" type="text" required class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-sm">
+                    <label class="text-[11px] font-black text-slate-400 uppercase mb-2 block ml-1">Alias de Tarjeta</label>
+                    <input id="card-nombre" type="text" required class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-slate-700 ring-1 ring-slate-200 focus:ring-2 focus:ring-primary transition-all">
                 </div>
                 <div>
-                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">Banco</label>
-                    <input id="card-banco" type="text" required class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-sm">
+                    <label class="text-[11px] font-black text-slate-400 uppercase mb-2 block ml-1">Entidad Bancaria</label>
+                    <input id="card-banco" type="text" required class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-slate-700 ring-1 ring-slate-200 focus:ring-2 focus:ring-primary transition-all">
                 </div>
             </div>
             <div>
-                <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">Diseño (Color)</label>
-                <select id="card-estilo" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-sm">
+                <label class="text-[11px] font-black text-slate-400 uppercase mb-2 block ml-1">Perfil Visual (Emisor)</label>
+                <select id="card-estilo" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-slate-700 ring-1 ring-slate-200 focus:ring-2 focus:ring-primary">
                     <option>Falabella (Verde)</option><option>Falabella (Negro)</option><option>Falabella (Dorada)</option>
                     <option>Santander (Rojo)</option><option>Chile (Azul)</option><option>BCI (Azul)</option>
                     <option>Itau (Naranja)</option><option>Scotiabank (Rojo)</option><option>Estado (Pato)</option><option>General (Gris)</option>
                 </select>
             </div>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-2 gap-6">
                 <div>
-                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">Categoría</label>
-                    <select id="card-categoria" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-sm">
+                    <label class="text-[11px] font-black text-slate-400 uppercase mb-2 block ml-1">Categoría</label>
+                    <select id="card-categoria" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-slate-700 ring-1 ring-slate-200 focus:ring-2 focus:ring-primary">
                         <option>Crédito</option><option>Débito</option>
                     </select>
                 </div>
                 <div>
-                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">Franquicia</label>
-                    <select id="card-tipo" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-sm">
+                    <label class="text-[11px] font-black text-slate-400 uppercase mb-2 block ml-1">Franquicia</label>
+                    <select id="card-tipo" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-slate-700 ring-1 ring-slate-200 focus:ring-2 focus:ring-primary">
                         <option>Visa</option><option>Mastercard</option>
                     </select>
                 </div>
             </div>
-            <div class="grid grid-cols-3 gap-4">
+            <div class="grid grid-cols-3 gap-6">
                 <div>
-                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">Cupo Total</label>
-                    <input id="card-limite" type="number" required class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-sm">
+                    <label class="text-[11px] font-black text-slate-400 uppercase mb-2 block ml-1">Cupo Total</label>
+                    <input id="card-limite" type="number" required class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-slate-700 ring-1 ring-slate-200 focus:ring-primary">
                 </div>
                 <div>
-                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">M. Utilizado</label>
-                    <input id="card-utilizado" type="number" required class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-sm">
+                    <label class="text-[11px] font-black text-red-400 uppercase mb-2 block ml-1">Uso Actual</label>
+                    <input id="card-utilizado" type="number" required class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-slate-700 ring-1 ring-red-100">
                 </div>
                 <div>
-                    <label class="text-[10px] font-black text-primary uppercase mb-2 block">M. Disponible</label>
-                    <input id="card-disponible" type="number" required class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-sm border-2 border-primary/20">
+                    <label class="text-[11px] font-black text-primary uppercase mb-2 block ml-1">Disponible</label>
+                    <input id="card-disponible" type="number" required class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-slate-700 ring-2 ring-primary/20">
                 </div>
             </div>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-2 gap-6">
                 <div>
-                    <label class="text-[10px] font-black text-red-400 uppercase mb-2 block">M. Facturado Mes</label>
-                    <input id="card-facturado" type="number" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-sm border-2 border-red-50/50">
+                    <label class="text-[11px] font-black text-slate-400 uppercase mb-2 block ml-1">Monto Facturado</label>
+                    <input id="card-facturado" type="number" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-slate-700 ring-1 ring-slate-200">
                 </div>
                 <div>
-                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">Estado Factura</label>
-                    <select id="card-estado" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-sm">
+                    <label class="text-[11px] font-black text-slate-400 uppercase mb-2 block ml-1">Estado de Pago</label>
+                    <select id="card-estado" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-slate-700 ring-1 ring-slate-200">
                         <option>Pendiente</option><option>Pagado</option>
                     </select>
                 </div>
             </div>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-2 gap-6">
                 <div>
-                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">Día Cierre</label>
-                    <input id="card-cierre" type="number" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-sm">
+                    <label class="text-[11px] font-black text-slate-400 uppercase mb-2 block ml-1">Día de Cierre</label>
+                    <input id="card-cierre" type="number" min="1" max="31" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-slate-700 ring-1 ring-slate-200">
                 </div>
                 <div>
-                    <label class="text-[10px] font-black text-slate-400 uppercase mb-2 block">Fecha de Pago</label>
-                    <input id="card-fecha-pago" type="date" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-sm">
+                    <label class="text-[11px] font-black text-slate-400 uppercase mb-2 block ml-1">Fecha de Pago</label>
+                    <input id="card-fecha-pago" type="date" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-slate-700 ring-1 ring-slate-200">
                 </div>
             </div>
-            <button type="submit" class="w-full bg-primary text-white py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] mt-4 shadow-lg">Confirmar y Sincronizar</button>
+            <button type="submit" class="w-full bg-primary text-white py-5 rounded-3xl font-black uppercase tracking-widest text-xs shadow-2xl shadow-primary/30 transition-all hover:scale-[1.02]">Confirmar y Sincronizar</button>
         </form>
     </div>
 </div>
