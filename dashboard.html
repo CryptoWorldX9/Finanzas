@@ -31,7 +31,6 @@
         let cacheListas = JSON.parse(localStorage.getItem('cache_listas')) || {};
         let cacheMovimientos = JSON.parse(localStorage.getItem('cache_movimientos_panel')) || [];
         
-        // Variables para la mezcla de pagos
         let pagosConfiguracion = {};
         let tarjetasBilletera = {}; 
 
@@ -75,7 +74,6 @@
         });
 
         function iniciarSincronizacionRealtime() {
-            // 1. Sincronizar Listas de Configuración (Tipo, Categ, Pago, etc)
             onValue(ref(db, `usuarios/${currentUser.uid}/listas`), (snapshot) => {
                 if (snapshot.exists()) {
                     const listas = snapshot.val();
@@ -86,13 +84,11 @@
                 }
             });
 
-            // 2. Sincronizar Tarjetas de la Billetera
             onValue(ref(db, `usuarios/${currentUser.uid}/tarjetas`), (snapshot) => {
                 tarjetasBilletera = snapshot.val() || {};
                 actualizarSelectorPagoMaestro(); 
             });
 
-            // 3. Sincronizar Movimientos
             onValue(ref(db, `usuarios/${currentUser.uid}/movimientos`), (snapshot) => {
                 const dataFull = [];
                 snapshot.forEach((child) => {
@@ -128,7 +124,6 @@
         function actualizarSelectorPagoMaestro() {
             const select = document.getElementById('op-pago');
             if(!select) return;
-            
             let opciones = '';
             Object.keys(pagosConfiguracion).forEach(key => {
                 const nombre = pagosConfiguracion[key].nombre;
@@ -307,6 +302,10 @@
                 <span class="material-symbols-outlined">analytics</span> 
                 <span class="font-semibold text-sm">Análisis</span>
             </a>
+            <a href="reportes.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
+                <span class="material-symbols-outlined">description</span> 
+                <span class="font-semibold text-sm">Reportes</span>
+            </a>
             <a href="metas.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all">
                 <span class="material-symbols-outlined">track_changes</span> 
                 <span class="font-semibold text-sm">Metas</span>
@@ -352,7 +351,6 @@
         </header>
 
         <div class="p-4 md:p-10 max-w-[1600px] mx-auto space-y-6 md:space-y-10">
-            
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8">
                 <div class="bg-white p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] border border-slate-200 shadow-sm">
                     <div class="flex items-center justify-between mb-4 md:mb-6">
