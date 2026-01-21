@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html class="light" lang="es">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>QuantyA - Billetera</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCO6WXu9iZsyEUmNNxrE4oWToLYY8wl-y4",
+            authDomain: "misfinanzaspro-d2f3f.firebaseapp.com",
+            databaseURL: "https://misfinanzaspro-d2f3f-default-rtdb.firebaseio.com",
+            projectId: "misfinanzaspro-d2f3f",
+            storageBucket: "misfinanzaspro-d2f3f.firebasestorage.app",
+            messagingSenderId: "613366165036",
+            appId: "1:613366165036:web:bebc72b38d39ab64932b89"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+        let currentUser = null;
+
+        // Navegación Móvil
+        window.toggleSidebar = () => {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        };
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('user-name-display').innerText = user.displayName || "Usuario";
+                cargarTarjetas();
+            } else {
+                window.location.href = "index.html";
+            }
+        });
+
+        window.saveCard = async () => {
+            const nombre = document.getElementById('card-nombre').value;
+            const tipo = document.getElementById('card-tipo').value;
+            const limite = parseFloat(document.getElementById('card-limite').value);
+            const diaCierre = document.getElementById('card-cierre').value;
+
+            if (nombre && limite > 0) {
+                await push(ref(db, `usuarios/${currentUser.uid}/tarjetas`), {
+                    nombre, tipo, limite, saldoUsado: 0, diaCierre, fechaCreacion: Date.now()
+                });
+                toggleModal('modal-tarjeta');
+                document.getElementById('form-tarjeta').reset();
+            }
+        };
+
+        function cargarTarjetas() {
+            onValue(ref(db, `usuarios/${currentUser.uid}/tarjetas`), (snapshot) => {
+                const container = document.getElementById('cards-grid');
+                container.innerHTML = '';
+                const data = snapshot.val();
+                if (data) {
+                    Object.keys(data).forEach(id => {
+                        const card = data[id];
+                        const disponible = card.limite - card.saldoUsado;
+                        const porc = Math.min((card.saldoUsado / card.limite) * 100, 100);
+                        
+                        const cardEl = document.createElement('div');
+                        cardEl.className = "bg-slate-900 rounded-[2rem] p-6 text-white shadow-xl border border-slate-800 relative group overflow-hidden";
+                        cardEl.innerHTML = `
+                            <div class="flex justify-between items-start mb-10">
+                                <div class="size-12 bg-white/5 rounded-xl flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-primary text-3xl">credit_card</span>
+                                </div>
+                                <button onclick="eliminarTarjeta('${id}')" class="p-2 text-slate-500 hover:text-red-400">
+                                    <span class="material-symbols-outlined">delete</span>
+                                </button>
+                            </div>
+                            <div class="space-y-1 mb-6">
+                                <p class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">${card.tipo}</p>
+                                <h3 class="text-xl font-black">${card.nombre}</h3>
+                            </div>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-end">
+                                    <p class="text-2xl font-black">$${disponible.toLocaleString()}</p>
+                                    <p class="text-[10px] text-slate-500 font-bold uppercase">Disponible</p>
+                                </div>
+                                <div class="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                                    <div class="h-full bg-primary transition-all duration-1000" style="width: ${porc}%"></div>
+                                </div>
+                                <p class="text-[9px] text-slate-600 font-bold uppercase tracking-tighter text-right">Límite: $${card.limite.toLocaleString()}</p>
+                            </div>
+                        `;
+                        container.appendChild(cardEl);
+                    });
+                }
+            });
+        }
+
+        window.eliminarTarjeta = (id) => {
+            if(confirm("¿Eliminar tarjeta?")) remove(ref(db, `usuarios/${currentUser.uid}/tarjetas/${id}`));
+        };
+
+        window.toggleModal = (id) => {
+            const m = document.getElementById(id);
+            m.classList.toggle('hidden');
+            m.classList.toggle('flex');
+        };
+    </script>
+
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: { "primary": "#176282" },
+                    fontFamily: { sans: ["Inter", "sans-serif"] },
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-[#fcfdfe] dark:bg-[#0f172a] text-slate-700 dark:text-slate-300 flex h-screen overflow-hidden">
+
+<div id="overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/60 z-40 hidden backdrop-blur-sm"></div>
+
+<aside id="sidebar" class="fixed lg:static inset-y-0 left-0 w-72 bg-[#0f172a] text-white flex flex-col border-r border-slate-800 p-6 h-full z-50 transition-transform duration-300 -translate-x-full lg:translate-x-0">
+    <div class="flex-1 space-y-8">
+        <div class="flex items-center gap-3 px-2">
+            <div class="size-10 bg-primary rounded-xl flex items-center justify-center text-white"><span class="material-symbols-outlined fill">account_balance_wallet</span></div>
+            <h1 class="text-xl font-black tracking-tight">QuantyA</h1>
+        </div>
+        <nav class="space-y-1">
+            <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 rounded-xl transition-all">
+                <span class="material-symbols-outlined">dashboard</span> <span class="font-semibold text-sm">Panel</span>
+            </a>
+            <a href="billetera.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20">
+                <span class="material-symbols-outlined">wallet</span> <span class="font-bold text-sm">Billetera</span>
+            </a>
+            <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 rounded-xl">
+                <span class="material-symbols-outlined">swap_horiz</span> <span class="font-semibold text-sm">Movimientos</span>
+            </a>
+            <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 rounded-xl">
+                <span class="material-symbols-outlined">settings</span> <span class="font-semibold text-sm">Configuración</span>
+            </a>
+        </nav>
+    </div>
+    <div class="pt-6 border-t border-slate-800">
+        <div class="bg-slate-800/50 p-4 rounded-2xl flex items-center gap-3 mb-2">
+            <div class="size-10 rounded-full bg-primary flex items-center justify-center font-bold text-xs">QA</div>
+            <div class="flex-1 overflow-hidden">
+                <p id="user-name-display" class="text-sm font-bold truncate">Cargando...</p>
+                <p class="text-[9px] text-slate-500 font-black uppercase">Mi Cuenta</p>
+            </div>
+        </div>
+        <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl">
+            <span class="material-symbols-outlined">logout</span> <span class="font-semibold text-sm">Salir</span>
+        </a>
+    </div>
+</aside>
+
+<main class="flex-1 flex flex-col overflow-hidden">
+    <header class="h-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-6 md:px-10 flex items-center justify-between z-40">
+        <div class="flex items-center gap-4">
+            <button onclick="toggleSidebar()" class="lg:hidden p-2 bg-slate-50 dark:bg-slate-800 rounded-lg"><span class="material-symbols-outlined">menu</span></button>
+            <h2 class="text-xl font-black tracking-tight text-slate-800 dark:text-white">Billetera</h2>
+        </div>
+        <button onclick="toggleModal('modal-tarjeta')" class="bg-primary text-white text-[10px] font-black uppercase tracking-widest px-6 py-3 rounded-xl shadow-lg shadow-primary/20 hover:scale-105 transition-transform">+ Tarjeta</button>
+    </header>
+
+    <div class="flex-1 overflow-y-auto p-6 md:p-10 space-y-8 max-w-[1400px] mx-auto w-full">
+        <div id="cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            </div>
+
+        <section class="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm">
+            <h3 class="font-black text-lg mb-6 flex items-center gap-3 uppercase tracking-tight">
+                <span class="material-symbols-outlined text-primary">calendar_month</span> Cuotas Pendientes
+            </h3>
+            <div class="overflow-x-auto -mx-6 md:mx-0 px-6 md:px-0">
+                <table class="w-full text-left">
+                    <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">
+                        <th class="pb-4">Concepto</th>
+                        <th class="pb-4">Tarjeta</th>
+                        <th class="pb-4">Cuota</th>
+                        <th class="pb-4">Monto</th>
+                    </tr>
+                    <tbody id="cuotas-list" class="text-sm">
+                        <tr><td colspan="4" class="py-10 text-center text-slate-400 italic">No hay pagos diferidos registrados.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</main>
+
+<div id="modal-tarjeta" class="fixed inset-0 z-[60] hidden items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+    <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl border border-slate-200 dark:border-slate-800">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-xl font-black">Nueva Tarjeta</h3>
+            <button onclick="toggleModal('modal-tarjeta')" class="text-slate-400 hover:text-white text-2xl">×</button>
+        </div>
+        <form id="form-tarjeta" class="space-y-4" onsubmit="event.preventDefault(); saveCard();">
+            <div>
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Nombre / Banco</label>
+                <input id="card-nombre" type="text" required class="w-full rounded-2xl bg-slate-50 dark:bg-slate-800 border-none p-4 font-semibold text-sm focus:ring-4 focus:ring-primary/10">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Tipo</label>
+                    <select id="card-tipo" class="w-full rounded-2xl bg-slate-50 dark:bg-slate-800 border-none p-4 font-semibold text-sm">
+                        <option>Visa</option><option>Mastercard</option><option>AMEX</option><option>Crypto</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Día Cierre</label>
+                    <input id="card-cierre" type="number" min="1" max="31" class="w-full rounded-2xl bg-slate-50 dark:bg-slate-800 border-none p-4 font-semibold text-sm">
+                </div>
+            </div>
+            <div>
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Monto del Cupo (Límite)</label>
+                <input id="card-limite" type="number" required class="w-full rounded-2xl bg-slate-50 dark:bg-slate-800 border-none p-4 font-semibold text-sm">
+            </div>
+            <button type="submit" class="w-full bg-primary text-white py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] mt-4 shadow-lg shadow-primary/30">Guardar Tarjeta</button>
+        </form>
+    </div>
+</div>
+
+</body>
+</html>
