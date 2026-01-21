@@ -37,7 +37,6 @@
 
     Chart.register(ChartDataLabels);
 
-    // Lógica de navegación móvil
     window.toggleSidebar = () => {
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('overlay');
@@ -225,30 +224,19 @@
         const { jsPDF } = window.jspdf;
         const btn = document.getElementById('btn-pdf-trigger');
         const originalContent = btn.innerHTML;
-        
         btn.innerHTML = '<span class="animate-spin material-symbols-outlined text-sm">sync</span> Generando...';
-        
         try {
             const element = document.getElementById('pdf-capture-area');
-            const canvas = await html2canvas(element, {
-                scale: 2,
-                useCORS: true,
-                backgroundColor: null
-            });
-            
+            const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: null });
             const imgData = canvas.toDataURL('image/png');
             const pdf = new jsPDF('p', 'mm', 'a4');
             const imgProps = pdf.getImageProperties(imgData);
             const pdfWidth = pdf.internal.pageSize.getWidth();
             const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-            
             pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
             pdf.save(`QuantyA_Reporte_${new Date().toLocaleDateString()}.pdf`);
-        } catch (error) {
-            console.error("Error al generar PDF:", error);
-        } finally {
-            btn.innerHTML = originalContent;
-        }
+        } catch (error) { console.error("Error al generar PDF:", error); } 
+        finally { btn.innerHTML = originalContent; }
     };
 </script>
 
@@ -263,6 +251,10 @@
         }
     }
 </script>
+<style type="text/tailwindcss">
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300; }
+    .material-symbols-outlined.font-fill { font-variation-settings: 'FILL' 1, 'wght' 400; }
+</style>
 </head>
 <body class="bg-background-light dark:bg-background-dark font-display text-[#121617] dark:text-white transition-colors duration-200">
 
@@ -275,7 +267,7 @@
             <div class="flex items-center justify-between px-2">
                 <div class="flex items-center gap-3">
                     <div class="size-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
-                        <span class="material-symbols-outlined text-2xl">account_balance_wallet</span>
+                        <span class="material-symbols-outlined text-2xl font-fill">account_balance_wallet</span>
                     </div>
                     <div>
                         <h1 class="text-xl font-black tracking-tight leading-none">QuantyA</h1>
@@ -288,23 +280,21 @@
             </div>
             <nav class="space-y-1">
                 <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">dashboard</span> <span class="font-semibold text-sm">Panel</span></a>
+                <a href="billetera.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">wallet</span> <span class="font-semibold text-sm">Billetera</span></a>
                 <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">swap_horiz</span> <span class="font-semibold text-sm">Movimientos</span></a>
                 <a href="analisis.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 transition-all"><span class="material-symbols-outlined font-fill">analytics</span> <span class="font-bold text-sm">Análisis</span></a>
                 <a href="metas.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">track_changes</span> <span class="font-semibold text-sm">Metas</span></a>
-                <a href="reportes.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">description</span> <span class="font-semibold text-sm">Reportes</span></a>
                 <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">settings</span> <span class="font-semibold text-sm">Configuración</span></a>
             </nav>
         </div>
         <div class="pt-6 border-t border-slate-800">
-            <a href="cuenta.html" class="bg-slate-800/50 p-4 rounded-2xl flex items-center gap-3 mb-2 hover:bg-slate-800 transition-all border border-transparent hover:border-primary/30 group">
-                <div class="size-10 rounded-full bg-primary flex items-center justify-center font-bold text-xs text-white shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">QA</div>
+            <div class="bg-slate-800/50 p-4 rounded-2xl flex items-center gap-3 mb-2 border border-transparent">
+                <div class="size-10 rounded-full bg-primary flex items-center justify-center font-bold text-xs text-white">QA</div>
                 <div class="flex-1 overflow-hidden">
-                    <p id="user-name-display" class="text-sm font-bold truncate text-white">Cargando...</p>
-                    <p class="text-[9px] text-slate-500 font-black uppercase tracking-tighter">Mi Perfil</p>
+                    <p id="user-name-display" class="text-sm font-bold truncate text-white text-left">Cargando...</p>
+                    <p class="text-[9px] text-slate-500 font-black uppercase tracking-tighter text-left">Mi Perfil</p>
                 </div>
-                <span class="material-symbols-outlined text-slate-600 text-sm group-hover:text-primary transition-colors">chevron_right</span>
-            </a>
-
+            </div>
             <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors w-full"><span class="material-symbols-outlined">logout</span> <span class="font-semibold text-sm">Cerrar Sesión</span></a>
         </div>
     </aside>
