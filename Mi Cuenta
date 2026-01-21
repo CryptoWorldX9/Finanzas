@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html class="light" lang="es">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>QuantyA - Mi Cuenta</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCO6WXu9iZsyEUmNNxrE4oWToLYY8wl-y4",
+            authDomain: "misfinanzaspro-d2f3f.firebaseapp.com",
+            databaseURL: "https://misfinanzaspro-d2f3f-default-rtdb.firebaseio.com",
+            projectId: "misfinanzaspro-d2f3f",
+            storageBucket: "misfinanzaspro-d2f3f.firebasestorage.app",
+            messagingSenderId: "613366165036",
+            appId: "1:613366165036:web:bebc72b38d39ab64932b89"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                document.getElementById('user-email').innerText = user.email;
+                document.getElementById('user-name-big').innerText = user.displayName || "Usuario QuantyA";
+                document.getElementById('user-initials').innerText = (user.displayName || "U").substring(0,2).toUpperCase();
+            } else {
+                window.location.href = "index.html";
+            }
+        });
+
+        window.goBack = () => window.location.href = "dashboard.html";
+    </script>
+
+    <script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { "primary": "#176282" },
+                    fontFamily: { sans: ["Inter", "sans-serif"] },
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-[#fcfdfe] text-slate-700 font-sans">
+
+    <nav class="h-20 border-b border-slate-100 bg-white/80 backdrop-blur-md sticky top-0 z-50 px-6 lg:px-12 flex items-center justify-between">
+        <div class="flex items-center gap-4">
+            <button onclick="goBack()" class="flex items-center gap-2 text-slate-400 hover:text-primary transition-colors group">
+                <span class="material-symbols-outlined font-light">arrow_back</span>
+                <span class="text-xs font-black uppercase tracking-widest">Volver al Panel</span>
+            </button>
+        </div>
+        <div class="flex items-center gap-2">
+            <div class="size-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                <span class="material-symbols-outlined text-primary text-sm fill">verified_user</span>
+            </div>
+            <span class="text-[10px] font-black uppercase tracking-tighter text-slate-400">Sesión Segura Activada</span>
+        </div>
+    </nav>
+
+    <main class="max-w-5xl mx-auto p-6 lg:p-12 space-y-12">
+        
+        <section class="flex flex-col md:flex-row items-center gap-8 bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm">
+            <div id="user-initials" class="size-32 bg-primary rounded-[2rem] flex items-center justify-center text-4xl font-black text-white shadow-2xl shadow-primary/20">
+                --
+            </div>
+            <div class="text-center md:text-left flex-1">
+                <h1 id="user-name-big" class="text-3xl font-black text-slate-900 tracking-tight">Cargando...</h1>
+                <p id="user-email" class="text-slate-400 font-medium mb-4">cargando@correo.com</p>
+                <div class="flex flex-wrap justify-center md:justify-start gap-2">
+                    <span class="px-3 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase rounded-full">Cuenta Verificada</span>
+                    <span class="px-3 py-1 bg-slate-100 text-slate-500 text-[10px] font-black uppercase rounded-full">Plan Premium</span>
+                </div>
+            </div>
+            <button class="bg-primary text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:brightness-110 transition-all shadow-lg shadow-primary/20">Editar Perfil</button>
+        </section>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            
+            <div class="md:col-span-2 space-y-8">
+                <h3 class="text-xs font-black uppercase tracking-[0.2em] text-slate-400 px-4">Preferencias del Sistema</h3>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div class="bg-white p-8 rounded-[2.5rem] border border-slate-100 hover:border-primary/20 transition-all">
+                        <span class="material-symbols-outlined text-primary mb-4">notifications_active</span>
+                        <h4 class="font-bold text-slate-800 mb-2">Notificaciones</h4>
+                        <p class="text-xs text-slate-400 leading-relaxed mb-6">Recibe alertas sobre gastos inusuales y recordatorios de metas.</p>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" checked class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                        </label>
+                    </div>
+
+                    <div class="bg-white p-8 rounded-[2.5rem] border border-slate-100 hover:border-primary/20 transition-all">
+                        <span class="material-symbols-outlined text-primary mb-4">visibility</span>
+                        <h4 class="font-bold text-slate-800 mb-2">Modo Privacidad</h4>
+                        <p class="text-xs text-slate-400 leading-relaxed mb-6">Oculta automáticamente los saldos principales al abrir la app.</p>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="bg-white p-8 rounded-[2.5rem] border border-slate-100 overflow-hidden">
+                    <div class="flex items-center gap-4 mb-8">
+                        <div class="p-3 bg-red-50 text-red-500 rounded-2xl"><span class="material-symbols-outlined fill">security</span></div>
+                        <h4 class="font-black text-slate-800 uppercase tracking-widest text-xs">Seguridad de la Cuenta</h4>
+                    </div>
+                    <div class="space-y-4">
+                        <button class="w-full flex items-center justify-between p-4 hover:bg-slate-50 rounded-2xl transition-all group">
+                            <div class="flex items-center gap-4">
+                                <span class="material-symbols-outlined text-slate-400 group-hover:text-primary">lock_reset</span>
+                                <span class="text-sm font-bold text-slate-600">Cambiar Contraseña</span>
+                            </div>
+                            <span class="material-symbols-outlined text-slate-300">chevron_right</span>
+                        </button>
+                        <button class="w-full flex items-center justify-between p-4 hover:bg-slate-50 rounded-2xl transition-all group">
+                            <div class="flex items-center gap-4">
+                                <span class="material-symbols-outlined text-slate-400 group-hover:text-primary">devices</span>
+                                <span class="text-sm font-bold text-slate-600">Sesiones Activas</span>
+                            </div>
+                            <span class="material-symbols-outlined text-slate-300">chevron_right</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-8">
+                <h3 class="text-xs font-black uppercase tracking-[0.2em] text-slate-400 px-4">Estadísticas de Perfil</h3>
+                <div class="bg-[#0f172a] text-white p-8 rounded-[2.5rem] shadow-xl shadow-slate-900/20">
+                    <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-6">Uso del Sistema</p>
+                    <div class="space-y-6">
+                        <div>
+                            <div class="flex justify-between text-xs mb-2 font-bold">
+                                <span>Datos Completados</span>
+                                <span class="text-primary">85%</span>
+                            </div>
+                            <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                                <div class="h-full bg-primary w-[85%]"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs mb-2 font-bold">
+                                <span>Seguridad</span>
+                                <span class="text-emerald-500">Alta</span>
+                            </div>
+                            <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                                <div class="h-full bg-emerald-500 w-[100%]"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-10 pt-8 border-t border-slate-800">
+                        <p class="text-[10px] text-slate-500 font-bold mb-4 uppercase">Soporte QuantyA</p>
+                        <button class="w-full bg-slate-800 p-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 transition-colors">Solicitar Ayuda</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+</body>
+</html>
