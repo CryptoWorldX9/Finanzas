@@ -11,7 +11,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getDatabase, ref, onValue, push, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCO6WXu9iZsyEUmNNxrE4oWToLYY8wl-y4",
@@ -28,121 +28,34 @@
         const db = getDatabase(app);
         let currentUser = null;
         let todosLosMovimientos = [];
-        let misTarjetas = {};
 
         window.toggleSidebar = () => {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('overlay');
-            sidebar.classList.toggle('-translate-x-full');
-            overlay.classList.toggle('hidden');
+            document.getElementById('sidebar').classList.toggle('-translate-x-full');
+            document.getElementById('overlay').classList.toggle('hidden');
         };
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
                 document.getElementById('user-name-display').innerText = user.displayName || "Usuario";
-                cargarTarjetas(); // Nueva función
                 cargarDatos();
             } else {
                 window.location.href = "index.html";
             }
         });
 
-        // CARGAR TARJETAS PARA EL SELECTOR
-        function cargarTarjetas() {
-            onValue(ref(db, `usuarios/${currentUser.uid}/tarjetas`), (snapshot) => {
-                const select = document.getElementById('m-pago');
-                const data = snapshot.val();
-                misTarjetas = data || {};
-                
-                // Mantener opciones base y agregar tarjetas
-                select.innerHTML = `
-                    <option value="Efectivo">Efectivo</option>
-                    <option value="Debito">Débito / Transferencia</option>
-                `;
-                
-                if (data) {
-                    Object.keys(data).forEach(id => {
-                        const option = document.createElement('option');
-                        option.value = id; 
-                        option.textContent = `💳 ${data[id].nombre}`;
-                        select.appendChild(option);
-                    });
-                }
-            });
-        }
-
-        // LÓGICA DE CUOTAS (Se activa al cambiar el método de pago)
-        window.checkMetodo = () => {
-            const metodo = document.getElementById('m-pago').value;
-            const cuotasDiv = document.getElementById('div-cuotas');
-            // Si el valor seleccionado es un ID de tarjeta (existe en misTarjetas)
-            if (misTarjetas[metodo]) {
-                cuotasDiv.classList.remove('hidden');
-            } else {
-                cuotasDiv.classList.add('hidden');
-                document.getElementById('m-cuotas').value = "1";
-            }
-        };
-
         function cargarDatos() {
+            // Escucha global de movimientos (Ingresos, Gastos, Cuotas de Tarjeta)
             onValue(ref(db, `usuarios/${currentUser.uid}/movimientos`), (snapshot) => {
                 todosLosMovimientos = [];
                 snapshot.forEach((child) => {
                     todosLosMovimientos.push({ id: child.key, ...child.val() });
                 });
+                // Ordenar por fecha descendente
                 todosLosMovimientos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
                 filtrarYRenderizar();
             });
         }
-
-        // AGREGAR MOVIMIENTO CON LÓGICA DE TARJETAS Y CUOTAS
-        window.saveMovimiento = async () => {
-            const monto = parseFloat(document.getElementById('m-monto').value);
-            const concepto = document.getElementById('m-concepto').value;
-            const categoria = document.getElementById('m-categoria').value;
-            const fechaStr = document.getElementById('m-fecha').value;
-            const metodoId = document.getElementById('m-pago').value;
-            const numCuotas = parseInt(document.getElementById('m-cuotas').value) || 1;
-
-            if (!monto || !concepto) return alert("Completa los campos");
-
-            const nombrePago = misTarjetas[metodoId] ? misTarjetas[metodoId].nombre : metodoId;
-            const montoPorCuota = monto / numCuotas;
-
-            for (let i = 0; i < numCuotas; i++) {
-                const fechaCouta = new Date(fechaStr);
-                fechaCouta.setMonth(fechaCouta.getMonth() + i);
-                
-                const movimiento = {
-                    monto: montoPorCuota,
-                    concepto: numCuotas > 1 ? `${concepto} (${i + 1}/${numCuotas})` : concepto,
-                    categoria,
-                    fecha: fechaCouta.toISOString().split('T')[0],
-                    pago: nombrePago,
-                    tipo: 'Gasto'
-                };
-                await push(ref(db, `usuarios/${currentUser.uid}/movimientos`), movimiento);
-            }
-
-            // Si es tarjeta, actualizar el saldo usado de la tarjeta (Monto Total)
-            if (misTarjetas[metodoId]) {
-                const nuevoSaldo = (misTarjetas[metodoId].saldoUsado || 0) + monto;
-                await update(ref(db, `usuarios/${currentUser.uid}/tarjetas/${metodoId}`), {
-                    saldoUsado: nuevoSaldo
-                });
-            }
-
-            toggleModal('modal-movimiento');
-            document.getElementById('form-movimiento').reset();
-            document.getElementById('div-cuotas').classList.add('hidden');
-        };
-
-        window.toggleModal = (id) => {
-            const m = document.getElementById(id);
-            m.classList.toggle('hidden');
-            m.classList.toggle('flex');
-        };
 
         window.filtrarYRenderizar = () => {
             const fMes = document.getElementById('filter-mes').value;
@@ -152,33 +65,54 @@
 
             const filtrados = todosLosMovimientos.filter(m => {
                 const coincideMes = fMes ? m.fecha.startsWith(fMes) : true;
-                const coincideCat = fCat ? m.categoria.toLowerCase().includes(fCat) : true;
-                const coincidePago = fPago ? m.pago.toLowerCase().includes(fPago) : true;
-                const coincideBusqueda = fBusqueda ? m.concepto.toLowerCase().includes(fBusqueda) : true;
+                const coincideCat = fCat ? (m.categoria || "").toLowerCase().includes(fCat) : true;
+                const coincidePago = fPago ? (m.pago || "").toLowerCase().includes(fPago) : true;
+                const coincideBusqueda = fBusqueda ? (m.concepto || "").toLowerCase().includes(fBusqueda) : true;
                 return coincideMes && coincideCat && coincidePago && coincideBusqueda;
             });
 
             const body = document.getElementById('table-body');
+            if (filtrados.length === 0) {
+                body.innerHTML = `<tr><td colspan="4" class="py-10 text-center text-slate-400 italic">No se encontraron movimientos</td></tr>`;
+                return;
+            }
+
             body.innerHTML = filtrados.map(m => {
-                const isIngreso = m.tipo?.toLowerCase().includes('ingreso') || m.tipo?.toLowerCase().includes('venta');
+                const esIngreso = m.tipo?.toLowerCase().includes('ingreso') || m.tipo?.toLowerCase().includes('venta');
+                const montoClase = esIngreso ? 'text-emerald-500' : 'text-red-500';
+                const simbolo = esIngreso ? '+' : '-';
+                
                 return `
-                    <tr class="hover:bg-slate-50 transition-colors border-b border-slate-100">
+                    <tr class="hover:bg-slate-50 transition-colors border-b border-slate-100 group">
                         <td class="px-4 md:px-8 py-5 text-[10px] md:text-sm font-medium text-slate-500">${m.fecha}</td>
                         <td class="px-4 md:px-6 py-5">
-                            <p class="text-xs md:text-sm font-bold text-slate-800 truncate max-w-[120px] md:max-w-none">${m.concepto}</p>
-                            <p class="text-[8px] md:text-[10px] text-slate-400 uppercase font-black tracking-widest">${m.categoria}</p>
+                            <div class="flex flex-col">
+                                <span class="text-xs md:text-sm font-bold text-slate-800">${m.concepto}</span>
+                                <span class="text-[8px] md:text-[10px] text-slate-400 uppercase font-black tracking-widest">${m.categoria || 'Sin Categoría'}</span>
+                            </div>
                         </td>
-                        <td class="px-4 md:px-6 py-5 text-right font-black text-xs md:text-sm ${isIngreso ? 'text-emerald-500' : 'text-red-500'}">
-                            ${isIngreso ? '+' : '-'} $${new Intl.NumberFormat('es-CL').format(m.monto)}
+                        <td class="px-4 md:px-6 py-5 text-right font-black text-xs md:text-sm ${montoClase}">
+                            ${simbolo} $${new Intl.NumberFormat('es-CL').format(m.monto)}
                         </td>
                         <td class="px-4 md:px-8 py-5 text-right hidden sm:table-cell">
-                            <span class="inline-block px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter bg-slate-100 text-slate-600 border border-slate-200">
-                                ${m.pago}
-                            </span>
+                            <div class="flex items-center justify-end gap-2">
+                                <span class="inline-block px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter bg-slate-100 text-slate-600 border border-slate-200">
+                                    ${m.pago}
+                                </span>
+                                <button onclick="eliminarMovimiento('${m.id}')" class="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-all">
+                                    <span class="material-symbols-outlined text-sm">delete</span>
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 `;
             }).join('');
+        };
+
+        window.eliminarMovimiento = (id) => {
+            if(confirm("¿Seguro que quieres eliminar este registro?")) {
+                remove(ref(db, `usuarios/${currentUser.uid}/movimientos/${id}`));
+            }
         };
     </script>
 
@@ -205,25 +139,22 @@
 <div class="flex h-screen overflow-hidden">
     
     <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 w-72 bg-[#0f172a] text-white flex flex-col shrink-0 border-r border-slate-800 p-6 z-50 transition-transform duration-300 -translate-x-full lg:translate-x-0">
-        <div class="flex items-center justify-between lg:block mb-8">
+        <div class="flex items-center justify-between mb-8">
             <div class="flex items-center gap-3 px-2">
                 <div class="size-10 bg-primary rounded-xl flex items-center justify-center text-white">
                     <span class="material-symbols-outlined text-2xl font-fill">account_balance_wallet</span>
                 </div>
-                <div>
-                    <h1 class="text-xl font-black tracking-tight leading-none">QuantyA</h1>
-                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Gestión Financiera</p>
-                </div>
+                <h1 class="text-xl font-black tracking-tight">QuantyA</h1>
             </div>
-            <button onclick="toggleSidebar()" class="lg:hidden p-2 text-slate-400">
-                <span class="material-symbols-outlined">close</span>
-            </button>
+            <button onclick="toggleSidebar()" class="lg:hidden p-2 text-slate-400"><span class="material-symbols-outlined">close</span></button>
         </div>
 
         <nav class="space-y-1 flex-1">
             <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">dashboard</span> <span class="font-semibold text-sm">Panel</span></a>
             <a href="billetera.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">wallet</span> <span class="font-semibold text-sm">Billetera</span></a>
-            <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 transition-all"><span class="material-symbols-outlined font-fill">swap_horiz</span> <span class="font-bold text-sm">Movimientos</span></a>
+            <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20"><span class="material-symbols-outlined font-fill">swap_horiz</span> <span class="font-bold text-sm">Movimientos</span></a>
+            <a href="analisis.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">analytics</span> <span class="font-semibold text-sm">Análisis</span></a>
+            <a href="metas.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">track_changes</span> <span class="font-semibold text-sm">Metas</span></a>
             <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">settings</span> <span class="font-semibold text-sm">Configuración</span></a>
         </nav>
 
@@ -232,96 +163,62 @@
                 <div class="size-10 rounded-full bg-primary flex items-center justify-center font-bold text-xs text-white">QA</div>
                 <div class="flex-1 overflow-hidden">
                     <p id="user-name-display" class="text-sm font-bold truncate text-white">Usuario</p>
-                    <p class="text-[9px] text-slate-500 font-black uppercase tracking-tighter">Mi Perfil</p>
+                    <p class="text-[9px] text-slate-500 font-black uppercase">Mi Perfil</p>
                 </div>
             </div>
-            <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors w-full"><span class="material-symbols-outlined">logout</span> <span class="font-semibold text-sm">Salir</span></a>
+            <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors"><span class="material-symbols-outlined">logout</span> <span class="font-semibold text-sm">Salir</span></a>
         </div>
     </aside>
 
     <main class="flex-1 overflow-y-auto">
         <header class="sticky top-0 z-40 h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 md:px-10 flex items-center justify-between">
             <div class="flex items-center gap-4">
-                <button onclick="toggleSidebar()" class="lg:hidden p-2 bg-slate-100 rounded-xl text-slate-600">
-                    <span class="material-symbols-outlined">menu</span>
-                </button>
-                <div>
-                    <h2 class="text-lg md:text-2xl font-black tracking-tight text-slate-800">Movimientos</h2>
-                </div>
+                <button onclick="toggleSidebar()" class="lg:hidden p-2 bg-slate-100 rounded-xl text-slate-600"><span class="material-symbols-outlined">menu</span></button>
+                <h2 class="text-lg md:text-2xl font-black tracking-tight text-slate-800">Historial de Movimientos</h2>
             </div>
-            <button onclick="toggleModal('modal-movimiento')" class="bg-primary text-white text-[10px] font-black uppercase tracking-widest px-6 py-3 rounded-xl shadow-lg shadow-primary/20">+ Nuevo</button>
+            <div class="relative w-40 md:w-64">
+                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl font-light">search</span>
+                <input id="search-input" oninput="filtrarYRenderizar()" class="w-full pl-10 pr-4 py-2 bg-slate-100/50 border-none rounded-2xl text-sm font-medium" placeholder="Buscar concepto...">
+            </div>
         </header>
 
         <div class="p-4 md:p-10 max-w-7xl mx-auto">
-            <section class="bg-white rounded-2xl border border-slate-200 shadow-sm mb-6 md:mb-12 overflow-hidden">
-                <div class="p-6 md:p-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 items-end">
+            <section class="bg-white rounded-2xl border border-slate-200 shadow-sm mb-6 overflow-hidden">
+                <div class="p-6 md:p-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end">
                     <div class="space-y-2">
-                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Buscar</label>
-                        <input id="search-input" oninput="filtrarYRenderizar()" class="w-full rounded-xl border-slate-200 bg-slate-50 text-sm font-bold py-3 px-4" placeholder="Concepto...">
+                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Mes</label>
+                        <input id="filter-mes" type="month" onchange="filtrarYRenderizar()" class="w-full rounded-xl border-slate-200 bg-slate-50 text-sm font-bold py-3 px-4 focus:ring-primary/20">
                     </div>
                     <div class="space-y-2">
-                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Período</label>
-                        <input id="filter-mes" type="month" onchange="filtrarYRenderizar()" class="w-full rounded-xl border-slate-200 bg-slate-50 text-sm font-bold py-3 px-4">
+                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Categoría</label>
+                        <input id="filter-categoria" type="text" placeholder="Alimentación..." oninput="filtrarYRenderizar()" class="w-full rounded-xl border-slate-200 bg-slate-50 text-sm font-bold py-3 px-4">
                     </div>
                     <div class="space-y-2">
-                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Método</label>
-                        <input id="filter-pago" type="text" placeholder="Ej: Visa" oninput="filtrarYRenderizar()" class="w-full rounded-xl border-slate-200 bg-slate-50 text-sm font-bold py-3 px-4">
+                        <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest px-1">Tarjeta / Método</label>
+                        <input id="filter-pago" type="text" placeholder="Visa, Efectivo..." oninput="filtrarYRenderizar()" class="w-full rounded-xl border-slate-200 bg-slate-50 text-sm font-bold py-3 px-4">
                     </div>
-                    <button onclick="location.reload()" class="bg-[#0f172a] text-white text-[10px] font-black py-4 rounded-xl uppercase tracking-widest">Reset</button>
+                    <button onclick="location.reload()" class="bg-slate-900 text-white text-[10px] font-black py-4 rounded-xl uppercase tracking-widest hover:bg-slate-800 transition-all">Limpiar</button>
                 </div>
             </section>
 
-            <div class="bg-white rounded-[1.5rem] border border-slate-200 shadow-sm overflow-hidden">
+            <div class="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden">
                 <div class="overflow-x-auto">
-                    <table class="w-full text-left min-w-[400px]">
+                    <table class="w-full text-left min-w-[500px]">
                         <thead>
-                            <tr class="bg-slate-50/50 border-b border-slate-100 uppercase text-[9px] font-black text-slate-400">
-                                <th class="px-8 py-5">Fecha</th>
-                                <th class="px-6 py-5">Detalle</th>
-                                <th class="px-6 py-5 text-right">Monto</th>
-                                <th class="px-8 py-5 text-right hidden sm:table-cell">Método</th>
+                            <tr class="bg-slate-50/50 border-b border-slate-100">
+                                <th class="px-8 py-5 text-[9px] font-black text-slate-400 uppercase tracking-widest">Fecha</th>
+                                <th class="px-6 py-5 text-[9px] font-black text-slate-400 uppercase tracking-widest">Detalle y Categoría</th>
+                                <th class="px-6 py-5 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Monto</th>
+                                <th class="px-8 py-5 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right hidden sm:table-cell">Medio de Pago</th>
                             </tr>
                         </thead>
-                        <tbody id="table-body" class="divide-y divide-slate-100"></tbody>
+                        <tbody id="table-body" class="divide-y divide-slate-100">
+                            </tbody>
                     </table>
                 </div>
             </div>
         </div>
     </main>
-</div>
-
-<div id="modal-movimiento" class="fixed inset-0 z-[60] hidden items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-    <div class="bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl border border-slate-200">
-        <h3 class="text-xl font-black mb-6">Registrar Gasto</h3>
-        <form id="form-movimiento" class="space-y-4" onsubmit="event.preventDefault(); saveMovimiento();">
-            <input id="m-concepto" type="text" placeholder="Concepto" required class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-sm">
-            <div class="grid grid-cols-2 gap-4">
-                <input id="m-monto" type="number" placeholder="Monto" required class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-sm">
-                <input id="m-fecha" type="date" required class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-sm">
-            </div>
-            <input id="m-categoria" type="text" placeholder="Categoría (Ej: Hogar)" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-sm">
-            
-            <div class="space-y-2">
-                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1">Método de Pago</label>
-                <select id="m-pago" onchange="checkMetodo()" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold text-sm">
-                    </select>
-            </div>
-
-            <div id="div-cuotas" class="hidden space-y-2 bg-primary/5 p-4 rounded-2xl border border-primary/10">
-                <label class="text-[10px] font-black text-primary uppercase tracking-widest px-1">Plan de Cuotas</label>
-                <select id="m-cuotas" class="w-full rounded-xl bg-white border-none p-3 font-bold text-sm">
-                    <option value="1">1 Cuota (Sin diferir)</option>
-                    <option value="3">3 Cuotas</option>
-                    <option value="6">6 Cuotas</option>
-                    <option value="12">12 Cuotas</option>
-                    <option value="24">24 Cuotas</option>
-                </select>
-            </div>
-
-            <button type="submit" class="w-full bg-primary text-white py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] mt-4 shadow-lg shadow-primary/30">Guardar Movimiento</button>
-            <button type="button" onclick="toggleModal('modal-movimiento')" class="w-full text-slate-400 text-[10px] font-black uppercase py-2">Cancelar</button>
-        </form>
-    </div>
 </div>
 
 </body>
