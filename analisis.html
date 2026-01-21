@@ -103,6 +103,20 @@
         });
 
         const saldo = ingresos - gastos;
+        
+        // --- CÁLCULOS PRO AGREGADOS ---
+        const diasDelFiltro = filtroActual || 30;
+        const gastoDiarioPromedio = gastos / diasDelFiltro;
+        const diasSupervivencia = gastoDiarioPromedio > 0 ? Math.floor(saldo / gastoDiarioPromedio) : '∞';
+        
+        // Proyección Fin de Mes (Simplificada)
+        const hoy = new Date();
+        const diasMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).getDate();
+        const diasTranscurridos = hoy.getDate();
+        const diasRestantes = diasMes - diasTranscurridos;
+        const proyeccionGastoMensual = (gastos / diasTranscurridos) * diasMes;
+        const proyeccionFinal = ingresos - proyeccionGastoMensual;
+
         document.getElementById('centro-monto').innerText = `$${new Intl.NumberFormat('es-CL').format(Math.abs(saldo))}`;
         document.getElementById('centro-monto').className = `text-2xl md:text-3xl font-black ${saldo >= 0 ? 'text-emerald-500' : 'text-red-500'}`;
 
@@ -150,23 +164,24 @@
             }
         });
 
+        // RENDERIZADO DE LOS 4 CUADROS CON MÉTRICAS INTELIGENTES
         document.getElementById('resumen-rendimiento-dinamico').innerHTML = `
             <div class="grid grid-cols-2 gap-4 p-6">
                 <div class="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
-                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Tasa de Ahorro</p>
-                    <p class="text-lg md:text-xl font-black ${ingresos > 0 && (ingresos-gastos)>0 ? 'text-emerald-500' : 'text-orange-500'}">${ingresos > 0 ? (((ingresos-gastos)/ingresos)*100).toFixed(1) : 0}%</p>
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Días de Autonomía</p>
+                    <p class="text-lg md:text-xl font-black ${diasSupervivencia > 30 ? 'text-emerald-500' : 'text-orange-500'}">${diasSupervivencia} Días</p>
                 </div>
                 <div class="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
-                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Ratio de Gastos</p>
-                    <p class="text-lg md:text-xl font-black ${gastos > ingresos ? 'text-red-500' : 'text-emerald-500'}">${ingresos > 0 ? ((gastos/ingresos)*100).toFixed(1) : 0}%</p>
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Ahorro Estimado</p>
+                    <p class="text-lg md:text-xl font-black ${proyeccionFinal > 0 ? 'text-emerald-500' : 'text-red-500'}">${ingresos > 0 ? (((ingresos-gastos)/ingresos)*100).toFixed(1) : 0}%</p>
                 </div>
                 <div class="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
                     <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Saldo Neto</p>
                     <p class="text-lg md:text-xl font-black text-primary">$${new Intl.NumberFormat('es-CL').format(saldo)}</p>
                 </div>
                 <div class="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
-                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Salud</p>
-                    <p class="text-lg md:text-xl font-black ${saldo > 0 ? 'text-emerald-500' : 'text-red-500'}">${saldo > 0 ? 'Óptima' : 'Crítica'}</p>
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Proyección Mes</p>
+                    <p class="text-lg md:text-xl font-black ${proyeccionFinal > 0 ? 'text-emerald-500' : 'text-red-500'}">$${new Intl.NumberFormat('es-CL').format(Math.floor(proyeccionFinal))}</p>
                 </div>
             </div>`;
     }
@@ -290,9 +305,9 @@
         <div class="pt-6 border-t border-slate-800">
             <div class="bg-slate-800/50 p-4 rounded-2xl flex items-center gap-3 mb-2 border border-transparent">
                 <div class="size-10 rounded-full bg-primary flex items-center justify-center font-bold text-xs text-white">QA</div>
-                <div class="flex-1 overflow-hidden">
-                    <p id="user-name-display" class="text-sm font-bold truncate text-white text-left">Cargando...</p>
-                    <p class="text-[9px] text-slate-500 font-black uppercase tracking-tighter text-left">Mi Perfil</p>
+                <div class="flex-1 overflow-hidden text-left">
+                    <p id="user-name-display" class="text-sm font-bold truncate text-white">Cargando...</p>
+                    <p class="text-[9px] text-slate-500 font-black uppercase tracking-tighter">Mi Perfil</p>
                 </div>
             </div>
             <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors w-full"><span class="material-symbols-outlined">logout</span> <span class="font-semibold text-sm">Cerrar Sesión</span></a>
@@ -316,7 +331,6 @@
         </header>
 
         <div id="pdf-capture-area" class="px-6 md:px-10 pb-10 flex flex-col lg:flex-row gap-8 mt-6">
-            
             <section class="flex-[1.2] space-y-6">
                 <div class="bg-white dark:bg-slate-800 rounded-xl p-6 md:p-8 shadow-sm border border-slate-100 dark:border-slate-700">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
@@ -341,7 +355,7 @@
 
                 <div class="bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-sm border border-slate-100 dark:border-slate-700">
                     <div class="p-6 border-b border-slate-50 dark:border-slate-700 flex justify-between items-center">
-                        <h3 class="text-lg font-bold tracking-tight">Resumen de Rendimiento</h3>
+                        <h3 class="text-lg font-bold tracking-tight">Métricas de Salud Financiera</h3>
                     </div>
                     <div id="resumen-rendimiento-dinamico"></div>
                 </div>
