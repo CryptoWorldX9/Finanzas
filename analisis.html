@@ -2,7 +2,7 @@
 <html class="light" lang="es"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Análisis Estratégico - QuantyA</title>
+<title>Análisis Pro - QuantyA</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
@@ -107,7 +107,6 @@
         });
 
         const saldo = ingresos - gastos;
-        const porcentajeAhorro = ingresos > 0 ? Math.max(0, ((saldo / ingresos) * 100)) : 0;
         const diasActivos = Math.max(filtroActual, 1);
         const gastoPromedioDiario = gastos / diasActivos;
         const masFrecuente = Object.entries(conteoConceptos).sort((a,b) => b[1] - a[1])[0]?.[0] || 'N/A';
@@ -124,19 +123,17 @@
                     <p class="text-lg font-black text-primary truncate">${masFrecuente}</p>
                 </div>
                 <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
-                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Eficiencia Ahorro</p>
-                    <p class="text-lg font-black text-emerald-500">${porcentajeAhorro.toFixed(1)}%</p>
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Ahorro Mensual</p>
+                    <p class="text-lg font-black text-emerald-500">${ingresos > 0 ? (((ingresos-gastos)/ingresos)*100).toFixed(1) : 0}%</p>
                 </div>
                 <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
-                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Flujo Total</p>
+                    <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Movimientos</p>
                     <p class="text-lg font-black text-slate-700 dark:text-white">${datos.length}</p>
                 </div>
             </div>`;
 
-        // Centro del gráfico con porcentaje
-        document.getElementById('subcentro-texto').innerText = `AHORRO`;
-        document.getElementById('centro-monto').innerText = `${porcentajeAhorro.toFixed(0)}%`;
-        document.getElementById('centro-monto').className = `text-3xl md:text-4xl font-black text-emerald-500`;
+        document.getElementById('centro-monto').innerText = `$${new Intl.NumberFormat('es-CL').format(Math.abs(saldo))}`;
+        document.getElementById('centro-monto').className = `text-2xl md:text-3xl font-black ${saldo >= 0 ? 'text-emerald-500' : 'text-red-500'}`;
 
         const topGastos = listaGastos.sort((a, b) => b.monto - a.monto).slice(0, 4);
         const contenedorLista = document.getElementById('lista-categorias-gastos');
@@ -156,25 +153,27 @@
 
         const ctx = document.getElementById('graficoDistribucion').getContext('2d');
         if (miGrafico) miGrafico.destroy();
-        
-        // El gráfico ahora muestra la relación Gasto vs Ahorro
-        const dataGrafico = [gastos, Math.max(0, ingresos - gastos)];
-        
         miGrafico = new Chart(ctx, {
             type: 'doughnut',
             data: {
-                labels: ['Gastos', 'Ahorro'],
+                labels: ['Ingresos', 'Gastos'],
                 datasets: [{
-                    data: dataGrafico,
-                    backgroundColor: ['#ef4444', '#10b981'],
-                    hoverOffset: 12, borderWidth: 0, borderRadius: 10, spacing: 5
+                    data: [ingresos, gastos],
+                    backgroundColor: ['#10b981', '#ef4444'],
+                    hoverOffset: 10, borderWidth: 4, borderColor: 'white', borderRadius: 5
                 }]
             },
             options: {
-                cutout: '75%',
+                cutout: '65%',
                 plugins: {
                     legend: { display: false },
-                    datalabels: { display: false }
+                    datalabels: {
+                        color: '#fff', font: { weight: '900', size: 14 },
+                        formatter: (v, context) => {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            return total > 0 ? Math.round((v / total) * 100) + '%' : '';
+                        }
+                    }
                 },
                 responsive: true, maintainAspectRatio: false
             }
@@ -184,20 +183,20 @@
         document.getElementById('resumen-rendimiento-dinamico').innerHTML = `
             <div class="grid grid-cols-2 gap-4 p-6">
                 <div class="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
-                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Saldo Líquido</p>
-                    <p class="text-lg md:text-xl font-black text-primary">$${new Intl.NumberFormat('es-CL').format(saldo)}</p>
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Capacidad Pago</p>
+                    <p class="text-lg md:text-xl font-black text-emerald-500">${saldo > 0 ? 'Excelente' : 'Ajustada'}</p>
                 </div>
                 <div class="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
                     <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Ratio Gasto/Ing</p>
-                    <p class="text-lg md:text-xl font-black ${gastos > ingresos ? 'text-red-500' : 'text-slate-700 dark:text-white'}">${ingresos > 0 ? ((gastos/ingresos)*100).toFixed(0) : 0}%</p>
+                    <p class="text-lg md:text-xl font-black ${gastos > ingresos ? 'text-red-500' : 'text-primary'}">${ingresos > 0 ? ((gastos/ingresos)*100).toFixed(1) : 0}%</p>
                 </div>
                 <div class="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
                     <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Días de Autonomía</p>
                     <p class="text-lg md:text-xl font-black text-primary">${gastoPromedioDiario > 0 ? Math.floor(saldo/gastoPromedioDiario) : '0'} Días</p>
                 </div>
                 <div class="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
-                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Estado Salud</p>
-                    <p class="text-lg md:text-xl font-black ${porcentajeAhorro > 20 ? 'text-emerald-500' : 'text-orange-500'}">${porcentajeAhorro > 20 ? 'Óptimo' : 'Crítico'}</p>
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Estado General</p>
+                    <p class="text-lg md:text-xl font-black ${saldo > 0 ? 'text-emerald-500' : 'text-red-500'}">${saldo > (ingresos * 0.2) ? 'Óptimo' : 'Crítico'}</p>
                 </div>
             </div>`;
     }
@@ -361,7 +360,7 @@
                             <div class="relative size-56 md:size-64 flex items-center justify-center shrink-0">
                                 <canvas id="graficoDistribucion"></canvas>
                                 <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
-                                    <span id="subcentro-texto" class="text-[8px] md:text-[10px] text-slate-400 font-bold uppercase tracking-wider">SALDO TOTAL</span>
+                                    <span class="text-[8px] md:text-[10px] text-slate-400 font-bold uppercase tracking-wider">SALDO TOTAL</span>
                                     <span id="centro-monto" class="text-2xl md:text-3xl font-black">$0</span>
                                 </div>
                             </div>
