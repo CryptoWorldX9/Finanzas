@@ -1,0 +1,31 @@
+/* estilos-globales.css */
+@layer components {
+    /* El contenedor del Sidebar */
+    .sidebar-container {
+        @apply fixed lg:static inset-y-0 left-0 w-72 bg-[#0a0f1c] text-white flex flex-col shrink-0 border-r border-white/5 z-50 transition-transform duration-300;
+    }
+
+    /* Enlace que no está seleccionado (Idle) */
+    .nav-link-idle {
+        @apply group flex items-center gap-3.5 px-4 py-3 text-slate-400 hover:bg-white/[0.03] hover:text-white rounded-2xl transition-all;
+    }
+
+    /* Enlace que SI está seleccionado (Active) */
+    .nav-link-active {
+        @apply flex items-center gap-3.5 px-4 py-3 bg-primary/10 border border-primary/20 text-white rounded-2xl shadow-xl shadow-primary/5 transition-all;
+    }
+
+    /* Iconos dentro de los enlaces */
+    .nav-icon-active {
+        @apply text-[22px] font-fill text-primary;
+    }
+
+    .nav-icon-idle {
+        @apply text-[22px] transition-transform group-hover:scale-110;
+    }
+
+    /* Textos dentro de los enlaces */
+    .nav-text {
+        @apply font-bold text-[13px] tracking-tight;
+    }
+}
