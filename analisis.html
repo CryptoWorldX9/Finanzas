@@ -39,6 +39,7 @@
 
         Chart.register(ChartDataLabels);
 
+        // Sidebar Toggle
         window.toggleSidebar = () => {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('overlay');
@@ -46,6 +47,7 @@
             overlay.classList.toggle('hidden');
         };
 
+        // Auth State
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 document.getElementById('user-name-display').innerText = user.displayName || "Usuario";
@@ -62,6 +64,7 @@
         };
 
         function iniciarSincronizacion(uid) {
+            // Sincronizar Movimientos
             onValue(ref(db, `usuarios/${uid}/movimientos`), (snapshot) => {
                 todosLosMovimientos = [];
                 snapshot.forEach(child => {
@@ -70,6 +73,7 @@
                 aplicarFiltroYActualizar(filtroActual);
             });
 
+            // Sincronizar Metas
             onValue(ref(db, `usuarios/${uid}/metas`), (snapshot) => {
                 const metas = [];
                 snapshot.forEach(child => {
@@ -135,6 +139,7 @@
             const gastoPromedioDiario = gastos / Math.max(filtroActual, 1);
             const masFrecuente = Object.entries(conteoConceptos).sort((a,b) => b[1] - a[1])[0]?.[0] || 'Sin datos';
 
+            // Renderizar Matriz Superior
             document.getElementById('matriz-pro-superior').innerHTML = `
                 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                     <div class="bg-white p-6 rounded-[1.5rem] border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
@@ -176,10 +181,12 @@
                 </div>
             `;
 
+            // Actualizar Centro de Gráfico
             const centroMonto = document.getElementById('centro-monto');
             centroMonto.innerText = `$${new Intl.NumberFormat('es-CL').format(Math.abs(saldo))}`;
             centroMonto.className = `text-2xl font-black tracking-tighter ${saldo >= 0 ? 'text-emerald-500' : 'text-red-500'}`;
 
+            // Renderizar Lista de Gastos Top
             const topGastos = listaGastos.sort((a, b) => b.monto - a.monto).slice(0, 5);
             const contenedorLista = document.getElementById('lista-categorias-gastos');
             contenedorLista.innerHTML = topGastos.map(g => {
@@ -200,6 +207,7 @@
                 `;
             }).join('');
 
+            // Gráfico Doughnut
             const ctx = document.getElementById('graficoDistribucion').getContext('2d');
             if (miGrafico) miGrafico.destroy();
             miGrafico = new Chart(ctx, {
@@ -228,6 +236,7 @@
                 }
             });
 
+            // Resumen de Rendimiento
             document.getElementById('resumen-rendimiento-dinamico').innerHTML = `
                 <div class="grid grid-cols-2 gap-4 p-6">
                     <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col gap-1">
@@ -359,12 +368,12 @@
             <div>
                 <p class="px-4 text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mb-4">Análisis y Metas</p>
                 <div class="space-y-1.5">
-                    <a href="reportes.html" class="flex items-center gap-3.5 px-4 py-3 bg-primary/10 border border-primary/20 text-white rounded-2xl shadow-xl shadow-primary/5 transition-all">
-                        <span class="material-symbols-outlined text-[22px] font-fill text-primary">description</span>
+                    <a href="reportes.html" class="group flex items-center gap-3.5 px-4 py-3 text-slate-400 hover:bg-white/[0.03] hover:text-white rounded-2xl transition-all">
+                        <span class="material-symbols-outlined text-[22px]">description</span>
                         <span class="font-bold text-[13px] tracking-tight">Reportes Mensuales</span>
                     </a>
-                    <a href="analisis.html" class="group flex items-center gap-3.5 px-4 py-3 text-slate-400 hover:bg-white/[0.03] hover:text-white rounded-2xl transition-all">
-                        <span class="material-symbols-outlined text-[22px]">analytics</span>
+                    <a href="analisis.html" class="flex items-center gap-3.5 px-4 py-3 bg-primary/10 border border-primary/20 text-white rounded-2xl shadow-xl shadow-primary/5 transition-all">
+                        <span class="material-symbols-outlined text-[22px] font-fill text-primary">analytics</span>
                         <span class="font-bold text-[13px] tracking-tight">Gráficos de Gastos</span>
                     </a>
                     <a href="metas.html" class="group flex items-center gap-3.5 px-4 py-3 text-slate-400 hover:bg-white/[0.03] hover:text-white rounded-2xl transition-all">
@@ -377,14 +386,13 @@
 
         <div class="p-4 mt-auto">
             <div class="bg-white/[0.03] border border-white/5 rounded-3xl p-4 mb-3">
-                <a href="cuenta.html" class="flex items-center gap-3 mb-4 hover:bg-white/5 p-2 rounded-2xl transition-all group">
-                    <div class="size-10 rounded-xl bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center font-bold text-xs text-white border border-white/10 shadow-inner group-hover:border-primary/50">QA</div>
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="size-10 rounded-xl bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center font-bold text-xs text-white">QA</div>
                     <div class="flex-1 overflow-hidden">
                         <p id="user-name-display" class="text-xs font-black truncate text-white tracking-tight">Cargando...</p>
-                        <p class="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Mi Perfil</p>
+                        <p class="text-[9px] font-bold text-slate-500 uppercase">Mi Perfil</p>
                     </div>
-                    <span class="material-symbols-outlined text-slate-600 text-sm group-hover:text-white">chevron_right</span>
-                </a>
+                </div>
                 <div class="space-y-1">
                     <a href="configuracion.html" class="flex items-center gap-3 px-3 py-2 text-slate-400 hover:text-white transition-colors text-xs font-bold">
                         <span class="material-symbols-outlined text-lg">settings</span> Ajustes
