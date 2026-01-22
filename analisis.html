@@ -9,12 +9,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
     const firebaseConfig = {
@@ -49,6 +49,8 @@
             iniciarSincronizacion(user.uid);
         } else { window.location.href = "index.html"; }
     });
+
+    window.cerrarSesion = () => { signOut(auth).then(() => { window.location.href = "index.html"; }); };
 
     function iniciarSincronizacion(uid) {
         onValue(ref(db, `usuarios/${uid}/movimientos`), (snapshot) => {
@@ -113,21 +115,21 @@
 
         document.getElementById('matriz-pro-superior').innerHTML = `
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
+                <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                     <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Gasto Diario Prom.</p>
-                    <p class="text-lg font-black text-slate-700 dark:text-white">$${new Intl.NumberFormat('es-CL').format(Math.round(gastoPromedioDiario))}</p>
+                    <p class="text-lg font-black text-slate-700">$${new Intl.NumberFormat('es-CL').format(Math.round(gastoPromedioDiario))}</p>
                 </div>
-                <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
+                <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                     <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Frecuencia Mayor</p>
                     <p class="text-lg font-black text-primary truncate">${masFrecuente}</p>
                 </div>
-                <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
+                <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                     <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Ahorro Mensual</p>
                     <p class="text-lg font-black text-emerald-500">${ingresos > 0 ? (((ingresos-gastos)/ingresos)*100).toFixed(1) : 0}%</p>
                 </div>
-                <div class="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
+                <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                     <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Movimientos</p>
-                    <p class="text-lg font-black text-slate-700 dark:text-white">${datos.length}</p>
+                    <p class="text-lg font-black text-slate-700">${datos.length}</p>
                 </div>
             </div>`;
 
@@ -144,7 +146,7 @@
                         <div class="size-9 rounded-lg flex items-center justify-center ${style.col}">
                             <span class="material-symbols-outlined text-xl">${style.ico}</span>
                         </div>
-                        <span class="text-sm font-bold truncate w-24 md:w-32 text-slate-700 dark:text-slate-200">${g.concepto}</span>
+                        <span class="text-sm font-bold truncate w-24 md:w-32 text-slate-700">${g.concepto}</span>
                     </div>
                     <span class="text-sm font-black text-red-500">$${new Intl.NumberFormat('es-CL').format(g.monto)}</span>
                 </div>`;
@@ -180,19 +182,19 @@
 
         document.getElementById('resumen-rendimiento-dinamico').innerHTML = `
             <div class="grid grid-cols-2 gap-4 p-6">
-                <div class="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
                     <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Capacidad Pago</p>
                     <p class="text-lg md:text-xl font-black text-emerald-500">${saldo > 0 ? 'Excelente' : 'Ajustada'}</p>
                 </div>
-                <div class="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
                     <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Ratio Gasto/Ing</p>
                     <p class="text-lg md:text-xl font-black ${gastos > ingresos ? 'text-red-500' : 'text-primary'}">${ingresos > 0 ? ((gastos/ingresos)*100).toFixed(1) : 0}%</p>
                 </div>
-                <div class="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
                     <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Días de Autonomía</p>
                     <p class="text-lg md:text-xl font-black text-primary">${gastoPromedioDiario > 0 ? Math.floor(saldo/gastoPromedioDiario) : '0'} Días</p>
                 </div>
-                <div class="p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-100 dark:border-slate-700">
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
                     <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Estado General</p>
                     <p class="text-lg md:text-xl font-black ${saldo > 0 ? 'text-emerald-500' : 'text-red-500'}">${saldo > (ingresos * 0.2) ? 'Óptimo' : 'Crítico'}</p>
                 </div>
@@ -215,31 +217,21 @@
             else if (n.includes('deuda') || n.includes('pago')) { icon = 'payments'; colorBase = 'red-500'; }
             else if (n.includes('casa')) { icon = 'home'; colorBase = 'orange-500'; }
             return `
-                <div class="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-100 dark:border-slate-700">
+                <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
                     <div class="flex items-center justify-between mb-4">
                         <div class="flex items-center gap-3">
-                            <div class="size-12 bg-slate-100 dark:bg-slate-700 rounded-xl flex items-center justify-center" style="color: ${colorBase === 'emerald-500' ? '#10b981' : colorBase === 'blue-500' ? '#3b82f6' : '#ef4444'}">
+                            <div class="size-12 bg-slate-100 rounded-xl flex items-center justify-center" style="color: ${colorBase === 'emerald-500' ? '#10b981' : colorBase === 'blue-500' ? '#3b82f6' : '#ef4444'}">
                                 <span class="material-symbols-outlined text-2xl">${icon}</span>
                             </div>
                             <div>
-                                <h4 class="font-bold text-base text-slate-800 dark:text-white">${meta.nombre}</h4>
+                                <h4 class="font-bold text-base text-slate-800">${meta.nombre}</h4>
                                 <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Meta: $${new Intl.NumberFormat('es-CL').format(objetivo)}</p>
                             </div>
                         </div>
                         <span class="font-black text-lg" style="color: ${colorBase === 'emerald-500' ? '#10b981' : colorBase === 'blue-500' ? '#3b82f6' : '#ef4444'}">${porcentaje}%</span>
                     </div>
-                    <div class="w-full h-3 bg-slate-100 dark:bg-slate-700 rounded-full mb-4 overflow-hidden">
+                    <div class="w-full h-3 bg-slate-100 rounded-full mb-4 overflow-hidden">
                         <div class="h-full transition-all duration-1000" style="width: ${porcentaje}%; background-color: ${colorBase === 'emerald-500' ? '#10b981' : colorBase === 'blue-500' ? '#3b82f6' : '#ef4444'}"></div>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <p class="text-[9px] text-slate-400 font-bold uppercase">Ahorrado</p>
-                            <p class="text-sm font-black text-slate-800 dark:text-white">$${new Intl.NumberFormat('es-CL').format(actual)}</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-[9px] text-slate-400 font-bold uppercase">Restante</p>
-                            <p class="text-sm font-black text-slate-800 dark:text-white">$${new Intl.NumberFormat('es-CL').format(Math.max(0, objetivo - actual))}</p>
-                        </div>
                     </div>
                 </div>`;
         }).join('');
@@ -252,13 +244,10 @@
         btn.innerHTML = '<span class="animate-spin material-symbols-outlined text-sm">sync</span> Generando...';
         try {
             const element = document.getElementById('pdf-capture-area');
-            const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: null });
+            const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: "#f8fafc" });
             const imgData = canvas.toDataURL('image/png');
             const pdf = new jsPDF('p', 'mm', 'a4');
-            const imgProps = pdf.getImageProperties(imgData);
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            pdf.addImage(imgData, 'PNG', 0, 0, 210, (canvas.height * 210) / canvas.width);
             pdf.save(`QuantyA_Análisis_${new Date().toLocaleDateString()}.pdf`);
         } catch (error) { console.error(error); } finally { btn.innerHTML = originalContent; }
     };
@@ -266,152 +255,144 @@
 
 <script id="tailwind-config">
     tailwind.config = {
-        darkMode: "class",
         theme: {
             extend: {
-                colors: { "primary": "#176282", "background-light": "#f9fafb", "background-dark": "#181d25" },
-                fontFamily: { "display": ["Inter", "sans-serif"] }
+                colors: { "primary": "#176282" },
+                fontFamily: { sans: ["Plus Jakarta Sans", "sans-serif"] }
             }
         }
     }
 </script>
 <style type="text/tailwindcss">
+    @layer base { body { @apply bg-[#f8fafc] text-slate-800 antialiased; } }
     .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300; }
     .material-symbols-outlined.font-fill { font-variation-settings: 'FILL' 1, 'wght' 400; }
+    
+    .nav-link-idle { @apply group flex items-center gap-3.5 px-4 py-3 text-slate-400 hover:bg-white/[0.03] hover:text-white rounded-2xl transition-all; }
+    .nav-link-active { @apply flex items-center gap-3.5 px-4 py-3 bg-primary/10 border border-primary/20 text-white rounded-2xl shadow-xl shadow-primary/5 transition-all; }
 </style>
 </head>
-<body class="bg-background-light dark:bg-background-dark font-display text-[#121617] dark:text-white transition-colors duration-200">
+<body>
 
 <div id="overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/60 z-40 hidden lg:hidden backdrop-blur-sm"></div>
 
-<div class="flex h-screen overflow-hidden">
+<div class="flex h-screen overflow-hidden relative">
     
-    <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 w-72 bg-[#0d1117] text-white flex flex-col shrink-0 border-r border-slate-800 p-6 z-50 transition-transform duration-300 -translate-x-full lg:translate-x-0">
-        <div class="space-y-8 flex-1">
-            <div class="flex items-center justify-between px-2">
-                <div class="flex items-center gap-3">
-                    <div class="size-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
+    <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 w-72 bg-[#0a0f1c] text-white flex flex-col shrink-0 border-r border-white/5 z-50 transition-transform duration-300 -translate-x-full lg:translate-x-0">
+        <div class="p-8">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <div class="size-11 bg-gradient-to-tr from-primary to-blue-400 rounded-2xl flex items-center justify-center text-white shadow-lg">
                         <span class="material-symbols-outlined text-2xl font-fill">account_balance_wallet</span>
                     </div>
-                    <div>
-                        <h1 class="text-xl font-black tracking-tight leading-none">QuantyA</h1>
-                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Gestión Financiera</p>
+                    <div class="flex flex-col">
+                        <h1 class="text-xl font-black tracking-tighter leading-none">QuantyA</h1>
+                        <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">Smart Finance</span>
                     </div>
                 </div>
-                <button onclick="toggleSidebar()" class="lg:hidden p-2 text-slate-400 hover:text-white">
-                    <span class="material-symbols-outlined">close</span>
+                <button onclick="toggleSidebar()" class="lg:hidden p-2 text-slate-400 hover:text-white"><span class="material-symbols-outlined">close</span></button>
+            </div>
+        </div>
+        
+        <nav class="flex-1 px-4 space-y-8 overflow-y-auto">
+            <div>
+                <p class="px-4 text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mb-4">Gestión Principal</p>
+                <div class="space-y-1.5">
+                    <a href="dashboard.html" class="nav-link-idle">
+                        <span class="material-symbols-outlined text-[22px]">dashboard</span>
+                        <span class="font-bold text-[13px]">Panel de Control</span>
+                    </a>
+                    <a href="billetera.html" class="nav-link-idle">
+                        <span class="material-symbols-outlined text-[22px]">wallet</span>
+                        <span class="font-bold text-[13px]">Billetera</span>
+                    </a>
+                    <a href="movimientos.html" class="nav-link-idle">
+                        <span class="material-symbols-outlined text-[22px]">swap_horiz</span>
+                        <span class="font-bold text-[13px]">Historial de Pagos</span>
+                    </a>
+                </div>
+            </div>
+            <div>
+                <p class="px-4 text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mb-4">Análisis y Metas</p>
+                <div class="space-y-1.5">
+                    <a href="reportes.html" class="nav-link-idle">
+                        <span class="material-symbols-outlined text-[22px]">description</span>
+                        <span class="font-bold text-[13px]">Reportes Mensuales</span>
+                    </a>
+                    <a href="analisis.html" class="nav-link-active">
+                        <span class="material-symbols-outlined text-[22px] font-fill text-primary">analytics</span>
+                        <span class="font-bold text-[13px]">Gráficos de Gastos</span>
+                    </a>
+                    <a href="metas.html" class="nav-link-idle">
+                        <span class="material-symbols-outlined text-[22px]">track_changes</span>
+                        <span class="font-bold text-[13px]">Objetivos de Ahorro</span>
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <div class="p-4 mt-auto">
+            <div class="bg-white/[0.03] border border-white/5 rounded-3xl p-4 mb-3">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="size-10 rounded-xl bg-slate-800 flex items-center justify-center font-bold text-xs text-white">QA</div>
+                    <div class="flex-1 overflow-hidden">
+                        <p id="user-name-display" class="text-xs font-black truncate text-white">Usuario</p>
+                        <p class="text-[9px] font-bold text-slate-500 uppercase">Mi Perfil</p>
+                    </div>
+                </div>
+                <button onclick="cerrarSesion()" class="w-full flex items-center gap-3 px-3 py-2 text-red-400/80 hover:text-red-400 text-xs font-bold transition-colors">
+                    <span class="material-symbols-outlined text-lg">logout</span> Cerrar Sesión
                 </button>
             </div>
-            
-            <nav class="space-y-1">
-                <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all group">
-                    <span class="material-symbols-outlined transition-colors">dashboard</span> 
-                    <span class="font-semibold text-sm">Panel</span>
-                </a>
-                <a href="billetera.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all group">
-                    <span class="material-symbols-outlined transition-colors">wallet</span> 
-                    <span class="font-semibold text-sm">Billetera</span>
-                </a>
-                <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all group">
-                    <span class="material-symbols-outlined transition-colors">swap_horiz</span> 
-                    <span class="font-semibold text-sm">Movimientos</span>
-                </a>
-                <a href="reportes.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all group">
-                    <span class="material-symbols-outlined transition-colors">calendar_month</span> 
-                    <span class="font-semibold text-sm">Reportes Mensuales</span>
-                </a>
-                <a href="analisis.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 transition-all">
-                    <span class="material-symbols-outlined font-fill">analytics</span> 
-                    <span class="font-bold text-sm">Gráficos de Gastos</span>
-                </a>
-                <a href="metas.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all group">
-                    <span class="material-symbols-outlined transition-colors">track_changes</span> 
-                    <span class="font-semibold text-sm">Metas</span>
-                </a>
-                <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all group">
-                    <span class="material-symbols-outlined transition-colors">settings</span> 
-                    <span class="font-semibold text-sm">Configuración</span>
-                </a>
-            </nav>
-        </div>
-
-        <div class="pt-6 border-t border-slate-800/50">
-            <div class="flex items-center gap-3 px-4 py-3 mb-2">
-                <div class="size-10 rounded-full bg-slate-800 flex items-center justify-center font-bold text-xs text-primary border border-slate-700">
-                    QA
-                </div>
-                <div class="flex-1 overflow-hidden">
-                    <p id="user-name-display" class="text-sm font-bold truncate">Cargando...</p>
-                    <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Usuario Pro</p>
-                </div>
-            </div>
-            <a href="index.html" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors w-full group">
-                <span class="material-symbols-outlined">logout</span> 
-                <span class="font-semibold text-sm">Cerrar Sesión</span>
-            </a>
         </div>
     </aside>
 
-    <main class="flex-1 overflow-y-auto flex flex-col">
-        <header class="sticky top-0 z-10 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md px-6 md:px-10 py-6 flex justify-between items-center">
+    <main class="flex-1 overflow-y-auto">
+        <header class="h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 px-6 md:px-10 flex items-center justify-between sticky top-0 z-30">
             <div class="flex items-center gap-4">
-                <button onclick="toggleSidebar()" class="lg:hidden p-2 bg-white dark:bg-slate-800 rounded-lg shadow-sm">
-                    <span class="material-symbols-outlined">menu</span>
-                </button>
-                <div>
-                    <h2 class="text-xl md:text-3xl font-black tracking-tight">Gráficos de Gastos</h2>
-                    <p class="text-slate-500 dark:text-slate-400 text-xs md:text-sm font-medium">Panel Estratégico QuantyA</p>
-                </div>
+                <button onclick="toggleSidebar()" class="lg:hidden p-2 bg-slate-100 rounded-xl"><span class="material-symbols-outlined">menu</span></button>
+                <h2 class="text-xl font-black text-slate-800 tracking-tight">Análisis Estratégico</h2>
             </div>
-            <button id="btn-pdf-trigger" onclick="generarReportePDF()" class="bg-primary text-white px-4 md:px-6 h-10 rounded-xl font-bold text-xs md:text-sm shadow-lg shadow-primary/20 flex items-center gap-2 hover:scale-105 transition-all">
-                <span class="material-symbols-outlined text-sm">download</span> <span class="hidden sm:inline">Generar PDF</span><span class="sm:hidden">PDF</span>
+            <button id="btn-pdf-trigger" onclick="generarReportePDF()" class="bg-primary text-white px-4 h-10 rounded-xl font-bold text-[10px] shadow-lg flex items-center gap-2">
+                <span class="material-symbols-outlined text-sm">download</span> GENERAR PDF
             </button>
         </header>
 
-        <div id="pdf-capture-area" class="px-6 md:px-10 pb-10 mt-6">
+        <div id="pdf-capture-area" class="p-6 md:p-10 max-w-[1400px] mx-auto space-y-6">
             <div id="matriz-pro-superior"></div>
+            
             <div class="flex flex-col lg:flex-row gap-8">
                 <section class="flex-[1.2] space-y-6">
-                    <div class="bg-white dark:bg-slate-800 rounded-xl p-6 md:p-8 shadow-sm border border-slate-100 dark:border-slate-700">
-                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-                            <h3 class="text-xl font-bold tracking-tight">Flujo de Caja Real</h3>
-                            <div class="flex gap-4 border-b border-slate-100 dark:border-slate-700 text-[10px] font-black uppercase tracking-widest text-slate-400 overflow-x-auto w-full sm:w-auto">
-                                <button onclick="setFiltro(90, this)" class="filter-tab pb-2 border-b-2 border-primary text-primary whitespace-nowrap">Trimestral</button>
-                                <button onclick="setFiltro(180, this)" class="filter-tab pb-2 border-b-2 border-transparent hover:text-primary whitespace-nowrap">Semestral</button>
-                                <button onclick="setFiltro(365, this)" class="filter-tab pb-2 border-b-2 border-transparent hover:text-primary whitespace-nowrap">Anual</button>
+                    <div class="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm">
+                        <div class="flex justify-between items-center mb-8">
+                            <h3 class="text-xl font-bold">Flujo de Caja</h3>
+                            <div class="flex gap-4 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                <button onclick="setFiltro(90, this)" class="filter-tab pb-2 border-b-2 border-primary text-primary">90 Días</button>
+                                <button onclick="setFiltro(180, this)" class="filter-tab pb-2 border-b-2 border-transparent">180 Días</button>
+                                <button onclick="setFiltro(365, this)" class="filter-tab pb-2 border-b-2 border-transparent">Anual</button>
                             </div>
                         </div>
-                        <div class="flex flex-col md:flex-row items-center gap-8 md:gap-12">
-                            <div class="relative size-56 md:size-64 flex items-center justify-center shrink-0">
+                        <div class="flex flex-col md:flex-row items-center gap-12">
+                            <div class="relative size-64 flex items-center justify-center shrink-0">
                                 <canvas id="graficoDistribucion"></canvas>
                                 <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
-                                    <span class="text-[8px] md:text-[10px] text-slate-400 font-bold uppercase tracking-wider">SALDO TOTAL</span>
-                                    <span id="centro-monto" class="text-2xl md:text-3xl font-black">$0</span>
+                                    <span class="text-[10px] text-slate-400 font-bold">SALDO</span>
+                                    <span id="centro-monto" class="text-2xl font-black">$0</span>
                                 </div>
                             </div>
                             <div id="lista-categorias-gastos" class="w-full flex-1 space-y-2"></div>
                         </div>
                     </div>
-
-                    <div class="bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-sm border border-slate-100 dark:border-slate-700">
-                        <div class="p-6 border-b border-slate-50 dark:border-slate-700 flex justify-between items-center">
-                            <h3 class="text-lg font-bold tracking-tight">Diagnóstico de Salud</h3>
-                        </div>
-                        <div id="resumen-rendimiento-dinamico"></div>
-                    </div>
+                    <div id="resumen-rendimiento-dinamico" class="bg-white rounded-[2rem] border border-slate-200 shadow-sm overflow-hidden"></div>
                 </section>
 
                 <section class="flex-1 space-y-6">
-                    <div class="flex justify-between items-center">
-                        <h3 class="text-xl font-bold tracking-tight">Metas Activas</h3>
-                        <a href="metas.html" class="size-10 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-primary hover:text-white transition-all flex items-center justify-center">
-                            <span class="material-symbols-outlined">add</span>
-                        </a>
-                    </div>
-                    <div id="contenedor-metas-dinamicas" class="grid grid-cols-1 gap-5"></div>
+                    <h3 class="text-xl font-bold px-2">Metas Activas</h3>
+                    <div id="contenedor-metas-dinamicas" class="grid grid-cols-1 gap-4"></div>
                 </section>
             </div>
         </div>
     </main>
 </div>
-</body></html>
+</body>
+</html>
