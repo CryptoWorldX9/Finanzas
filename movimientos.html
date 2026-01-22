@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>QuantyA - Movimientos</title>
+    <title>QuantyA - Historial de Pagos</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -90,29 +90,19 @@
             });
         }
 
-        // LÓGICA DE ACTUALIZACIÓN DE SALDOS EN BILLETERA
         async function procesarImpactoFinanciero(nombrePago, montoNuevo, montoAnterior = 0, esGasto = true) {
-            // Buscamos si el nombre del pago corresponde a una tarjeta de la billetera
             const tarjetaId = Object.keys(tarjetasBilletera).find(key => tarjetasBilletera[key].nombre === nombrePago);
-            
             if (tarjetaId) {
                 const tarjeta = tarjetasBilletera[tarjetaId];
                 const diferencia = esGasto ? (montoNuevo - montoAnterior) : (montoAnterior - montoNuevo);
-                
                 let updates = {};
                 const nuevoDisponible = (Number(tarjeta.saldoDisponibleActual) || 0) - diferencia;
-
                 if (tarjeta.categoria === 'Crédito') {
                     const nuevoUtilizado = (Number(tarjeta.montoUtilizado) || 0) + diferencia;
-                    updates = {
-                        saldoDisponibleActual: nuevoDisponible,
-                        montoUtilizado: nuevoUtilizado
-                    };
+                    updates = { saldoDisponibleActual: nuevoDisponible, montoUtilizado: nuevoUtilizado };
                 } else {
-                    // Débito: Solo afecta el disponible
                     updates = { saldoDisponibleActual: nuevoDisponible };
                 }
-
                 await update(ref(db, `usuarios/${currentUser.uid}/tarjetas/${tarjetaId}`), updates);
             }
         }
@@ -123,18 +113,11 @@
             const pagoNuevo = document.getElementById('modal-pago').value;
             const tipo = document.getElementById('modal-tipo').value.toLowerCase();
             const esGasto = tipo.includes('gasto') || tipo.includes('egreso');
-
-            // 1. Obtener datos antiguos para revertir el impacto si es necesario
             const movimientoAntiguo = movimientosBase.find(m => m.id === editNodeId);
-            
-            // 2. Revertir impacto anterior (si existía)
             if (movimientoAntiguo) {
                 await procesarImpactoFinanciero(movimientoAntiguo.pago, 0, movimientoAntiguo.monto, esGasto);
             }
-
-            // 3. Aplicar nuevo impacto
             await procesarImpactoFinanciero(pagoNuevo, montoNuevo, 0, esGasto);
-
             const updateData = {
                 concepto: document.getElementById('modal-concepto').value,
                 monto: montoNuevo,
@@ -145,7 +128,6 @@
                 subcategoria: document.getElementById('modal-subcategoria').value,
                 recurrente: document.getElementById('modal-recurrente').value
             };
-
             await update(ref(db, `usuarios/${currentUser.uid}/movimientos/${editNodeId}`), updateData);
             cerrarModal();
         };
@@ -156,7 +138,6 @@
             const pago = document.getElementById('filter-pago').value;
             const fechaDesde = document.getElementById('filter-desde').value;
             const fechaHasta = document.getElementById('filter-hasta').value;
-
             const filtrados = movimientosBase.filter(m => {
                 const matchSearch = m.concepto.toLowerCase().includes(search);
                 const matchCat = cat === "" || m.categoria === cat;
@@ -309,7 +290,7 @@
         <nav class="space-y-1 flex-1">
             <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">dashboard</span> <span class="font-semibold text-sm">Panel</span></a>
             <a href="billetera.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">wallet</span> <span class="font-semibold text-sm">Billetera</span></a>
-            <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20"><span class="material-symbols-outlined fill">swap_horiz</span> <span class="font-bold text-sm">Movimientos</span></a>
+            <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20"><span class="material-symbols-outlined fill">history</span> <span class="font-bold text-sm">Historial de Pagos</span></a>
             <a href="analisis.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">analytics</span> <span class="font-semibold text-sm">Análisis</span></a>
             <a href="metas.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">track_changes</span> <span class="font-semibold text-sm">Metas</span></a>
             <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl transition-all"><span class="material-symbols-outlined">settings</span> <span class="font-semibold text-sm">Configuración</span></a>
@@ -327,7 +308,7 @@
         <header class="sticky top-0 z-40 h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 md:px-10 flex items-center justify-between">
             <div class="flex items-center gap-4">
                 <button onclick="toggleSidebar()" class="lg:hidden p-2 bg-slate-100 rounded-xl text-slate-600"><span class="material-symbols-outlined">menu</span></button>
-                <h2 class="text-lg md:text-2xl font-black text-slate-800">Movimientos</h2>
+                <h2 class="text-lg md:text-2xl font-black text-slate-800">Historial de Pagos</h2>
             </div>
         </header>
 
