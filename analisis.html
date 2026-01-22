@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>Análisis Pro - QuantyA</title>
+    <title>Gráficos de Gastos - QuantyA</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
@@ -292,7 +292,7 @@
 
 <div class="flex h-screen overflow-hidden">
     
-    <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 w-72 bg-[#0f172a] text-white flex flex-col shrink-0 border-r border-slate-800 p-6 z-50 transition-transform duration-300 -translate-x-full lg:translate-x-0 overflow-y-auto">
+    <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 w-72 bg-[#0f172a] text-white flex flex-col shrink-0 border-r border-white/5 p-6 z-50 transition-transform duration-300 -translate-x-full lg:translate-x-0 overflow-y-auto">
         <div class="space-y-8 flex-1">
             <div class="flex items-center justify-between px-2">
                 <div class="flex items-center gap-3">
@@ -309,59 +309,70 @@
                 </button>
             </div>
             
-            <nav class="space-y-1">
-                <a href="dashboard.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800/50 hover:text-white rounded-xl transition-all group">
-                    <span class="material-symbols-outlined transition-colors">dashboard</span> 
-                    <span class="font-semibold text-sm">Panel</span>
-                </a>
-                <a href="billetera.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800/50 hover:text-white rounded-xl transition-all group">
-                    <span class="material-symbols-outlined transition-colors">wallet</span> 
-                    <span class="font-semibold text-sm">Billetera</span>
-                </a>
-                <a href="movimientos.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800/50 hover:text-white rounded-xl transition-all group">
-                    <span class="material-symbols-outlined transition-colors">swap_horiz</span> 
-                    <span class="font-semibold text-sm">Movimientos</span>
-                </a>
-                <a href="reportes.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800/50 hover:text-white rounded-xl transition-all group">
-                    <span class="material-symbols-outlined transition-colors">calendar_month</span> 
-                    <span class="font-semibold text-sm">Reportes Mensuales</span>
-                </a>
-                <a href="analisis.html" class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20 transition-all">
-                    <span class="material-symbols-outlined font-fill">analytics</span> 
-                    <span class="font-bold text-sm">Gráficos de Gastos</span>
-                </a>
-                <a href="metas.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800/50 hover:text-white rounded-xl transition-all group">
-                    <span class="material-symbols-outlined transition-colors">track_changes</span> 
-                    <span class="font-semibold text-sm">Metas</span>
-                </a>
-                <a href="configuracion.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:bg-slate-800/50 hover:text-white rounded-xl transition-all group">
-                    <span class="material-symbols-outlined transition-colors">settings</span> 
-                    <span class="font-semibold text-sm">Configuración</span>
-                </a>
+            <nav class="space-y-6">
+                <div>
+                    <p class="px-4 text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mb-4">Gestión Principal</p>
+                    <div class="space-y-1.5">
+                        <a href="panel.html" class="group flex items-center gap-3.5 px-4 py-3 text-slate-400 hover:bg-white/[0.03] hover:text-white rounded-2xl transition-all">
+                            <span class="material-symbols-outlined text-[22px] transition-transform group-hover:scale-110">dashboard</span>
+                            <span class="font-bold text-[13px] tracking-tight">Panel de Control</span>
+                        </a>
+                        <a href="billetera.html" class="group flex items-center gap-3.5 px-4 py-3 text-slate-400 hover:bg-white/[0.03] hover:text-white rounded-2xl transition-all">
+                            <span class="material-symbols-outlined text-[22px] transition-transform group-hover:scale-110">wallet</span>
+                            <span class="font-bold text-[13px] tracking-tight">Billetera</span>
+                        </a>
+                        <a href="movimientos.html" class="group flex items-center gap-3.5 px-4 py-3 text-slate-400 hover:bg-white/[0.03] hover:text-white rounded-2xl transition-all">
+                            <span class="material-symbols-outlined text-[22px] transition-transform group-hover:scale-110">swap_horiz</span>
+                            <span class="font-bold text-[13px] tracking-tight">Historial de Pagos</span>
+                        </a>
+                    </div>
+                </div>
+
+                <div>
+                    <p class="px-4 text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mb-4">Análisis y Metas</p>
+                    <div class="space-y-1.5">
+                        <a href="reportes.html" class="group flex items-center gap-3.5 px-4 py-3 text-slate-400 hover:bg-white/[0.03] hover:text-white rounded-2xl transition-all">
+                            <span class="material-symbols-outlined text-[22px] transition-transform group-hover:scale-110">description</span>
+                            <span class="font-bold text-[13px] tracking-tight">Reportes Mensuales</span>
+                        </a>
+                        <a href="analisis.html" class="flex items-center gap-3.5 px-4 py-3 bg-primary/10 border border-primary/20 text-white rounded-2xl shadow-xl shadow-primary/5 transition-all">
+                            <span class="material-symbols-outlined text-[22px] font-fill text-primary">analytics</span>
+                            <span class="font-bold text-[13px] tracking-tight">Gráficos de Gastos</span>
+                        </a>
+                        <a href="metas.html" class="group flex items-center gap-3.5 px-4 py-3 text-slate-400 hover:bg-white/[0.03] hover:text-white rounded-2xl transition-all">
+                            <span class="material-symbols-outlined text-[22px] transition-transform group-hover:scale-110">track_changes</span>
+                            <span class="font-bold text-[13px] tracking-tight">Objetivos de Ahorro</span>
+                        </a>
+                    </div>
+                </div>
             </nav>
         </div>
 
-        <div class="pt-6 border-t border-slate-800/50 mt-auto">
-            <div class="flex items-center gap-3 px-4 py-3 mb-2">
-                <div class="size-10 rounded-full bg-slate-800 flex items-center justify-center font-bold text-xs text-primary border border-slate-700">
-                    QA
+        <div class="p-4 mt-auto">
+            <div class="bg-white/[0.03] border border-white/5 rounded-3xl p-4 mb-3">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="size-10 rounded-xl bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center font-bold text-xs text-white border border-white/10 shadow-inner">QA</div>
+                    <div class="flex-1 overflow-hidden">
+                        <p id="user-name-display" class="text-xs font-black truncate text-white tracking-tight">Cargando...</p>
+                        <p class="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Mi Perfil</p>
+                    </div>
                 </div>
-                <div class="flex-1 overflow-hidden">
-                    <p id="user-name-display" class="text-sm font-bold truncate text-white">Cargando...</p>
-                    <p class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Usuario Pro</p>
+                <div class="space-y-1">
+                    <a href="configuracion.html" class="flex items-center gap-3 px-3 py-2 text-slate-400 hover:text-white transition-colors text-xs font-bold">
+                        <span class="material-symbols-outlined text-lg">settings</span> Ajustes
+                    </a>
+                    <button onclick="cerrarSesion()" class="flex items-center gap-3 px-3 py-2 text-red-400/80 hover:text-red-400 transition-colors text-xs font-bold w-full text-left">
+                        <span class="material-symbols-outlined text-lg">logout</span> Cerrar Sesión
+                    </button>
                 </div>
             </div>
-            <button onclick="cerrarSesion()" class="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-500/10 rounded-xl transition-colors w-full group text-left font-semibold text-sm">
-                <span class="material-symbols-outlined">logout</span> 
-                <span>Cerrar Sesión</span>
-            </button>
         </div>
     </aside>
 
     <main class="flex-1 overflow-y-auto flex flex-col bg-[#f8fafc] dark:bg-[#0f172a]">
-        <header class="sticky top-0 z-10 bg-white/80 dark:bg-[#0f172a]/80 backdrop-blur-md px-6 md:px-10 py-6 flex justify-between items-center border-b border-slate-100 dark:border-slate-800">
+        <header class="sticky top-0 z-10 bg-white/80 dark:bg-[#0f172a]/80 backdrop-blur-md px-6 md:px-10 py-6 flex justify-between items-center border-b border-slate-100 dark:border-white/5">
             <div class="flex items-center gap-4">
-                <button onclick="toggleSidebar()" class="lg:hidden p-2 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-100 dark:border-slate-700">
+                <button onclick="toggleSidebar()" class="lg:hidden p-2 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-100 dark:border-white/5">
                     <span class="material-symbols-outlined">menu</span>
                 </button>
                 <div>
@@ -378,10 +389,10 @@
             <div id="matriz-pro-superior"></div>
             <div class="flex flex-col lg:flex-row gap-8">
                 <section class="flex-[1.2] space-y-6">
-                    <div class="bg-white dark:bg-slate-800 rounded-xl p-6 md:p-8 shadow-sm border border-slate-100 dark:border-slate-700">
+                    <div class="bg-white dark:bg-slate-800 rounded-xl p-6 md:p-8 shadow-sm border border-slate-100 dark:border-white/5">
                         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
                             <h3 class="text-xl font-bold tracking-tight">Flujo de Caja Real</h3>
-                            <div class="flex gap-4 border-b border-slate-100 dark:border-slate-700 text-[10px] font-black uppercase tracking-widest text-slate-400 overflow-x-auto w-full sm:w-auto">
+                            <div class="flex gap-4 border-b border-slate-100 dark:border-white/5 text-[10px] font-black uppercase tracking-widest text-slate-400 overflow-x-auto w-full sm:w-auto">
                                 <button onclick="setFiltro(90, this)" class="filter-tab pb-2 border-b-2 border-primary text-primary whitespace-nowrap">Trimestral</button>
                                 <button onclick="setFiltro(180, this)" class="filter-tab pb-2 border-b-2 border-transparent hover:text-primary whitespace-nowrap">Semestral</button>
                                 <button onclick="setFiltro(365, this)" class="filter-tab pb-2 border-b-2 border-transparent hover:text-primary whitespace-nowrap">Anual</button>
@@ -399,8 +410,8 @@
                         </div>
                     </div>
 
-                    <div class="bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-sm border border-slate-100 dark:border-slate-700">
-                        <div class="p-6 border-b border-slate-50 dark:border-slate-700 flex justify-between items-center">
+                    <div class="bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-sm border border-slate-100 dark:border-white/5">
+                        <div class="p-6 border-b border-slate-50 dark:border-white/5 flex justify-between items-center">
                             <h3 class="text-lg font-bold tracking-tight">Diagnóstico de Salud</h3>
                         </div>
                         <div id="resumen-rendimiento-dinamico"></div>
