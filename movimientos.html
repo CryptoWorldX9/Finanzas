@@ -29,7 +29,8 @@
         
         let currentUser = null;
         let movimientosBase = [];
-        let editNodeId = null;
+        let pagosConfiguracion = {};
+        let tarjetasBilletera = {};
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
@@ -40,13 +41,64 @@
         });
 
         function iniciarSincronizacion() {
+            onValue(ref(db, `usuarios/${currentUser.uid}/listas`), (snapshot) => {
+                if (snapshot.exists()) {
+                    const listas = snapshot.val();
+                    pagosConfiguracion = listas.pago || {};
+                    llenarSelect('filter-categoria', listas.categoria, "Todas las Categorías");
+                    actualizarSelectsPagoMaestro();
+                }
+            });
+
+            onValue(ref(db, `usuarios/${currentUser.uid}/tarjetas`), (snapshot) => {
+                tarjetasBilletera = snapshot.val() || {};
+                actualizarSelectsPagoMaestro();
+            });
+
             onValue(ref(db, `usuarios/${currentUser.uid}/movimientos`), (snapshot) => {
                 movimientosBase = [];
                 snapshot.forEach(child => { movimientosBase.push({ id: child.key, ...child.val() }); });
                 movimientosBase.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-                renderTable(movimientosBase);
+                filtrarMovimientos();
             });
         }
+
+        function llenarSelect(id, datos, defaultText) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            let html = `<option value="">${defaultText}</option>`;
+            Object.values(datos).forEach(d => { html += `<option value="${d.nombre}">${d.nombre}</option>`; });
+            el.innerHTML = html;
+        }
+
+        function actualizarSelectsPagoMaestro() {
+            const el = document.getElementById('filter-pago');
+            if (!el) return;
+            let html = '<option value="">Todos los Pagos</option>';
+            Object.values(pagosConfiguracion).forEach(p => { html += `<option value="${p.nombre}">${p.nombre}</option>`; });
+            Object.entries(tarjetasBilletera).forEach(([key, t]) => { 
+                html += `<option value="${t.nombre}">💳 ${t.nombre}</option>`; 
+            });
+            el.innerHTML = html;
+        }
+
+        window.filtrarMovimientos = () => {
+            const search = document.getElementById('search-input').value.toLowerCase();
+            const cat = document.getElementById('filter-categoria').value;
+            const pago = document.getElementById('filter-pago').value;
+            const fechaDesde = document.getElementById('filter-desde').value;
+            const fechaHasta = document.getElementById('filter-hasta').value;
+
+            const filtrados = movimientosBase.filter(m => {
+                const matchSearch = m.concepto.toLowerCase().includes(search);
+                const matchCat = cat === "" || m.categoria === cat;
+                const matchPago = pago === "" || m.pago === pago;
+                const matchDesde = fechaDesde === "" || m.fecha >= fechaDesde;
+                const matchHasta = fechaHasta === "" || m.fecha <= fechaHasta;
+                return matchSearch && matchCat && matchPago && matchDesde && matchHasta;
+            });
+            renderTable(filtrados);
+        };
 
         function renderTable(datos) {
             const body = document.getElementById('table-body');
@@ -187,11 +239,32 @@
         <header class="sticky top-0 z-40 h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 md:px-10 flex items-center justify-between">
             <div class="flex items-center gap-4">
                 <button onclick="toggleSidebar()" class="lg:hidden p-2 bg-slate-100 rounded-xl text-slate-600"><span class="material-symbols-outlined">menu</span></button>
-                <h2 class="text-lg md:text-2xl font-black text-slate-800">Historial de Pagos</h2>
+                <h2 class="text-lg md:text-2xl font-black text-slate-800 tracking-tight">Historial de Pagos</h2>
             </div>
         </header>
 
-        <div class="p-4 md:p-10 max-w-[1500px] mx-auto">
+        <div class="p-4 md:p-10 max-w-[1500px] mx-auto space-y-6">
+            <div class="bg-white p-6 md:p-8 rounded-[2rem] border border-slate-200 shadow-sm space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="relative md:col-span-2">
+                        <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+                        <input id="search-input" oninput="filtrarMovimientos()" class="w-full pl-12 pr-4 py-4 bg-slate-50 border-none rounded-2xl text-sm font-medium" placeholder="¿Qué buscas?"/>
+                    </div>
+                    <select id="filter-categoria" onchange="filtrarMovimientos()" class="w-full bg-slate-50 border-none rounded-2xl text-sm font-bold p-4"></select>
+                    <select id="filter-pago" onchange="filtrarMovimientos()" class="w-full bg-slate-50 border-none rounded-2xl text-sm font-bold p-4"></select>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-slate-100">
+                    <div class="flex items-center gap-3">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0">Desde:</label>
+                        <input id="filter-desde" type="date" onchange="filtrarMovimientos()" class="w-full bg-slate-50 border-none rounded-xl text-xs p-3"/>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0">Hasta:</label>
+                        <input id="filter-hasta" type="date" onchange="filtrarMovimientos()" class="w-full bg-slate-50 border-none rounded-xl text-xs p-3"/>
+                    </div>
+                </div>
+            </div>
+
             <div class="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="w-full text-left min-w-[750px]">
