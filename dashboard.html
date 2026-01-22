@@ -66,7 +66,7 @@
                 });
             });
 
-            // MEJORA 2: Automatización de Cuotas según tipo de cuenta seleccionada
+            // MEJORA 2: Automatización automática de cuotas al cambiar la cuenta
             document.getElementById('op-pago').addEventListener('change', (e) => {
                 const tarjetaSeleccionada = tarjetasBilletera[e.target.value];
                 const divCuotas = document.getElementById('div-cuotas-dinamico');
@@ -78,13 +78,12 @@
                 }
             });
 
-            // MEJORA 1: Carga automática de listas maestras (incluyendo Subcategorías)
             onValue(ref(db, `usuarios/${currentUser.uid}/listas`), (snapshot) => {
                 const listas = snapshot.val() || {};
                 const mapeo = {
                     'tipo': 'op-tipo',
                     'categoria': 'op-categoria',
-                    'sub_categoria': 'op-sub-select', // Vincula la lista de la DB al nuevo select
+                    'sub_categoria': 'op-sub-select', // MEJORA 1: Vínculo a la lista maestra de subcategorías
                     'recurrente': 'op-recurrente'
                 };
 
@@ -136,6 +135,7 @@
             const btn = document.getElementById('btn-submit');
             btn.disabled = true;
             btn.innerText = "Sincronizando...";
+
             try {
                 const montoRaw = Math.round(parseInt(document.getElementById('op-monto').value.replace(/\D/g, "")));
                 const metodoId = document.getElementById('op-pago').value;
@@ -145,7 +145,7 @@
                 const tipoLower = tipoOp.toLowerCase();
                 const esIngreso = tipoLower.includes('ingreso') || tipoLower.includes('venta') || tipoLower.includes('sueldo');
 
-                if(!metodoId) throw new Error("Por favor selecciona una cuenta de pago.");
+                if(!metodoId) throw new Error("Por favor selecciona una cuenta.");
 
                 for(let i=0; i<cuotas; i++){
                     let f = new Date(document.getElementById('op-fecha').value + "T00:00:00");
@@ -203,8 +203,8 @@
                         <span class="px-3 py-1 bg-slate-100 rounded-full text-[9px] font-black text-slate-500 uppercase tracking-tighter">${m.categoria}</span>
                     </td>
                     <td class="px-6 py-4 text-right">
-                        <span class="text-[13px] font-black ${m.tipo.toLowerCase().includes('ingreso') || m.tipo.toLowerCase().includes('sueldo') ? 'text-emerald-500' : 'text-red-500'} font-mono">
-                            ${m.tipo.toLowerCase().includes('ingreso') || m.tipo.toLowerCase().includes('sueldo') ? '+' : '-'}${fmt.format(Math.round(m.monto))}
+                        <span class="text-[13px] font-black ${m.tipo.toLowerCase().includes('ingreso') ? 'text-emerald-500' : 'text-red-500'} font-mono">
+                            ${m.tipo.toLowerCase().includes('ingreso') ? '+' : '-'}${fmt.format(Math.round(m.monto))}
                         </span>
                     </td>
                     <td class="px-8 py-4 text-right opacity-0 group-hover:opacity-100 transition-all">
@@ -223,10 +223,6 @@
         window.toggleSidebar = () => {
             document.getElementById('sidebar').classList.toggle('-translate-x-full');
             document.getElementById('overlay').classList.toggle('hidden');
-        };
-
-        window.checkCuotas = (val) => {
-            // Esta función queda por compatibilidad pero el listener de op-pago es el que manda ahora
         };
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -259,7 +255,6 @@
 <div id="overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/60 z-40 hidden lg:hidden backdrop-blur-sm"></div>
 
 <div class="flex h-screen overflow-hidden">
-    
     <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 w-72 bg-[#0a0f1c] text-white flex flex-col shrink-0 border-r border-white/5 z-50 transition-transform duration-300 -translate-x-full lg:translate-x-0">
         <div class="p-8">
             <div class="flex items-center justify-between">
@@ -448,13 +443,11 @@
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Tipo de Movimiento</label>
-                                    <select id="op-tipo" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-[12px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all">
-                                        </select>
+                                    <select id="op-tipo" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-[12px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all"></select>
                                 </div>
                                 <div>
                                     <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Categoría Principal</label>
-                                    <select id="op-categoria" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-[12px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all">
-                                        </select>
+                                    <select id="op-categoria" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-[12px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all"></select>
                                 </div>
                             </div>
 
@@ -463,7 +456,7 @@
                                     <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Subcategoría</label>
                                     <input id="op-subcategoria" type="hidden"/>
                                     <select id="op-sub-select" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-[12px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all">
-                                        <option value="">Subcategoría</option>
+                                        <option value="">Seleccionar</option>
                                     </select>
                                 </div>
                                 <div>
@@ -481,8 +474,7 @@
                                 </div>
                                 <div>
                                     <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Recurrencia</label>
-                                    <select id="op-recurrente" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-[12px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all">
-                                        </select>
+                                    <select id="op-recurrente" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-[12px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all"></select>
                                 </div>
                             </div>
 
@@ -524,5 +516,6 @@
         </div>
     </main>
 </div>
+
 </body>
 </html>
