@@ -14,7 +14,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
     const firebaseConfig = {
@@ -49,8 +49,6 @@
             iniciarSincronizacion(user.uid);
         } else { window.location.href = "index.html"; }
     });
-
-    window.cerrarSesion = () => { signOut(auth).then(() => { window.location.href = "index.html"; }); };
 
     function iniciarSincronizacion(uid) {
         onValue(ref(db, `usuarios/${uid}/movimientos`), (snapshot) => {
@@ -117,19 +115,19 @@
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                     <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Gasto Diario Prom.</p>
-                    <p class="text-lg font-black text-slate-700">$${new Intl.NumberFormat('es-CL').format(Math.round(gastoPromedioDiario))}</p>
+                    <p class="text-lg font-black text-slate-700 font-sans tracking-tight">$${new Intl.NumberFormat('es-CL').format(Math.round(gastoPromedioDiario))}</p>
                 </div>
                 <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                     <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Frecuencia Mayor</p>
-                    <p class="text-lg font-black text-primary truncate">${masFrecuente}</p>
+                    <p class="text-lg font-black text-primary truncate tracking-tight">${masFrecuente}</p>
                 </div>
                 <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                     <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Ahorro Mensual</p>
-                    <p class="text-lg font-black text-emerald-500">${ingresos > 0 ? (((ingresos-gastos)/ingresos)*100).toFixed(1) : 0}%</p>
+                    <p class="text-lg font-black text-emerald-500 font-sans tracking-tight">${ingresos > 0 ? (((ingresos-gastos)/ingresos)*100).toFixed(1) : 0}%</p>
                 </div>
                 <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
                     <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Movimientos</p>
-                    <p class="text-lg font-black text-slate-700">${datos.length}</p>
+                    <p class="text-lg font-black text-slate-700 font-sans tracking-tight">${datos.length}</p>
                 </div>
             </div>`;
 
@@ -184,19 +182,19 @@
             <div class="grid grid-cols-2 gap-4 p-6">
                 <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
                     <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Capacidad Pago</p>
-                    <p class="text-lg md:text-xl font-black text-emerald-500">${saldo > 0 ? 'Excelente' : 'Ajustada'}</p>
+                    <p class="text-lg md:text-xl font-black text-emerald-500 tracking-tight">${saldo > 0 ? 'Excelente' : 'Ajustada'}</p>
                 </div>
                 <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
                     <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Ratio Gasto/Ing</p>
-                    <p class="text-lg md:text-xl font-black ${gastos > ingresos ? 'text-red-500' : 'text-primary'}">${ingresos > 0 ? ((gastos/ingresos)*100).toFixed(1) : 0}%</p>
+                    <p class="text-lg md:text-xl font-black ${gastos > ingresos ? 'text-red-500' : 'text-primary'} tracking-tight">${ingresos > 0 ? ((gastos/ingresos)*100).toFixed(1) : 0}%</p>
                 </div>
                 <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
                     <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Días de Autonomía</p>
-                    <p class="text-lg md:text-xl font-black text-primary">${gastoPromedioDiario > 0 ? Math.floor(saldo/gastoPromedioDiario) : '0'} Días</p>
+                    <p class="text-lg md:text-xl font-black text-primary tracking-tight">${gastoPromedioDiario > 0 ? Math.floor(saldo/gastoPromedioDiario) : '0'} Días</p>
                 </div>
                 <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
                     <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Estado General</p>
-                    <p class="text-lg md:text-xl font-black ${saldo > 0 ? 'text-emerald-500' : 'text-red-500'}">${saldo > (ingresos * 0.2) ? 'Óptimo' : 'Crítico'}</p>
+                    <p class="text-lg md:text-xl font-black ${saldo > 0 ? 'text-emerald-500' : 'text-red-500'} tracking-tight">${saldo > (ingresos * 0.2) ? 'Óptimo' : 'Crítico'}</p>
                 </div>
             </div>`;
     }
@@ -211,27 +209,14 @@
             const actual = Number(meta.ahorrado) || 0;
             const objetivo = Number(meta.objetivo) || 1;
             const porcentaje = Math.min(Math.round((actual / objetivo) * 100), 100);
-            let icon = "savings", colorBase = "emerald-500";
-            const n = meta.nombre.toLowerCase();
-            if (n.includes('vacac') || n.includes('viaje')) { icon = 'flight'; colorBase = 'blue-500'; }
-            else if (n.includes('deuda') || n.includes('pago')) { icon = 'payments'; colorBase = 'red-500'; }
-            else if (n.includes('casa')) { icon = 'home'; colorBase = 'orange-500'; }
             return `
                 <div class="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
                     <div class="flex items-center justify-between mb-4">
-                        <div class="flex items-center gap-3">
-                            <div class="size-12 bg-slate-100 rounded-xl flex items-center justify-center" style="color: ${colorBase === 'emerald-500' ? '#10b981' : colorBase === 'blue-500' ? '#3b82f6' : '#ef4444'}">
-                                <span class="material-symbols-outlined text-2xl">${icon}</span>
-                            </div>
-                            <div>
-                                <h4 class="font-bold text-base text-slate-800">${meta.nombre}</h4>
-                                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Meta: $${new Intl.NumberFormat('es-CL').format(objetivo)}</p>
-                            </div>
-                        </div>
-                        <span class="font-black text-lg" style="color: ${colorBase === 'emerald-500' ? '#10b981' : colorBase === 'blue-500' ? '#3b82f6' : '#ef4444'}">${porcentaje}%</span>
+                        <h4 class="font-bold text-base text-slate-800">${meta.nombre}</h4>
+                        <span class="font-black text-primary font-sans">${porcentaje}%</span>
                     </div>
-                    <div class="w-full h-3 bg-slate-100 rounded-full mb-4 overflow-hidden">
-                        <div class="h-full transition-all duration-1000" style="width: ${porcentaje}%; background-color: ${colorBase === 'emerald-500' ? '#10b981' : colorBase === 'blue-500' ? '#3b82f6' : '#ef4444'}"></div>
+                    <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+                        <div class="h-full bg-primary" style="width: ${porcentaje}%"></div>
                     </div>
                 </div>`;
         }).join('');
@@ -267,16 +252,13 @@
     @layer base { body { @apply bg-[#f8fafc] text-slate-800 antialiased; } }
     .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300; }
     .material-symbols-outlined.font-fill { font-variation-settings: 'FILL' 1, 'wght' 400; }
-    
-    .nav-link-idle { @apply group flex items-center gap-3.5 px-4 py-3 text-slate-400 hover:bg-white/[0.03] hover:text-white rounded-2xl transition-all; }
-    .nav-link-active { @apply flex items-center gap-3.5 px-4 py-3 bg-primary/10 border border-primary/20 text-white rounded-2xl shadow-xl shadow-primary/5 transition-all; }
 </style>
 </head>
 <body>
 
 <div id="overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/60 z-40 hidden lg:hidden backdrop-blur-sm"></div>
 
-<div class="flex h-screen overflow-hidden relative">
+<div class="flex h-screen overflow-hidden">
     
     <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 w-72 bg-[#0a0f1c] text-white flex flex-col shrink-0 border-r border-white/5 z-50 transition-transform duration-300 -translate-x-full lg:translate-x-0">
         <div class="p-8">
@@ -290,42 +272,45 @@
                         <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">Smart Finance</span>
                     </div>
                 </div>
-                <button onclick="toggleSidebar()" class="lg:hidden p-2 text-slate-400 hover:text-white"><span class="material-symbols-outlined">close</span></button>
+                <button onclick="toggleSidebar()" class="lg:hidden p-2 text-slate-400 hover:text-white transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
             </div>
         </div>
-        
+
         <nav class="flex-1 px-4 space-y-8 overflow-y-auto">
             <div>
                 <p class="px-4 text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mb-4">Gestión Principal</p>
                 <div class="space-y-1.5">
-                    <a href="dashboard.html" class="nav-link-idle">
-                        <span class="material-symbols-outlined text-[22px]">dashboard</span>
-                        <span class="font-bold text-[13px]">Panel de Control</span>
+                    <a href="dashboard.html" class="group flex items-center gap-3.5 px-4 py-3 text-slate-400 hover:bg-white/[0.03] hover:text-white rounded-2xl transition-all duration-300">
+                        <span class="material-symbols-outlined text-[22px] transition-transform group-hover:scale-110">dashboard</span>
+                        <span class="font-bold text-[13px] tracking-tight">Panel de Control</span>
                     </a>
-                    <a href="billetera.html" class="nav-link-idle">
-                        <span class="material-symbols-outlined text-[22px]">wallet</span>
-                        <span class="font-bold text-[13px]">Billetera</span>
+                    <a href="billetera.html" class="group flex items-center gap-3.5 px-4 py-3 text-slate-400 hover:bg-white/[0.03] hover:text-white rounded-2xl transition-all">
+                        <span class="material-symbols-outlined text-[22px] transition-transform group-hover:scale-110">wallet</span>
+                        <span class="font-bold text-[13px] tracking-tight">Billetera</span>
                     </a>
-                    <a href="movimientos.html" class="nav-link-idle">
-                        <span class="material-symbols-outlined text-[22px]">swap_horiz</span>
-                        <span class="font-bold text-[13px]">Historial de Pagos</span>
+                    <a href="movimientos.html" class="group flex items-center gap-3.5 px-4 py-3 text-slate-400 hover:bg-white/[0.03] hover:text-white rounded-2xl transition-all">
+                        <span class="material-symbols-outlined text-[22px] transition-transform group-hover:scale-110">swap_horiz</span>
+                        <span class="font-bold text-[13px] tracking-tight">Historial de Pagos</span>
                     </a>
                 </div>
             </div>
+
             <div>
                 <p class="px-4 text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mb-4">Análisis y Metas</p>
                 <div class="space-y-1.5">
-                    <a href="reportes.html" class="nav-link-idle">
-                        <span class="material-symbols-outlined text-[22px]">description</span>
-                        <span class="font-bold text-[13px]">Reportes Mensuales</span>
+                    <a href="reportes.html" class="group flex items-center gap-3.5 px-4 py-3 text-slate-400 hover:bg-white/[0.03] hover:text-white rounded-2xl transition-all">
+                        <span class="material-symbols-outlined text-[22px] transition-transform group-hover:scale-110">description</span>
+                        <span class="font-bold text-[13px] tracking-tight">Reportes Mensuales</span>
                     </a>
-                    <a href="analisis.html" class="nav-link-active">
+                    <a href="analisis.html" class="flex items-center gap-3.5 px-4 py-3 bg-primary/10 border border-primary/20 text-white rounded-2xl shadow-xl shadow-primary/5 transition-all">
                         <span class="material-symbols-outlined text-[22px] font-fill text-primary">analytics</span>
-                        <span class="font-bold text-[13px]">Gráficos de Gastos</span>
+                        <span class="font-bold text-[13px] tracking-tight">Gráficos de Gastos</span>
                     </a>
-                    <a href="metas.html" class="nav-link-idle">
-                        <span class="material-symbols-outlined text-[22px]">track_changes</span>
-                        <span class="font-bold text-[13px]">Objetivos de Ahorro</span>
+                    <a href="metas.html" class="group flex items-center gap-3.5 px-4 py-3 text-slate-400 hover:bg-white/[0.03] hover:text-white rounded-2xl transition-all">
+                        <span class="material-symbols-outlined text-[22px] transition-transform group-hover:scale-110">track_changes</span>
+                        <span class="font-bold text-[13px] tracking-tight">Objetivos de Ahorro</span>
                     </a>
                 </div>
             </div>
@@ -333,16 +318,24 @@
 
         <div class="p-4 mt-auto">
             <div class="bg-white/[0.03] border border-white/5 rounded-3xl p-4 mb-3">
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="size-10 rounded-xl bg-slate-800 flex items-center justify-center font-bold text-xs text-white">QA</div>
-                    <div class="flex-1 overflow-hidden">
-                        <p id="user-name-display" class="text-xs font-black truncate text-white">Usuario</p>
-                        <p class="text-[9px] font-bold text-slate-500 uppercase">Mi Perfil</p>
+                <a href="cuenta.html" class="block group">
+                    <div class="flex items-center gap-3 mb-4 transition-all group-hover:bg-white/5 p-2 rounded-2xl">
+                        <div class="size-10 rounded-xl bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center font-bold text-xs text-white border border-white/10 shadow-inner group-hover:from-primary group-hover:to-blue-600 transition-all">QA</div>
+                        <div class="flex-1 overflow-hidden">
+                            <p id="user-name-display" class="text-xs font-black truncate text-white tracking-tight">Cargando...</p>
+                            <p class="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Mi Perfil</p>
+                        </div>
+                        <span class="material-symbols-outlined text-slate-600 text-sm group-hover:text-white">arrow_forward_ios</span>
                     </div>
+                </a>
+                <div class="space-y-1">
+                    <a href="cuenta.html" class="flex items-center gap-3 px-3 py-2 text-slate-400 hover:text-white transition-colors text-xs font-bold">
+                        <span class="material-symbols-outlined text-lg">settings</span> Ajustes
+                    </a>
+                    <a href="index.html" class="flex items-center gap-3 px-3 py-2 text-red-400/80 hover:text-red-400 transition-colors text-xs font-bold">
+                        <span class="material-symbols-outlined text-lg">logout</span> Cerrar Sesión
+                    </a>
                 </div>
-                <button onclick="cerrarSesion()" class="w-full flex items-center gap-3 px-3 py-2 text-red-400/80 hover:text-red-400 text-xs font-bold transition-colors">
-                    <span class="material-symbols-outlined text-lg">logout</span> Cerrar Sesión
-                </button>
             </div>
         </div>
     </aside>
@@ -363,13 +356,13 @@
             
             <div class="flex flex-col lg:flex-row gap-8">
                 <section class="flex-[1.2] space-y-6">
-                    <div class="bg-white rounded-[2.5rem] p-8 border border-slate-200 shadow-sm">
-                        <div class="flex justify-between items-center mb-8">
+                    <div class="bg-white rounded-[2rem] p-8 border border-slate-200 shadow-sm">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
                             <h3 class="text-xl font-bold">Flujo de Caja</h3>
-                            <div class="flex gap-4 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                <button onclick="setFiltro(90, this)" class="filter-tab pb-2 border-b-2 border-primary text-primary">90 Días</button>
-                                <button onclick="setFiltro(180, this)" class="filter-tab pb-2 border-b-2 border-transparent">180 Días</button>
-                                <button onclick="setFiltro(365, this)" class="filter-tab pb-2 border-b-2 border-transparent">Anual</button>
+                            <div class="flex gap-4 text-[10px] font-black uppercase tracking-widest text-slate-400 overflow-x-auto w-full sm:w-auto">
+                                <button onclick="setFiltro(90, this)" class="filter-tab pb-2 border-b-2 border-primary text-primary whitespace-nowrap">90 Días</button>
+                                <button onclick="setFiltro(180, this)" class="filter-tab pb-2 border-b-2 border-transparent hover:text-primary whitespace-nowrap">180 Días</button>
+                                <button onclick="setFiltro(365, this)" class="filter-tab pb-2 border-b-2 border-transparent hover:text-primary whitespace-nowrap">Anual</button>
                             </div>
                         </div>
                         <div class="flex flex-col md:flex-row items-center gap-12">
@@ -387,12 +380,11 @@
                 </section>
 
                 <section class="flex-1 space-y-6">
-                    <h3 class="text-xl font-bold px-2">Metas Activas</h3>
+                    <h3 class="text-xl font-bold px-2 tracking-tight">Metas Activas</h3>
                     <div id="contenedor-metas-dinamicas" class="grid grid-cols-1 gap-4"></div>
                 </section>
             </div>
         </div>
     </main>
 </div>
-</body>
-</html>
+</body></html>
