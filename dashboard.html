@@ -10,7 +10,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getDatabase, ref, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
@@ -26,252 +26,235 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getDatabase(app);
+
         let currentUser = null;
-        let editNodeId = null; 
-        let cacheListas = JSON.parse(localStorage.getItem('cache_listas')) || {};
-        let cacheMovimientos = JSON.parse(localStorage.getItem('cache_movimientos_panel')) || [];
-        
-        let pagosConfiguracion = {};
-        let tarjetasBilletera = {}; 
+        let editNodeId = null;
+        let tarjetasBilletera = {};
 
-        const consejos = [
-            "Revisa tus suscripciones activas este mes.", "El 30% de tus gastos son en comida rápida.", "Ahorra el 10% de cada ingreso extra.",
-            "Usa transferencias para evitar comisiones.", "Mantén un fondo de emergencia de 3 meses.", "Evita compras impulsivas esperando 24h."
-        ];
+        // FORMATEADOR PROFESIONAL: Enteros con punto
+        const fmt = new Intl.NumberFormat('es-CL', {
+            style: 'currency',
+            currency: 'CLP',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        });
 
-        window.toggleSidebar = () => {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('overlay');
-            sidebar.classList.toggle('-translate-x-full');
-            overlay.classList.toggle('hidden');
-        };
-
-        function iniciarCarruselSugerencias() {
-            const textEl = document.getElementById('sugerencia-texto');
-            let i = 0;
-            setInterval(() => {
-                if(!textEl) return;
-                textEl.style.opacity = 0;
-                setTimeout(() => {
-                    i = (i + 1) % consejos.length;
-                    textEl.innerText = consejos[i];
-                    textEl.style.opacity = 1;
-                }, 500);
-            }, 10000);
-        }
-
+        // --- AUTH & INITIALIZATION ---
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
                 document.getElementById('user-name-display').innerText = user.displayName || "Usuario";
-                if(cacheMovimientos.length > 0) renderizarTodo(cacheMovimientos);
-                if(Object.keys(cacheListas).length > 0) llenarTodosLosSelects(cacheListas);
-                iniciarSincronizacionRealtime();
-                iniciarCarruselSugerencias();
+                cargarDatos();
             } else {
                 window.location.href = "index.html";
             }
         });
 
-        function iniciarSincronizacionRealtime() {
-            onValue(ref(db, `usuarios/${currentUser.uid}/listas`), (snapshot) => {
-                if (snapshot.exists()) {
-                    const listas = snapshot.val();
-                    localStorage.setItem('cache_listas', JSON.stringify(listas));
-                    pagosConfiguracion = listas.pago || {}; 
-                    llenarTodosLosSelects(listas);
-                    actualizarSelectorPagoMaestro(); 
-                }
-            });
+        window.cerrarSesion = () => signOut(auth);
 
+        function cargarDatos() {
+            // Cargar Tarjetas para el select de "Método de Pago"
             onValue(ref(db, `usuarios/${currentUser.uid}/tarjetas`), (snapshot) => {
-                tarjetasBilletera = snapshot.val() || {};
-                actualizarSelectorPagoMaestro(); 
-            });
-
-            onValue(ref(db, `usuarios/${currentUser.uid}/movimientos`), (snapshot) => {
-                const dataFull = [];
+                const selectPago = document.getElementById('op-pago');
+                selectPago.innerHTML = '<option value="">Seleccionar Cuenta</option>';
+                tarjetasBilletera = {};
                 snapshot.forEach((child) => {
-                    dataFull.push({ id: child.key, ...child.val() });
+                    const t = child.val();
+                    const key = child.key;
+                    tarjetasBilletera[key] = { ...t, id: key };
+                    const opt = document.createElement('option');
+                    opt.value = key;
+                    opt.textContent = t.nombre;
+                    selectPago.appendChild(opt);
                 });
-                dataFull.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-                localStorage.setItem('cache_movimientos_panel', JSON.stringify(dataFull));
-                renderizarTodo(dataFull);
+            });
+
+            // Cargar Movimientos y Resumen
+            onValue(ref(db, `usuarios/${currentUser.uid}/movimientos`), (snapshot) => {
+                const moves = [];
+                let ingresos = 0, egresos = 0;
+                
+                snapshot.forEach((child) => {
+                    const m = child.val();
+                    const id = child.key;
+                    moves.push({ ...m, id });
+                    
+                    const monto = Math.round(parseFloat(m.monto)) || 0;
+                    const tipoLower = m.tipo.toLowerCase();
+                    
+                    if (tipoLower.includes('ingreso') || tipoLower.includes('venta') || tipoLower.includes('sueldo')) {
+                        ingresos += monto;
+                    } else {
+                        egresos += monto;
+                    }
+                });
+
+                document.getElementById('total-ingresos').innerText = fmt.format(ingresos);
+                document.getElementById('total-egresos').innerText = fmt.format(egresos);
+                document.getElementById('total-balance').innerText = fmt.format(ingresos - egresos);
+                
+                renderizarTabla(moves.reverse().slice(0, 10));
             });
         }
 
-        function llenarTodosLosSelects(listas) {
-            llenarSelect('op-tipo', listas.tipo);
-            llenarSelect('op-categoria', listas.categoria);
-            llenarSelect('op-subcategoria', listas.sub_categoria);
-            llenarSelect('op-recurrente', listas.recurrente);
-        }
-
-        function llenarSelect(elementId, datos) {
-            const select = document.getElementById(elementId);
-            if (!select || !datos) return;
-            const fragment = document.createDocumentFragment();
-            Object.keys(datos).forEach(key => {
-                const opt = document.createElement('option');
-                opt.value = datos[key].nombre;
-                opt.textContent = datos[key].nombre;
-                fragment.appendChild(opt);
-            });
-            select.innerHTML = '';
-            select.appendChild(fragment);
-        }
-
-        function actualizarSelectorPagoMaestro() {
-            const select = document.getElementById('op-pago');
-            if(!select) return;
-            let opciones = '';
-            Object.keys(pagosConfiguracion).forEach(key => {
-                const nombre = pagosConfiguracion[key].nombre;
-                opciones += `<option value="${nombre}">${nombre}</option>`;
-            });
-            Object.keys(tarjetasBilletera).forEach(id => {
-                const t = tarjetasBilletera[id];
-                opciones += `<option value="${id}">💳 ${t.nombre}</option>`;
-            });
-            select.innerHTML = opciones;
-        }
-
-        window.checkMetodoPago = () => {
-            const val = document.getElementById('op-pago').value;
-            const divCuotas = document.getElementById('div-cuotas-dinamico');
-            divCuotas.classList.toggle('hidden', !tarjetasBilletera[val]);
-        };
-
-        function renderizarTodo(datos) {
-            const container = document.getElementById('recent-moves-body');
-            if(!container) return;
-            container.innerHTML = datos.slice(0, 5).map(data => {
-                const isIngreso = data.tipo.toLowerCase().includes('ingreso') || data.tipo.toLowerCase().includes('venta');
-                const dataString = encodeURIComponent(JSON.stringify(data));
-                return `
-                    <tr class="hover:bg-slate-50 transition-colors border-b border-slate-100">
-                        <td class="px-4 md:px-8 py-4 text-[10px] md:text-xs font-medium text-slate-400">${data.fecha}</td>
-                        <td class="px-4 md:px-6 py-4">
-                            <p class="text-xs md:text-sm font-bold text-slate-800 truncate max-w-[100px] md:max-w-[150px]">${data.concepto}</p>
-                            <p class="text-[8px] md:text-[9px] font-black uppercase text-primary tracking-tighter">${data.pago}</p>
-                        </td>
-                        <td class="px-4 md:px-6 py-4 hidden md:table-cell"><span class="bg-slate-100 text-slate-600 text-[9px] px-2 py-1 rounded-lg font-black uppercase">${data.categoria}</span></td>
-                        <td class="px-4 md:px-6 py-4 text-xs md:text-sm font-black text-right ${isIngreso ? 'text-emerald-500' : 'text-red-500'}">
-                            ${isIngreso ? '+' : '-'} $${new Intl.NumberFormat('es-CL').format(data.monto)}
-                        </td>
-                        <td class="px-4 md:px-8 py-4 text-right space-x-1">
-                            <button onclick="prepararEdicion('${data.id}', '${dataString}')" class="p-1.5 hover:bg-primary/10 text-slate-400 hover:text-primary rounded-lg transition-colors"><span class="material-symbols-outlined text-lg">edit</span></button>
-                        </td>
-                    </tr>`;
-            }).join('');
-
-            let tIngresos = 0, tGastos = 0;
-            datos.forEach(m => {
-                if(m.tipo.toLowerCase().includes('ingreso') || m.tipo.toLowerCase().includes('venta')) tIngresos += m.monto;
-                else tGastos += m.monto;
-            });
-            const saldo = tIngresos - tGastos;
-            const percGastos = tIngresos > 0 ? Math.min((tGastos / tIngresos) * 100, 100) : 0;
-            
-            document.getElementById('display-ingresos').innerText = `$ ${new Intl.NumberFormat('es-CL').format(tIngresos)}`;
-            document.getElementById('display-gastos').innerText = `$ ${new Intl.NumberFormat('es-CL').format(tGastos)}`;
-            document.getElementById('display-saldo').innerText = `$ ${new Intl.NumberFormat('es-CL').format(saldo)}`;
-            document.getElementById('bar-ingresos').style.width = '100%';
-            document.getElementById('bar-gastos').style.width = `${percGastos}%`;
-            document.getElementById('bar-saldo').style.width = `${100 - percGastos}%`;
-        }
-
-        window.formatMoneyInput = (input) => {
-            let val = input.value.replace(/\D/g, "");
-            if (val) input.value = new Intl.NumberFormat('es-CL').format(val);
-        };
-
+        // --- REGISTRAR OPERACIÓN ACTUALIZADO ---
         window.registrarOperacion = async (e) => {
             e.preventDefault();
-            const montoRaw = parseInt(document.getElementById('op-monto').value.replace(/\./g, ""));
-            const metodoId = document.getElementById('op-pago').value;
-            const cuotas = parseInt(document.getElementById('op-cuotas')?.value) || 1;
-            const esTarjeta = tarjetasBilletera[metodoId];
-            
-            for(let i=0; i<cuotas; i++){
-                let f = new Date(document.getElementById('op-fecha').value);
-                f.setMonth(f.getMonth() + i);
+            const btn = document.getElementById('btn-submit');
+            const originalBtnText = btn.innerText;
+            btn.disabled = true;
+            btn.innerText = "Sincronizando...";
+
+            try {
+                const montoRaw = Math.round(parseInt(document.getElementById('op-monto').value.replace(/\D/g, "")));
+                const metodoId = document.getElementById('op-pago').value;
+                const cuotas = parseInt(document.getElementById('op-cuotas')?.value) || 1;
+                const esTarjeta = tarjetasBilletera[metodoId];
                 
-                const data = {
-                    concepto: cuotas > 1 ? `${document.getElementById('op-concepto').value} (${i+1}/${cuotas})` : document.getElementById('op-concepto').value,
-                    tipo: document.getElementById('op-tipo').value,
-                    categoria: document.getElementById('op-categoria').value,
-                    subcategoria: document.getElementById('op-subcategoria').value,
-                    pago: esTarjeta ? esTarjeta.nombre : metodoId,
-                    recurrente: document.getElementById('op-recurrente').value,
-                    fecha: f.toISOString().split('T')[0],
-                    monto: montoRaw / cuotas,
-                    timestamp: Date.now()
-                };
+                const tipoOperacion = document.getElementById('op-tipo').value;
+                const tipoLower = tipoOperacion.toLowerCase();
+                const esIngreso = tipoLower.includes('ingreso') || tipoLower.includes('venta') || tipoLower.includes('sueldo');
 
-                if(editNodeId && i === 0) {
-                    await update(ref(db, `usuarios/${currentUser.uid}/movimientos/${editNodeId}`), data);
-                } else {
-                    await push(ref(db, `usuarios/${currentUser.uid}/movimientos`), data);
+                if(!metodoId) throw new Error("Selecciona un método de pago");
+
+                // 1. Guardar en Movimientos
+                for(let i=0; i<cuotas; i++){
+                    let fechaOriginal = document.getElementById('op-fecha').value;
+                    let fechaObj = new Date(fechaOriginal + "T00:00:00");
+                    fechaObj.setMonth(fechaObj.getMonth() + i);
+                    
+                    const data = {
+                        concepto: cuotas > 1 ? `${document.getElementById('op-concepto').value} (${i+1}/${cuotas})` : document.getElementById('op-concepto').value,
+                        tipo: tipoOperacion,
+                        categoria: document.getElementById('op-categoria').value,
+                        subcategoria: document.getElementById('op-subcategoria').value,
+                        pago: esTarjeta ? esTarjeta.nombre : metodoId,
+                        recurrente: document.getElementById('op-recurrente').value,
+                        fecha: fechaObj.toISOString().split('T')[0],
+                        monto: Math.round(montoRaw / cuotas),
+                        timestamp: Date.now()
+                    };
+
+                    if(editNodeId && i === 0) {
+                        await update(ref(db, `usuarios/${currentUser.uid}/movimientos/${editNodeId}`), data);
+                    } else {
+                        await push(ref(db, `usuarios/${currentUser.uid}/movimientos`), data);
+                    }
                 }
-            }
 
-            if (esTarjeta) {
-                const nuevoSaldo = (esTarjeta.saldoUsado || 0) + montoRaw;
-                await update(ref(db, `usuarios/${currentUser.uid}/tarjetas/${metodoId}`), { saldoUsado: nuevoSaldo });
-            }
+                // 2. Actualizar Billetera (Ajuste de Saldos)
+                if (esTarjeta) {
+                    const updates = {};
+                    let disp = Math.round(Number(esTarjeta.saldoDisponibleActual)) || 0;
+                    let util = Math.round(Number(esTarjeta.montoUtilizado)) || 0;
 
-            editNodeId = null;
-            document.getElementById('btn-submit').innerText = "Registrar Operación";
-            e.target.reset();
-            document.getElementById('div-cuotas-dinamico').classList.add('hidden');
+                    if (esIngreso) {
+                        updates[`usuarios/${currentUser.uid}/tarjetas/${metodoId}/saldoDisponibleActual`] = disp + montoRaw;
+                        if (esTarjeta.categoria === 'Crédito') {
+                            updates[`usuarios/${currentUser.uid}/tarjetas/${metodoId}/montoUtilizado`] = Math.max(0, util - montoRaw);
+                        }
+                    } else {
+                        if (esTarjeta.categoria === 'Crédito') {
+                            updates[`usuarios/${currentUser.uid}/tarjetas/${metodoId}/saldoDisponibleActual`] = disp - montoRaw;
+                            updates[`usuarios/${currentUser.uid}/tarjetas/${metodoId}/montoUtilizado`] = util + montoRaw;
+                        } else {
+                            updates[`usuarios/${currentUser.uid}/tarjetas/${metodoId}/saldoDisponibleActual`] = disp - montoRaw;
+                        }
+                    }
+                    await update(ref(db), updates);
+                }
+
+                editNodeId = null;
+                btn.innerText = "Registrar Operación";
+                e.target.reset();
+                document.getElementById('div-cuotas-dinamico').classList.add('hidden');
+                alert("Sincronizado con éxito");
+
+            } catch (err) {
+                alert(err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Registrar Operación";
+            }
         };
 
-        window.prepararEdicion = (id, dataStr) => {
-            const d = JSON.parse(decodeURIComponent(dataStr));
-            editNodeId = id;
-            document.getElementById('op-concepto').value = d.concepto;
-            document.getElementById('op-tipo').value = d.tipo;
-            document.getElementById('op-monto').value = new Intl.NumberFormat('es-CL').format(d.monto);
-            document.getElementById('op-categoria').value = d.categoria;
-            document.getElementById('op-subcategoria').value = d.subcategoria;
-            document.getElementById('op-pago').value = d.pago; 
-            document.getElementById('op-recurrente').value = d.recurrente;
-            document.getElementById('op-fecha').value = d.fecha;
-            document.getElementById('btn-submit').innerText = "Actualizar Registro";
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            document.getElementById('op-concepto').focus();
+        function renderizarTabla(moves) {
+            const body = document.getElementById('recent-moves-body');
+            body.innerHTML = moves.map(m => `
+                <tr class="border-b border-slate-50 group hover:bg-slate-50/50 transition-all">
+                    <td class="px-8 py-4 text-[11px] font-bold text-slate-400 font-mono">${m.fecha}</td>
+                    <td class="px-6 py-4">
+                        <div class="flex flex-col">
+                            <span class="text-[13px] font-black text-slate-700">${m.concepto}</span>
+                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">${m.pago}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 hidden md:table-cell">
+                        <span class="px-3 py-1 bg-slate-100 rounded-full text-[9px] font-black text-slate-500 uppercase tracking-tighter">${m.categoria}</span>
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <span class="text-[13px] font-black ${m.tipo.toLowerCase().includes('ingreso') || m.tipo.toLowerCase().includes('sueldo') ? 'text-emerald-500' : 'text-red-500'} font-mono">
+                            ${m.tipo.toLowerCase().includes('ingreso') || m.tipo.toLowerCase().includes('sueldo') ? '+' : '-'}${fmt.format(Math.round(m.monto))}
+                        </span>
+                    </td>
+                    <td class="px-8 py-4 text-right opacity-0 group-hover:opacity-100 transition-all">
+                        <button onclick="eliminarMovimiento('${m.id}')" class="text-slate-300 hover:text-red-500 transition-colors">
+                            <span class="material-symbols-outlined text-xl">delete</span>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        window.eliminarMovimiento = (id) => {
+            if(confirm("¿Eliminar este registro?")) {
+                remove(ref(db, `usuarios/${currentUser.uid}/movimientos/${id}`));
+            }
         };
+
+        // --- UI HELPERS ---
+        window.toggleSidebar = () => {
+            document.getElementById('sidebar').classList.toggle('-translate-x-full');
+            document.getElementById('overlay').classList.toggle('hidden');
+        };
+
+        window.checkCuotas = (val) => {
+            const div = document.getElementById('div-cuotas-dinamico');
+            val === 'Tarjeta de Crédito' ? div.classList.remove('hidden') : div.classList.add('hidden');
+        };
+
+        // Formato moneda en tiempo real
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('op-monto').addEventListener('input', (e) => {
+                let val = e.target.value.replace(/\D/g, "");
+                e.target.value = val ? parseInt(val).toLocaleString('es-CL') : "";
+            });
+        });
+
     </script>
 
     <script id="tailwind-config">
         tailwind.config = {
             theme: {
                 extend: {
-                    colors: { "primary": "#176282", "emerald-custom": "#10b981" },
-                    fontFamily: { sans: ["Plus Jakarta Sans", "sans-serif"] },
+                    colors: { "primary": "#176282" },
+                    fontFamily: { sans: ["Plus Jakarta Sans", "sans-serif"] }
                 }
             }
         }
     </script>
     <style type="text/tailwindcss">
-        @layer base { 
-            body { @apply bg-[#f8fafc] text-slate-800 antialiased overflow-hidden; } 
-        }
-        /* Ocultar scrollbar pero mantener funcionalidad */
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
+        @layer base { body { @apply bg-[#f8fafc] text-slate-800 antialiased font-sans; } }
         .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300; }
         .material-symbols-outlined.font-fill { font-variation-settings: 'FILL' 1, 'wght' 400; }
-        #sugerencia-texto { transition: opacity 0.5s ease-in-out; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body>
 
 <div id="overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/60 z-40 hidden lg:hidden backdrop-blur-sm"></div>
 
-<div class="flex h-screen overflow-hidden relative">
+<div class="flex h-screen overflow-hidden">
     
     <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 w-72 bg-[#0a0f1c] text-white flex flex-col shrink-0 border-r border-white/5 z-50 transition-transform duration-300 -translate-x-full lg:translate-x-0">
         <div class="p-8">
@@ -290,7 +273,7 @@
                 </button>
             </div>
         </div>
-        
+
         <nav class="flex-1 px-4 space-y-8 overflow-y-auto no-scrollbar">
             <div>
                 <p class="px-4 text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mb-4">Gestión Principal</p>
@@ -345,140 +328,123 @@
                     <a href="cuenta.html" class="flex items-center gap-3 px-3 py-2 text-slate-400 hover:text-white transition-colors text-xs font-bold">
                         <span class="material-symbols-outlined text-lg">settings</span> Ajustes
                     </a>
-                    <a href="index.html" class="flex items-center gap-3 px-3 py-2 text-red-400/80 hover:text-red-400 transition-colors text-xs font-bold">
+                    <button onclick="cerrarSesion()" class="w-full flex items-center gap-3 px-3 py-2 text-red-400/80 hover:text-red-400 transition-colors text-xs font-bold">
                         <span class="material-symbols-outlined text-lg">logout</span> Cerrar Sesión
-                    </a>
+                    </button>
                 </div>
             </div>
         </div>
     </aside>
 
     <main class="flex-1 overflow-y-auto no-scrollbar">
-        <header class="sticky top-0 z-40 h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 md:px-10 flex items-center justify-between">
+        <header class="h-24 bg-white/80 backdrop-blur-md border-b border-slate-100 px-6 md:px-10 flex items-center justify-between sticky top-0 z-30">
             <div class="flex items-center gap-4">
-                <button onclick="toggleSidebar()" class="lg:hidden p-2 bg-slate-100 rounded-xl text-slate-600">
-                    <span class="material-symbols-outlined">menu</span>
-                </button>
-                <div>
-                    <h2 class="text-lg md:text-2xl font-black tracking-tight text-slate-800">Panel</h2>
-                    <p class="hidden md:block text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Resumen Global</p>
-                </div>
-            </div>
-            <div class="flex items-center gap-2">
-                <div class="relative hidden md:block w-64 lg:w-80">
-                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl font-light">search</span>
-                    <input class="w-full pl-11 pr-4 py-2 bg-slate-100/50 border-none rounded-2xl text-sm focus:ring-4 focus:ring-primary/5 font-medium" placeholder="Buscar..."/>
+                <button onclick="toggleSidebar()" class="lg:hidden p-2.5 bg-slate-100 rounded-xl text-slate-600 hover:bg-slate-200 transition-all"><span class="material-symbols-outlined">menu</span></button>
+                <div class="flex flex-col">
+                    <h2 class="text-xl md:text-2xl font-black text-slate-800 tracking-tight">Panel de Control</h2>
+                    <p class="text-[10px] md:text-[11px] font-bold text-slate-400 uppercase tracking-widest">Resumen General de Finanzas</p>
                 </div>
             </div>
         </header>
 
-        <div class="p-4 md:p-10 max-w-[1600px] mx-auto space-y-6 md:space-y-10">
-            
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8">
-                <div class="bg-white p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] border border-slate-200 shadow-sm">
-                    <div class="flex items-center justify-between mb-4 md:mb-6">
-                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ingresos</p>
-                        <span class="text-emerald-500 material-symbols-outlined font-fill">trending_up</span>
+        <div class="p-6 md:p-10 max-w-[1600px] mx-auto space-y-8 md:space-y-10">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden group">
+                    <div class="relative z-10">
+                        <p class="text-[10px] md:text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Total Ingresos</p>
+                        <h3 id="total-ingresos" class="text-2xl md:text-3xl font-black text-slate-800 font-mono tracking-tighter">$0</h3>
                     </div>
-                    <p id="display-ingresos" class="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter">$ 0</p>
-                    <div class="mt-4 h-1 w-full bg-slate-100 rounded-full overflow-hidden"><div id="bar-ingresos" class="h-full bg-emerald-500 w-0 transition-all duration-1000"></div></div>
+                    <div class="absolute -right-4 -bottom-4 size-20 md:size-24 bg-emerald-50 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <span class="material-symbols-outlined text-emerald-500 text-3xl md:text-4xl">trending_up</span>
+                    </div>
                 </div>
-
-                <div class="bg-white p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] border border-slate-200 shadow-sm">
-                    <div class="flex items-center justify-between mb-4 md:mb-6">
-                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Gastos</p>
-                        <span class="text-red-500 material-symbols-outlined font-fill">trending_down</span>
+                <div class="bg-white p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden group">
+                    <div class="relative z-10">
+                        <p class="text-[10px] md:text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Total Egresos</p>
+                        <h3 id="total-egresos" class="text-2xl md:text-3xl font-black text-slate-800 font-mono tracking-tighter">$0</h3>
                     </div>
-                    <p id="display-gastos" class="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter">$ 0</p>
-                    <div class="mt-4 h-1 w-full bg-slate-100 rounded-full overflow-hidden"><div id="bar-gastos" class="h-full bg-red-500 w-0 transition-all duration-1000"></div></div>
+                    <div class="absolute -right-4 -bottom-4 size-20 md:size-24 bg-red-50 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <span class="material-symbols-outlined text-red-500 text-3xl md:text-4xl">trending_down</span>
+                    </div>
                 </div>
-
-                <div class="bg-white p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] border border-slate-200 shadow-sm">
-                    <div class="flex items-center justify-between mb-4 md:mb-6">
-                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Saldo</p>
-                        <span class="text-primary material-symbols-outlined font-fill">account_balance</span>
+                <div class="bg-[#176282] p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] shadow-2xl shadow-primary/20 relative overflow-hidden">
+                    <div class="relative z-10">
+                        <p class="text-[10px] md:text-[11px] font-black text-white/50 uppercase tracking-[0.2em] mb-3">Balance Neto</p>
+                        <h3 id="total-balance" class="text-2xl md:text-3xl font-black text-white font-mono tracking-tighter">$0</h3>
                     </div>
-                    <p id="display-saldo" class="text-2xl md:text-3xl font-black text-slate-900 tracking-tighter">$ 0</p>
-                    <div class="mt-4 h-1 w-full bg-slate-100 rounded-full overflow-hidden"><div id="bar-saldo" class="h-full bg-primary w-0 transition-all duration-1000"></div></div>
+                    <div class="absolute -right-4 -bottom-4 size-20 md:size-24 bg-white/10 rounded-full flex items-center justify-center">
+                        <span class="material-symbols-outlined text-white text-3xl md:text-4xl">account_balance</span>
+                    </div>
                 </div>
             </div>
 
-            <div class="bg-gradient-to-r from-primary/10 to-transparent p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border border-primary/10 flex items-center gap-4 md:gap-6">
-                <div class="size-10 md:size-14 bg-white rounded-xl md:rounded-2xl flex items-center justify-center shadow-sm text-primary shrink-0">
-                    <span class="material-symbols-outlined text-2xl md:text-3xl font-fill">lightbulb</span>
-                </div>
-                <div>
-                    <p class="text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] text-primary">Smart AI</p>
-                    <p id="sugerencia-texto" class="text-xs md:text-sm font-semibold text-slate-600">Calculando indicadores...</p>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 md:gap-10 pb-10">
-                <div class="lg:col-span-2">
-                    <div class="bg-white p-6 md:p-10 rounded-[2rem] md:rounded-[2.5rem] border border-slate-200 shadow-sm">
-                        <h3 class="text-lg md:text-xl font-black mb-6 md:mb-8 flex items-center gap-3 tracking-tight">
-                            <span class="material-symbols-outlined text-primary font-fill">add_circle</span> Operación Rápida
+            <div class="grid grid-cols-1 xl:grid-cols-12 gap-8 md:gap-10">
+                <div class="xl:col-span-4">
+                    <div class="bg-white rounded-[2rem] md:rounded-[2.5rem] border border-slate-100 shadow-sm p-6 md:p-8 sticky top-32">
+                        <h3 class="text-xl font-black text-slate-800 mb-8 flex items-center gap-3">
+                            <span class="size-8 bg-primary/10 rounded-lg flex items-center justify-center text-primary"><span class="material-symbols-outlined text-xl">bolt</span></span>
+                            Operación Rápida
                         </h3>
-                        <form id="form-operacion" onsubmit="registrarOperacion(event)" class="space-y-4 md:space-y-5">
+                        
+                        <form onsubmit="registrarOperacion(event)" class="space-y-5">
                             <div>
-                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Concepto</label>
-                                <input id="op-concepto" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-sm p-4 font-medium focus:ring-2 focus:ring-primary/20 transition-all" placeholder="Ej: Supermercado" required/>
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Monto</label>
+                                <div class="relative">
+                                    <span class="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+                                    <input required id="op-monto" type="text" placeholder="0" class="w-full bg-slate-50 border-none rounded-2xl py-4 pl-10 pr-6 text-lg font-black text-slate-800 focus:ring-2 focus:ring-primary/20 transition-all"/>
+                                </div>
                             </div>
+
                             <div>
-                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Fecha</label>
-                                <input id="op-fecha" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-sm p-4 focus:ring-2 focus:ring-primary/20 transition-all" type="date" required/>
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Detalle</label>
+                                <input required id="op-concepto" type="text" placeholder="Ej: Compra..." class="w-full bg-slate-50 border-none rounded-2xl py-4 px-6 text-[13px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all"/>
                             </div>
-                            <div class="grid grid-cols-2 gap-3 md:gap-4">
+
+                            <div class="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Tipo</label>
-                                    <select id="op-tipo" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-xs font-bold p-4 focus:ring-2 focus:ring-primary/20 transition-all"></select>
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Tipo</label>
+                                    <select id="op-tipo" onchange="checkCuotas(this.value)" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-[12px] font-bold text-slate-700">
+                                        <option>Gasto Diario</option><option>Sueldo</option><option>Ingreso Extra</option><option>Venta</option><option>Tarjeta de Crédito</option>
+                                    </select>
                                 </div>
                                 <div>
-                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Monto</label>
-                                    <input id="op-monto" oninput="formatMoneyInput(this)" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-sm font-black p-4 text-primary focus:ring-2 focus:ring-primary/20 transition-all" placeholder="$ 0" required/>
-                                </div>
-                            </div>
-                            <div class="grid grid-cols-2 gap-3 md:gap-4">
-                                <div>
-                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Categoría</label>
-                                    <select id="op-categoria" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-xs p-4 focus:ring-2 focus:ring-primary/20 transition-all"></select>
-                                </div>
-                                <div>
-                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Método de Pago</label>
-                                    <select id="op-pago" onchange="checkMetodoPago()" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-xs font-bold p-4 focus:ring-2 focus:ring-primary/20 transition-all"></select>
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Categoría</label>
+                                    <select id="op-categoria" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-[12px] font-bold text-slate-700">
+                                        <option>Alimentación</option><option>Transporte</option><option>Vivienda</option><option>Salud</option><option>Ocio</option><option>Otros</option>
+                                    </select>
                                 </div>
                             </div>
-                            <div id="div-cuotas-dinamico" class="hidden bg-slate-50 p-4 rounded-xl border border-primary/10">
-                                <label class="text-[9px] font-black text-primary uppercase block mb-2">Diferir en Cuotas</label>
-                                <select id="op-cuotas" class="w-full bg-white border-slate-200 rounded-lg p-3 text-xs font-bold">
-                                    <option value="1">1 (Sin cuotas)</option><option value="3">3 Cuotas</option><option value="6">6 Cuotas</option><option value="12">12 Cuotas</option>
-                                </select>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div><label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Fecha</label><input required id="op-fecha" type="date" class="w-full bg-slate-50 border-none rounded-2xl py-4 text-[12px] font-bold text-slate-700"/></div>
+                                <div><label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Pago</label><select required id="op-pago" class="w-full bg-slate-50 border-none rounded-2xl py-4 text-[12px] font-bold text-slate-700"><option value="">Cargando...</option></select></div>
                             </div>
-                            <div class="grid grid-cols-2 gap-3 md:gap-4">
-                                <div>
-                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Subcategoría</label>
-                                    <select id="op-subcategoria" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-xs p-4 focus:ring-2 focus:ring-primary/20 transition-all"></select>
-                                </div>
-                                <div>
-                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1 block">Recurrencia</label>
-                                    <select id="op-recurrente" class="w-full bg-slate-50 border-slate-100 rounded-xl md:rounded-2xl text-xs p-4 focus:ring-2 focus:ring-primary/20 transition-all"></select>
-                                </div>
+
+                            <div id="div-cuotas-dinamico" class="hidden">
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">N° de Cuotas</label>
+                                <input id="op-cuotas" type="number" value="1" min="1" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-6 text-[13px] font-bold text-slate-700"/>
                             </div>
-                            <button id="btn-submit" type="submit" class="w-full bg-[#0a0f1c] text-white font-black py-4 md:py-5 rounded-xl md:rounded-2xl text-[10px] uppercase tracking-widest shadow-lg hover:bg-slate-800 transition-all active:scale-95">Registrar</button>
+
+                            <input type="hidden" id="op-subcategoria" value="General">
+                            <input type="hidden" id="op-recurrente" value="No">
+
+                            <button type="submit" id="btn-submit" class="w-full bg-primary text-white font-black py-5 rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all text-xs uppercase tracking-widest mt-4">
+                                Registrar Operación
+                            </button>
                         </form>
                     </div>
                 </div>
 
-                <div class="lg:col-span-3">
-                    <div class="bg-white rounded-[2rem] md:rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden h-full flex flex-col">
-                        <div class="px-6 md:px-8 py-5 md:py-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                <div class="xl:col-span-8">
+                    <div class="bg-white rounded-[2rem] md:rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col h-full">
+                        <div class="p-6 md:p-8 border-b border-slate-50 flex items-center justify-between">
                             <h3 class="font-black text-slate-800 uppercase tracking-widest text-[10px]">Recientes</h3>
                             <a href="movimientos.html" class="bg-white px-3 py-1.5 border border-slate-200 rounded-lg text-primary text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-white transition-all">Ver Todo</a>
                         </div>
                         <div class="overflow-x-auto no-scrollbar flex-1">
                             <table class="w-full text-left min-w-[500px]">
                                 <thead>
-                                    <tr class="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                                    <tr class="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 bg-slate-50/20">
                                         <th class="px-4 md:px-8 py-4">Fecha</th>
                                         <th class="px-4 md:px-6 py-4">Detalle</th>
                                         <th class="px-4 md:px-6 py-4 hidden md:table-cell">Categoría</th>
@@ -495,6 +461,5 @@
         </div>
     </main>
 </div>
-
 </body>
 </html>
