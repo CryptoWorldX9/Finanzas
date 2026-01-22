@@ -1,220 +1,293 @@
 <!DOCTYPE html>
 <html class="light" lang="es">
 <head>
-    <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>QuantyA - Historial de Pagos</title>
-    
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>QuantyA - Historial de Pagos</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
 
-    <script id="tailwind-config">
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: { "primary": "#176282" },
-                    fontFamily: { sans: ["Plus Jakarta Sans", "sans-serif"] },
-                }
-            }
-        }
-    </script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getDatabase, ref, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-    <style type="text/tailwindcss">
-        @layer base { 
-            body { @apply bg-[#f8fafc] text-slate-800 antialiased; } 
-        }
-        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300; }
-        .material-symbols-outlined.font-fill { font-variation-settings: 'FILL' 1, 'wght' 400; }
-        
-        /* Clases maestras para que no se rompa el diseño */
-        .nav-link-idle { @apply group flex items-center gap-3.5 px-4 py-3 text-slate-400 hover:bg-white/[0.03] hover:text-white rounded-2xl transition-all; }
-        .nav-link-active { @apply flex items-center gap-3.5 px-4 py-3 bg-primary/10 border border-primary/20 text-white rounded-2xl shadow-xl shadow-primary/5 transition-all; }
-    </style>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCO6WXu9iZsyEUmNNxrE4oWToLYY8wl-y4",
+            authDomain: "misfinanzaspro-d2f3f.firebaseapp.com",
+            databaseURL: "https://misfinanzaspro-d2f3f-default-rtdb.firebaseio.com",
+            projectId: "misfinanzaspro-d2f3f",
+            storageBucket: "misfinanzaspro-d2f3f.firebasestorage.app",
+            messagingSenderId: "613366165036",
+            appId: "1:613366165036:web:bebc72b38d39ab64932b89"
+        };
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+        
+        let currentUser = null;
+        let movimientosBase = [];
+        let pagosConfiguracion = {};
+        let tarjetasBilletera = {};
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyCO6WXu9iZsyEUmNNxrE4oWToLYY8wl-y4",
-            authDomain: "misfinanzaspro-d2f3f.firebaseapp.com",
-            databaseURL: "https://misfinanzaspro-d2f3f-default-rtdb.firebaseio.com",
-            projectId: "misfinanzaspro-d2f3f",
-            storageBucket: "misfinanzaspro-d2f3f.firebasestorage.app",
-            messagingSenderId: "613366165036",
-            appId: "1:613366165036:web:bebc72b38d39ab64932b89"
-        };
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('user-name-display').innerText = user.displayName || "Usuario";
+                iniciarSincronizacion();
+            } else { window.location.href = "index.html"; }
+        });
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getDatabase(app);
-        
-        let currentUser = null;
-        let movimientosBase = [];
+        window.cerrarSesion = () => {
+            signOut(auth).then(() => { window.location.href = "index.html"; });
+        };
 
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                currentUser = user;
-                document.getElementById('user-name-display').innerText = user.displayName || "Usuario";
-                iniciarSincronizacion();
-            } else { window.location.href = "index.html"; }
-        });
+        function iniciarSincronizacion() {
+            onValue(ref(db, `usuarios/${currentUser.uid}/listas`), (snapshot) => {
+                if (snapshot.exists()) {
+                    const listas = snapshot.val();
+                    pagosConfiguracion = listas.pago || {};
+                    llenarSelect('filter-categoria', listas.categoria, "Todas las Categorías");
+                    actualizarSelectsPagoMaestro();
+                }
+            });
 
-        window.cerrarSesion = () => { signOut(auth).then(() => { window.location.href = "index.html"; }); };
+            onValue(ref(db, `usuarios/${currentUser.uid}/tarjetas`), (snapshot) => {
+                tarjetasBilletera = snapshot.val() || {};
+                actualizarSelectsPagoMaestro();
+            });
 
-        function iniciarSincronizacion() {
-            onValue(ref(db, `usuarios/${currentUser.uid}/listas`), (snapshot) => {
-                if (snapshot.exists()) {
-                    const listas = snapshot.val();
-                    llenarSelect('filter-categoria', listas.categoria, "Todas las Categorías");
-                }
-            });
+            onValue(ref(db, `usuarios/${currentUser.uid}/movimientos`), (snapshot) => {
+                movimientosBase = [];
+                snapshot.forEach(child => { movimientosBase.push({ id: child.key, ...child.val() }); });
+                movimientosBase.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+                filtrarMovimientos();
+            });
+        }
 
-            onValue(ref(db, `usuarios/${currentUser.uid}/movimientos`), (snapshot) => {
-                movimientosBase = [];
-                snapshot.forEach(child => { movimientosBase.push({ id: child.key, ...child.val() }); });
-                movimientosBase.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-                renderTable(movimientosBase);
-            });
-        }
+        function llenarSelect(id, datos, defaultText) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            let html = `<option value="">${defaultText}</option>`;
+            Object.values(datos).forEach(d => { html += `<option value="${d.nombre}">${d.nombre}</option>`; });
+            el.innerHTML = html;
+        }
 
-        function llenarSelect(id, datos, defaultText) {
-            const el = document.getElementById(id);
-            if (!el) return;
-            let html = `<option value="">${defaultText}</option>`;
-            Object.values(datos).forEach(d => { html += `<option value="${d.nombre}">${d.nombre}</option>`; });
-            el.innerHTML = html;
-        }
+        function actualizarSelectsPagoMaestro() {
+            const el = document.getElementById('filter-pago');
+            if (!el) return;
+            let html = '<option value="">Todos los Pagos</option>';
+            Object.values(pagosConfiguracion).forEach(p => { html += `<option value="${p.nombre}">${p.nombre}</option>`; });
+            Object.entries(tarjetasBilletera).forEach(([key, t]) => { 
+                html += `<option value="${t.nombre}">💳 ${t.nombre}</option>`; 
+            });
+            el.innerHTML = html;
+        }
 
-        function renderTable(datos) {
-            const body = document.getElementById('table-body');
-            body.innerHTML = datos.map(m => {
-                const isIngreso = m.tipo?.toLowerCase().includes('ingreso') || m.tipo?.toLowerCase().includes('venta');
-                return `
-                    <tr class="hover:bg-slate-50 transition-colors border-b border-slate-100">
-                        <td class="px-8 py-4 text-xs font-semibold text-slate-500">${m.fecha}</td>
-                        <td class="px-6 py-4">
-                            <p class="text-sm font-bold text-slate-800">${m.concepto}</p>
-                            <p class="text-[9px] font-black text-primary uppercase">${m.pago || ''}</p>
-                        </td>
-                        <td class="px-6 py-4"><span class="bg-slate-100 text-slate-600 text-[9px] px-2 py-1 rounded-lg font-black uppercase">${m.categoria}</span></td>
-                        <td class="px-6 py-4 text-sm font-black text-right ${isIngreso ? 'text-emerald-500' : 'text-red-500'}">
-                            $${new Intl.NumberFormat('es-CL').format(m.monto)}
-                        </td>
-                        <td class="px-8 py-4 text-right">
-                             <button onclick="eliminarMovimiento('${m.id}')" class="p-2 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-xl transition-all">
-                                <span class="material-symbols-outlined text-lg">delete</span>
-                            </button>
-                        </td>
-                    </tr>`;
-            }).join('');
-        }
+        window.filtrarMovimientos = () => {
+            const search = document.getElementById('search-input').value.toLowerCase();
+            const cat = document.getElementById('filter-categoria').value;
+            const pago = document.getElementById('filter-pago').value;
+            const fechaDesde = document.getElementById('filter-desde').value;
+            const fechaHasta = document.getElementById('filter-hasta').value;
 
-        window.eliminarMovimiento = async (id) => {
-            if(confirm('¿Eliminar este registro?')) {
-                await remove(ref(db, `usuarios/${currentUser.uid}/movimientos/${id}`));
-            }
-        };
+            const filtrados = movimientosBase.filter(m => {
+                const matchSearch = m.concepto.toLowerCase().includes(search);
+                const matchCat = cat === "" || m.categoria === cat;
+                const matchPago = pago === "" || m.pago === pago;
+                const matchDesde = fechaDesde === "" || m.fecha >= fechaDesde;
+                const matchHasta = fechaHasta === "" || m.fecha <= fechaHasta;
+                return matchSearch && matchCat && matchPago && matchDesde && matchHasta;
+            });
+            renderTable(filtrados);
+        };
 
-        window.toggleSidebar = () => {
-            document.getElementById('sidebar').classList.toggle('-translate-x-full');
-            document.getElementById('overlay').classList.toggle('hidden');
-        };
-    </script>
+        function renderTable(datos) {
+            const body = document.getElementById('table-body');
+            body.innerHTML = datos.map(m => {
+                const isIngreso = m.tipo.toLowerCase().includes('ingreso') || m.tipo.toLowerCase().includes('venta');
+                return `
+                    <tr class="hover:bg-slate-50 transition-colors border-b border-slate-100 group">
+                        <td class="px-6 py-4 text-xs font-semibold text-slate-500">${m.fecha}</td>
+                        <td class="px-6 py-4">
+                            <p class="text-sm font-bold text-slate-800">${m.concepto}</p>
+                            <p class="text-[9px] font-black text-primary uppercase">${m.pago}</p>
+                        </td>
+                        <td class="px-6 py-4"><span class="bg-slate-100 text-slate-600 text-[9px] px-2 py-1 rounded-lg font-black uppercase">${m.categoria}</span></td>
+                        <td class="px-6 py-4 text-sm font-black text-right ${isIngreso ? 'text-emerald-500' : 'text-red-500'}">
+                            $${new Intl.NumberFormat('es-CL').format(m.monto)}
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                             <button onclick="eliminarMovimiento('${m.id}')" class="p-2 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-xl transition-all">
+                                <span class="material-symbols-outlined text-lg">delete</span>
+                            </button>
+                        </td>
+                    </tr>`;
+            }).join('');
+        }
+
+        window.eliminarMovimiento = async (id) => {
+            if(confirm('¿Eliminar este registro?')) {
+                await remove(ref(db, `usuarios/${currentUser.uid}/movimientos/${id}`));
+            }
+        };
+
+        window.toggleSidebar = () => {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('overlay');
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        };
+    </script>
+
+    <script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { "primary": "#176282" },
+                    fontFamily: { sans: ["Plus Jakarta Sans", "sans-serif"] },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer base { body { @apply bg-[#f8fafc] text-slate-800 antialiased; } }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300; }
+        .material-symbols-outlined.font-fill { font-variation-settings: 'FILL' 1, 'wght' 400; }
+    </style>
 </head>
 <body>
 
 <div id="overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/60 z-40 hidden lg:hidden backdrop-blur-sm"></div>
 
 <div class="flex h-screen overflow-hidden relative">
-    <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 w-72 bg-[#0a0f1c] text-white flex flex-col shrink-0 border-r border-white/5 z-50 transition-transform duration-300 -translate-x-full lg:translate-x-0">
-        <div class="p-8">
-            <div class="flex items-center gap-4">
-                <div class="size-11 bg-gradient-to-tr from-primary to-blue-400 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
-                    <span class="material-symbols-outlined text-2xl font-fill">account_balance_wallet</span>
-                </div>
-                <div class="flex flex-col">
-                    <h1 class="text-xl font-black tracking-tighter leading-none">QuantyA</h1>
-                    <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">Smart Finance</span>
-                </div>
-            </div>
-        </div>
-        
-        <nav class="flex-1 px-4 space-y-8 overflow-y-auto">
-            <div>
-                <p class="px-4 text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mb-4">Gestión Principal</p>
-                <div class="flex flex-col gap-1.5">
-                    <a href="panel.html" class="nav-link-idle">
-                        <span class="material-symbols-outlined text-[22px]">dashboard</span>
-                        <span class="font-bold text-[13px]">Panel de Control</span>
-                    </a>
-                    <a href="billetera.html" class="nav-link-idle">
-                        <span class="material-symbols-outlined text-[22px]">wallet</span>
-                        <span class="font-bold text-[13px]">Billetera</span>
-                    </a>
-                    <a href="movimientos.html" class="nav-link-active">
-                        <span class="material-symbols-outlined text-[22px] font-fill text-primary">swap_horiz</span>
-                        <span class="font-bold text-[13px]">Historial de Pagos</span>
-                    </a>
-                </div>
-            </div>
-        </nav>
+    <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 w-72 bg-[#0a0f1c] text-white flex flex-col shrink-0 border-r border-white/5 z-50 transition-transform duration-300 -translate-x-full lg:translate-x-0">
+        <div class="p-8">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <div class="size-11 bg-gradient-to-tr from-primary to-blue-400 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
+                        <span class="material-symbols-outlined text-2xl font-fill">account_balance_wallet</span>
+                    </div>
+                    <div class="flex flex-col">
+                        <h1 class="text-xl font-black tracking-tighter leading-none">QuantyA</h1>
+                        <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">Smart Finance</span>
+                    </div>
+                </div>
+                <button onclick="toggleSidebar()" class="lg:hidden p-2 text-slate-400 hover:text-white transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+        </div>
+        
+        <nav class="flex-1 px-4 space-y-8 overflow-y-auto">
+            <div>
+                <p class="px-4 text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mb-4">Gestión Principal</p>
+                <div class="space-y-1.5">
+                    <a href="panel.html" class="group flex items-center gap-3.5 px-4 py-3 text-slate-400 hover:bg-white/[0.03] hover:text-white rounded-2xl transition-all">
+                        <span class="material-symbols-outlined text-[22px] transition-transform group-hover:scale-110">dashboard</span>
+                        <span class="font-bold text-[13px] tracking-tight">Panel de Control</span>
+                    </a>
+                    <a href="billetera.html" class="group flex items-center gap-3.5 px-4 py-3 text-slate-400 hover:bg-white/[0.03] hover:text-white rounded-2xl transition-all">
+                        <span class="material-symbols-outlined text-[22px] transition-transform group-hover:scale-110">wallet</span>
+                        <span class="font-bold text-[13px] tracking-tight">Billetera</span>
+                    </a>
+                    <a href="movimientos.html" class="flex items-center gap-3.5 px-4 py-3 bg-primary/10 border border-primary/20 text-white rounded-2xl shadow-xl shadow-primary/5 transition-all">
+                        <span class="material-symbols-outlined text-[22px] font-fill text-primary">swap_horiz</span>
+                        <span class="font-bold text-[13px] tracking-tight">Historial de Pagos</span>
+                    </a>
+                </div>
+            </div>
+            <div>
+                <p class="px-4 text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mb-4">Análisis y Metas</p>
+                <div class="space-y-1.5">
+                    <a href="reportes.html" class="group flex items-center gap-3.5 px-4 py-3 text-slate-400 hover:bg-white/[0.03] hover:text-white rounded-2xl transition-all">
+                        <span class="material-symbols-outlined text-[22px] transition-transform group-hover:scale-110">description</span>
+                        <span class="font-bold text-[13px] tracking-tight">Reportes Mensuales</span>
+                    </a>
+                    <a href="analisis.html" class="group flex items-center gap-3.5 px-4 py-3 text-slate-400 hover:bg-white/[0.03] hover:text-white rounded-2xl transition-all">
+                        <span class="material-symbols-outlined text-[22px] transition-transform group-hover:scale-110">analytics</span>
+                        <span class="font-bold text-[13px] tracking-tight">Gráficos de Gastos</span>
+                    </a>
+                    <a href="metas.html" class="group flex items-center gap-3.5 px-4 py-3 text-slate-400 hover:bg-white/[0.03] hover:text-white rounded-2xl transition-all">
+                        <span class="material-symbols-outlined text-[22px] transition-transform group-hover:scale-110">track_changes</span>
+                        <span class="font-bold text-[13px] tracking-tight">Objetivos de Ahorro</span>
+                    </a>
+                </div>
+            </div>
+        </nav>
 
-        <div class="p-4 mt-auto">
-            <div class="bg-white/[0.03] border border-white/5 rounded-3xl p-4 mb-3">
-                <div class="flex items-center gap-3 mb-4">
-                    <div class="size-10 rounded-xl bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center font-bold text-xs text-white">QA</div>
-                    <div class="flex-1 overflow-hidden">
-                        <p id="user-name-display" class="text-xs font-black truncate text-white">Usuario</p>
-                        <p class="text-[9px] font-bold text-slate-500 uppercase">Mi Perfil</p>
-                    </div>
-                </div>
-                <button onclick="cerrarSesion()" class="w-full flex items-center gap-3 px-3 py-2 text-red-400/80 hover:text-red-400 text-xs font-bold transition-colors">
-                    <span class="material-symbols-outlined text-lg">logout</span> Cerrar Sesión
-                </button>
-            </div>
-        </div>
-    </aside>
+        <div class="p-4 mt-auto">
+            <div class="bg-white/[0.03] border border-white/5 rounded-3xl p-4 mb-3">
+                <a href="cuenta.html" class="flex items-center gap-3 mb-4 hover:bg-white/5 p-2 rounded-2xl transition-all group">
+                    <div class="size-10 rounded-xl bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center font-bold text-xs text-white border border-white/10 shadow-inner group-hover:border-primary/50">QA</div>
+                    <div class="flex-1 overflow-hidden">
+                        <p id="user-name-display" class="text-xs font-black truncate text-white tracking-tight">Cargando...</p>
+                        <p class="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Mi Perfil</p>
+                    </div>
+                    <span class="material-symbols-outlined text-slate-600 text-sm group-hover:text-white">chevron_right</span>
+                </a>
+                <div class="space-y-1">
+                    <a href="configuracion.html" class="flex items-center gap-3 px-3 py-2 text-slate-400 hover:text-white transition-colors text-xs font-bold">
+                        <span class="material-symbols-outlined text-lg">settings</span> Ajustes
+                    </a>
+                    <button onclick="cerrarSesion()" class="w-full flex items-center gap-3 px-3 py-2 text-red-400/80 hover:text-red-400 transition-colors text-xs font-bold">
+                        <span class="material-symbols-outlined text-lg">logout</span> Cerrar Sesión
+                    </button>
+                </div>
+            </div>
+        </div>
+    </aside>
 
-    <main class="flex-1 overflow-y-auto">
-        <header class="h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 md:px-10 flex items-center justify-between sticky top-0 z-30">
-            <div class="flex items-center gap-4">
-                <button onclick="toggleSidebar()" class="lg:hidden p-2 bg-slate-100 rounded-xl"><span class="material-symbols-outlined">menu</span></button>
-                <h2 class="text-xl font-black text-slate-800 tracking-tight">Historial de Pagos</h2>
-            </div>
-        </header>
+    <main class="flex-1 overflow-y-auto">
+        <header class="sticky top-0 z-40 h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 md:px-10 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <button onclick="toggleSidebar()" class="lg:hidden p-2 bg-slate-100 rounded-xl text-slate-600"><span class="material-symbols-outlined">menu</span></button>
+                <h2 class="text-lg md:text-2xl font-black text-slate-800 tracking-tight">Historial de Pagos</h2>
+            </div>
+        </header>
 
-        <div class="p-4 md:p-10 max-w-[1400px] mx-auto space-y-6">
-            <div class="bg-white p-6 rounded-[2.5rem] border border-slate-200 shadow-sm grid grid-cols-1 md:grid-cols-4 gap-4">
-                <input id="search-input" class="md:col-span-2 bg-slate-50 border-none rounded-2xl p-4 text-sm" placeholder="Buscar concepto..."/>
-                <select id="filter-categoria" class="bg-slate-50 border-none rounded-2xl p-4 text-sm font-bold"></select>
-                <div class="flex gap-2">
-                    <input type="date" id="filter-desde" class="bg-slate-50 border-none rounded-xl p-2 text-[10px] w-1/2"/>
-                    <input type="date" id="filter-hasta" class="bg-slate-50 border-none rounded-xl p-2 text-[10px] w-1/2"/>
-                </div>
-            </div>
+        <div class="p-4 md:p-10 max-w-[1500px] mx-auto space-y-6">
+            <div class="bg-white p-6 md:p-8 rounded-[2rem] border border-slate-200 shadow-sm space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="relative md:col-span-2">
+                        <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+                        <input id="search-input" oninput="filtrarMovimientos()" class="w-full pl-12 pr-4 py-4 bg-slate-50 border-none rounded-2xl text-sm font-medium" placeholder="¿Qué buscas?"/>
+                    </div>
+                    <select id="filter-categoria" onchange="filtrarMovimientos()" class="w-full bg-slate-50 border-none rounded-2xl text-sm font-bold p-4"></select>
+                    <select id="filter-pago" onchange="filtrarMovimientos()" class="w-full bg-slate-50 border-none rounded-2xl text-sm font-bold p-4"></select>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-slate-100">
+                    <div class="flex items-center gap-3">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0">Desde:</label>
+                        <input id="filter-desde" type="date" onchange="filtrarMovimientos()" class="w-full bg-slate-50 border-none rounded-xl text-xs p-3"/>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0">Hasta:</label>
+                        <input id="filter-hasta" type="date" onchange="filtrarMovimientos()" class="w-full bg-slate-50 border-none rounded-xl text-xs p-3"/>
+                    </div>
+                </div>
+            </div>
 
-            <div class="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left">
-                        <thead>
-                            <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
-                                <th class="px-8 py-6">Fecha</th>
-                                <th class="px-6 py-6">Detalle</th>
-                                <th class="px-6 py-6">Categoría</th>
-                                <th class="px-6 py-6 text-right">Monto</th>
-                                <th class="px-8 py-6 text-right">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table-body"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </main>
+            <div class="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left min-w-[750px]">
+                        <thead>
+                            <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                                <th class="px-8 py-6">Fecha</th>
+                                <th class="px-6 py-6">Detalle / Pago</th>
+                                <th class="px-6 py-6">Categoría</th>
+                                <th class="px-6 py-6 text-right">Monto</th>
+                                <th class="px-8 py-6 text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
 </div>
 </body>
 </html>
