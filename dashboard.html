@@ -31,7 +31,7 @@
         let editNodeId = null;
         let tarjetasBilletera = {};
 
-        // FORMATEADOR PROFESIONAL: Enteros con punto
+        // Formateador de moneda: Enteros con punto
         const fmt = new Intl.NumberFormat('es-CL', {
             style: 'currency',
             currency: 'CLP',
@@ -39,7 +39,6 @@
             maximumFractionDigits: 0
         });
 
-        // --- AUTH & INITIALIZATION ---
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
@@ -50,10 +49,10 @@
             }
         });
 
-        window.cerrarSesion = () => signOut(auth);
+        window.cerrarSesion = () => signOut(auth).then(() => window.location.href = "index.html");
 
         function cargarDatos() {
-            // Cargar Tarjetas para el select de "Método de Pago"
+            // Cargar Cuentas/Tarjetas para el select
             onValue(ref(db, `usuarios/${currentUser.uid}/tarjetas`), (snapshot) => {
                 const selectPago = document.getElementById('op-pago');
                 selectPago.innerHTML = '<option value="">Seleccionar Cuenta</option>';
@@ -97,11 +96,9 @@
             });
         }
 
-        // --- REGISTRAR OPERACIÓN ACTUALIZADO ---
         window.registrarOperacion = async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btn-submit');
-            const originalBtnText = btn.innerText;
             btn.disabled = true;
             btn.innerText = "Sincronizando...";
 
@@ -111,26 +108,25 @@
                 const cuotas = parseInt(document.getElementById('op-cuotas')?.value) || 1;
                 const esTarjeta = tarjetasBilletera[metodoId];
                 
-                const tipoOperacion = document.getElementById('op-tipo').value;
-                const tipoLower = tipoOperacion.toLowerCase();
+                const tipoOp = document.getElementById('op-tipo').value;
+                const tipoLower = tipoOp.toLowerCase();
                 const esIngreso = tipoLower.includes('ingreso') || tipoLower.includes('venta') || tipoLower.includes('sueldo');
 
-                if(!metodoId) throw new Error("Selecciona un método de pago");
+                if(!metodoId) throw new Error("Por favor selecciona una cuenta de pago.");
 
                 // 1. Guardar en Movimientos
                 for(let i=0; i<cuotas; i++){
-                    let fechaOriginal = document.getElementById('op-fecha').value;
-                    let fechaObj = new Date(fechaOriginal + "T00:00:00");
-                    fechaObj.setMonth(fechaObj.getMonth() + i);
+                    let f = new Date(document.getElementById('op-fecha').value + "T00:00:00");
+                    f.setMonth(f.getMonth() + i);
                     
                     const data = {
                         concepto: cuotas > 1 ? `${document.getElementById('op-concepto').value} (${i+1}/${cuotas})` : document.getElementById('op-concepto').value,
-                        tipo: tipoOperacion,
+                        tipo: tipoOp,
                         categoria: document.getElementById('op-categoria').value,
                         subcategoria: document.getElementById('op-subcategoria').value,
                         pago: esTarjeta ? esTarjeta.nombre : metodoId,
                         recurrente: document.getElementById('op-recurrente').value,
-                        fecha: fechaObj.toISOString().split('T')[0],
+                        fecha: f.toISOString().split('T')[0],
                         monto: Math.round(montoRaw / cuotas),
                         timestamp: Date.now()
                     };
@@ -142,7 +138,7 @@
                     }
                 }
 
-                // 2. Actualizar Billetera (Ajuste de Saldos)
+                // 2. Sincronizar Billetera (Ajuste de saldos reales)
                 if (esTarjeta) {
                     const updates = {};
                     let disp = Math.round(Number(esTarjeta.saldoDisponibleActual)) || 0;
@@ -154,24 +150,22 @@
                             updates[`usuarios/${currentUser.uid}/tarjetas/${metodoId}/montoUtilizado`] = Math.max(0, util - montoRaw);
                         }
                     } else {
+                        // Es Egreso/Gasto
+                        updates[`usuarios/${currentUser.uid}/tarjetas/${metodoId}/saldoDisponibleActual`] = disp - montoRaw;
                         if (esTarjeta.categoria === 'Crédito') {
-                            updates[`usuarios/${currentUser.uid}/tarjetas/${metodoId}/saldoDisponibleActual`] = disp - montoRaw;
                             updates[`usuarios/${currentUser.uid}/tarjetas/${metodoId}/montoUtilizado`] = util + montoRaw;
-                        } else {
-                            updates[`usuarios/${currentUser.uid}/tarjetas/${metodoId}/saldoDisponibleActual`] = disp - montoRaw;
                         }
                     }
                     await update(ref(db), updates);
                 }
 
                 editNodeId = null;
-                btn.innerText = "Registrar Operación";
                 e.target.reset();
                 document.getElementById('div-cuotas-dinamico').classList.add('hidden');
-                alert("Sincronizado con éxito");
+                alert("Operación registrada y saldo actualizado con éxito.");
 
             } catch (err) {
-                alert(err.message);
+                alert("Error: " + err.message);
             } finally {
                 btn.disabled = false;
                 btn.innerText = "Registrar Operación";
@@ -186,7 +180,7 @@
                     <td class="px-6 py-4">
                         <div class="flex flex-col">
                             <span class="text-[13px] font-black text-slate-700">${m.concepto}</span>
-                            <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">${m.pago}</span>
+                            <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">${m.pago}</span>
                         </div>
                     </td>
                     <td class="px-6 py-4 hidden md:table-cell">
@@ -207,12 +201,11 @@
         }
 
         window.eliminarMovimiento = (id) => {
-            if(confirm("¿Eliminar este registro?")) {
+            if(confirm("¿Estás seguro de eliminar este registro? (No afectará el saldo actual de la billetera)")) {
                 remove(ref(db, `usuarios/${currentUser.uid}/movimientos/${id}`));
             }
         };
 
-        // --- UI HELPERS ---
         window.toggleSidebar = () => {
             document.getElementById('sidebar').classList.toggle('-translate-x-full');
             document.getElementById('overlay').classList.toggle('hidden');
@@ -223,14 +216,12 @@
             val === 'Tarjeta de Crédito' ? div.classList.remove('hidden') : div.classList.add('hidden');
         };
 
-        // Formato moneda en tiempo real
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('op-monto').addEventListener('input', (e) => {
                 let val = e.target.value.replace(/\D/g, "");
                 e.target.value = val ? parseInt(val).toLocaleString('es-CL') : "";
             });
         });
-
     </script>
 
     <script id="tailwind-config">
@@ -345,42 +336,83 @@
                     <p class="text-[10px] md:text-[11px] font-bold text-slate-400 uppercase tracking-widest">Resumen General de Finanzas</p>
                 </div>
             </div>
+            <div class="flex items-center gap-3 md:gap-6">
+                <button class="size-10 md:size-12 bg-white border border-slate-100 rounded-2xl flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-all relative">
+                    <span class="material-symbols-outlined text-[20px] md:text-[22px]">notifications</span>
+                    <span class="absolute top-3 right-3 size-2 bg-red-500 rounded-full border-2 border-white"></span>
+                </button>
+                <div class="h-8 md:h-10 w-[1px] bg-slate-100"></div>
+                <div class="flex items-center gap-3 pl-1 md:pl-2">
+                    <div class="flex flex-col items-end hidden sm:flex">
+                        <p class="text-[11px] md:text-[13px] font-black text-slate-800 leading-none">Premium</p>
+                        <p class="text-[9px] md:text-[10px] font-bold text-emerald-500 uppercase tracking-tighter mt-1">Plan Pro Activo</p>
+                    </div>
+                    <div class="size-10 md:size-12 rounded-2xl bg-slate-100 border-2 border-white shadow-sm overflow-hidden">
+                        <img src="https://ui-avatars.com/api/?name=User&background=176282&color=fff" alt="Profile" class="w-full h-full object-cover">
+                    </div>
+                </div>
+            </div>
         </header>
 
         <div class="p-6 md:p-10 max-w-[1600px] mx-auto space-y-8 md:space-y-10">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-white p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden group">
-                    <div class="relative z-10">
-                        <p class="text-[10px] md:text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Total Ingresos</p>
-                        <h3 id="total-ingresos" class="text-2xl md:text-3xl font-black text-slate-800 font-mono tracking-tighter">$0</h3>
+            <div class="bg-gradient-to-r from-[#176282] to-[#1e293b] rounded-[2rem] md:rounded-[3rem] p-6 md:p-10 text-white relative overflow-hidden shadow-2xl shadow-primary/20">
+                <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
+                    <div class="max-w-2xl space-y-4 md:space-y-6">
+                        <div class="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md rounded-full border border-white/10">
+                            <span class="material-symbols-outlined text-sm font-fill text-blue-300">auto_awesome</span>
+                            <span class="text-[10px] font-black uppercase tracking-widest">Inteligencia Financiera</span>
+                        </div>
+                        <h3 class="text-3xl md:text-5xl font-black tracking-tighter leading-[1.1]">Tu ahorro este mes ha subido un <span class="text-blue-300">12%</span></h3>
+                        <p class="text-slate-300 text-sm md:text-lg font-medium leading-relaxed max-w-xl">Basado en tus gastos de la última semana, si mantienes este ritmo podrías alcanzar tu meta de "Viaje a Europa" 2 meses antes.</p>
+                        <div class="flex flex-wrap items-center gap-4 pt-4 md:pt-6">
+                            <button class="px-6 md:px-8 py-3 md:py-4 bg-white text-slate-900 rounded-2xl font-black text-xs md:text-sm shadow-xl hover:scale-105 transition-all">Ver Análisis IA</button>
+                            <button class="px-6 md:px-8 py-3 md:py-4 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/10 rounded-2xl font-black text-xs md:text-sm transition-all">Configurar Metas</button>
+                        </div>
                     </div>
-                    <div class="absolute -right-4 -bottom-4 size-20 md:size-24 bg-emerald-50 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <span class="material-symbols-outlined text-emerald-500 text-3xl md:text-4xl">trending_up</span>
-                    </div>
-                </div>
-                <div class="bg-white p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden group">
-                    <div class="relative z-10">
-                        <p class="text-[10px] md:text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Total Egresos</p>
-                        <h3 id="total-egresos" class="text-2xl md:text-3xl font-black text-slate-800 font-mono tracking-tighter">$0</h3>
-                    </div>
-                    <div class="absolute -right-4 -bottom-4 size-20 md:size-24 bg-red-50 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <span class="material-symbols-outlined text-red-500 text-3xl md:text-4xl">trending_down</span>
-                    </div>
-                </div>
-                <div class="bg-[#176282] p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] shadow-2xl shadow-primary/20 relative overflow-hidden">
-                    <div class="relative z-10">
-                        <p class="text-[10px] md:text-[11px] font-black text-white/50 uppercase tracking-[0.2em] mb-3">Balance Neto</p>
-                        <h3 id="total-balance" class="text-2xl md:text-3xl font-black text-white font-mono tracking-tighter">$0</h3>
-                    </div>
-                    <div class="absolute -right-4 -bottom-4 size-20 md:size-24 bg-white/10 rounded-full flex items-center justify-center">
-                        <span class="material-symbols-outlined text-white text-3xl md:text-4xl">account_balance</span>
+                    <div class="hidden xl:block relative">
+                        <div class="size-64 bg-blue-500/20 rounded-full blur-[80px] absolute -top-10 -right-10 animate-pulse"></div>
+                        <div class="relative bg-white/5 backdrop-blur-2xl p-8 rounded-[2.5rem] border border-white/10 shadow-2xl space-y-6 w-80 rotate-3">
+                            <div class="flex items-center justify-between"><p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Proyección Mensual</p><span class="material-symbols-outlined text-blue-400">trending_up</span></div>
+                            <div class="space-y-2"><p class="text-3xl font-black">$425.000</p><p class="text-[11px] font-bold text-emerald-400 flex items-center gap-1"><span class="material-symbols-outlined text-sm">check_circle</span> Por debajo del presupuesto</p></div>
+                            <div class="h-2 bg-white/10 rounded-full overflow-hidden"><div class="w-[65%] h-full bg-gradient-to-r from-blue-400 to-emerald-400 rounded-full"></div></div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 xl:grid-cols-12 gap-8 md:gap-10">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden group">
+                    <div class="relative z-10">
+                        <p class="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Total Ingresos</p>
+                        <h3 id="total-ingresos" class="text-3xl font-black text-slate-800 font-mono tracking-tighter">$0</h3>
+                    </div>
+                    <div class="absolute -right-4 -bottom-4 size-24 bg-emerald-50 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <span class="material-symbols-outlined text-emerald-500 text-4xl">trending_up</span>
+                    </div>
+                </div>
+                <div class="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden group">
+                    <div class="relative z-10">
+                        <p class="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Total Egresos</p>
+                        <h3 id="total-egresos" class="text-3xl font-black text-slate-800 font-mono tracking-tighter">$0</h3>
+                    </div>
+                    <div class="absolute -right-4 -bottom-4 size-24 bg-red-50 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <span class="material-symbols-outlined text-red-500 text-4xl">trending_down</span>
+                    </div>
+                </div>
+                <div class="bg-[#176282] p-8 rounded-[2.5rem] shadow-2xl shadow-primary/20 relative overflow-hidden">
+                    <div class="relative z-10">
+                        <p class="text-[11px] font-black text-white/50 uppercase tracking-[0.2em] mb-3">Balance Neto</p>
+                        <h3 id="total-balance" class="text-3xl font-black text-white font-mono tracking-tighter">$0</h3>
+                    </div>
+                    <div class="absolute -right-4 -bottom-4 size-24 bg-white/10 rounded-full flex items-center justify-center">
+                        <span class="material-symbols-outlined text-white text-4xl">account_balance</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 xl:grid-cols-12 gap-10">
                 <div class="xl:col-span-4">
-                    <div class="bg-white rounded-[2rem] md:rounded-[2.5rem] border border-slate-100 shadow-sm p-6 md:p-8 sticky top-32">
+                    <div class="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-8 sticky top-32">
                         <h3 class="text-xl font-black text-slate-800 mb-8 flex items-center gap-3">
                             <span class="size-8 bg-primary/10 rounded-lg flex items-center justify-center text-primary"><span class="material-symbols-outlined text-xl">bolt</span></span>
                             Operación Rápida
@@ -388,7 +420,7 @@
                         
                         <form onsubmit="registrarOperacion(event)" class="space-y-5">
                             <div>
-                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Monto</label>
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Monto del Movimiento</label>
                                 <div class="relative">
                                     <span class="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
                                     <input required id="op-monto" type="text" placeholder="0" class="w-full bg-slate-50 border-none rounded-2xl py-4 pl-10 pr-6 text-lg font-black text-slate-800 focus:ring-2 focus:ring-primary/20 transition-all"/>
@@ -396,37 +428,59 @@
                             </div>
 
                             <div>
-                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Detalle</label>
-                                <input required id="op-concepto" type="text" placeholder="Ej: Compra..." class="w-full bg-slate-50 border-none rounded-2xl py-4 px-6 text-[13px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all"/>
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Concepto / Detalle</label>
+                                <input required id="op-concepto" type="text" placeholder="Ej: Compra Supermercado" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-6 text-[13px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all"/>
                             </div>
 
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Tipo</label>
-                                    <select id="op-tipo" onchange="checkCuotas(this.value)" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-[12px] font-bold text-slate-700">
-                                        <option>Gasto Diario</option><option>Sueldo</option><option>Ingreso Extra</option><option>Venta</option><option>Tarjeta de Crédito</option>
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Tipo de Movimiento</label>
+                                    <select id="op-tipo" onchange="checkCuotas(this.value)" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-[12px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all">
+                                        <option>Gasto Diario</option>
+                                        <option>Ingreso Extra</option>
+                                        <option>Venta</option>
+                                        <option>Tarjeta de Crédito</option>
+                                        <option>Sueldo</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Categoría</label>
-                                    <select id="op-categoria" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-[12px] font-bold text-slate-700">
-                                        <option>Alimentación</option><option>Transporte</option><option>Vivienda</option><option>Salud</option><option>Ocio</option><option>Otros</option>
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Categoría Principal</label>
+                                    <select id="op-categoria" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-[12px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all">
+                                        <option>Alimentación</option><option>Transporte</option><option>Vivienda</option><option>Salud</option><option>Ocio</option><option>Suscripciones</option><option>Educación</option><option>Otros</option>
                                     </select>
                                 </div>
                             </div>
 
                             <div class="grid grid-cols-2 gap-4">
-                                <div><label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Fecha</label><input required id="op-fecha" type="date" class="w-full bg-slate-50 border-none rounded-2xl py-4 text-[12px] font-bold text-slate-700"/></div>
-                                <div><label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Pago</label><select required id="op-pago" class="w-full bg-slate-50 border-none rounded-2xl py-4 text-[12px] font-bold text-slate-700"><option value="">Cargando...</option></select></div>
+                                <div>
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Subcategoría</label>
+                                    <input id="op-subcategoria" type="text" placeholder="Ej: Supermercado" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-[12px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all"/>
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Pago Desde</label>
+                                    <select required id="op-pago" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-[12px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all">
+                                        <option value="">Cargando...</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Fecha</label>
+                                    <input required id="op-fecha" type="date" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-[12px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all"/>
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Recurrencia</label>
+                                    <select id="op-recurrente" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-[12px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all">
+                                        <option>No</option><option>Mensual</option><option>Semanal</option><option>Anual</option>
+                                    </select>
+                                </div>
                             </div>
 
                             <div id="div-cuotas-dinamico" class="hidden">
-                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">N° de Cuotas</label>
-                                <input id="op-cuotas" type="number" value="1" min="1" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-6 text-[13px] font-bold text-slate-700"/>
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Número de Cuotas</label>
+                                <input id="op-cuotas" type="number" value="1" min="1" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-6 text-[13px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all"/>
                             </div>
-
-                            <input type="hidden" id="op-subcategoria" value="General">
-                            <input type="hidden" id="op-recurrente" value="No">
 
                             <button type="submit" id="btn-submit" class="w-full bg-primary text-white font-black py-5 rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all text-xs uppercase tracking-widest mt-4">
                                 Registrar Operación
@@ -436,8 +490,8 @@
                 </div>
 
                 <div class="xl:col-span-8">
-                    <div class="bg-white rounded-[2rem] md:rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col h-full">
-                        <div class="p-6 md:p-8 border-b border-slate-50 flex items-center justify-between">
+                    <div class="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col h-full">
+                        <div class="p-8 border-b border-slate-50 flex items-center justify-between">
                             <h3 class="font-black text-slate-800 uppercase tracking-widest text-[10px]">Recientes</h3>
                             <a href="movimientos.html" class="bg-white px-3 py-1.5 border border-slate-200 rounded-lg text-primary text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-white transition-all">Ver Todo</a>
                         </div>
@@ -445,11 +499,11 @@
                             <table class="w-full text-left min-w-[500px]">
                                 <thead>
                                     <tr class="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 bg-slate-50/20">
-                                        <th class="px-4 md:px-8 py-4">Fecha</th>
-                                        <th class="px-4 md:px-6 py-4">Detalle</th>
-                                        <th class="px-4 md:px-6 py-4 hidden md:table-cell">Categoría</th>
-                                        <th class="px-4 md:px-6 py-4 text-right">Monto</th>
-                                        <th class="px-4 md:px-8 py-4 text-right"></th>
+                                        <th class="px-8 py-4">Fecha</th>
+                                        <th class="px-6 py-4">Detalle & Cuenta</th>
+                                        <th class="px-6 py-4 hidden md:table-cell">Categoría</th>
+                                        <th class="px-6 py-4 text-right">Monto</th>
+                                        <th class="px-8 py-4 text-right"></th>
                                     </tr>
                                 </thead>
                                 <tbody id="recent-moves-body"></tbody>
@@ -461,5 +515,6 @@
         </div>
     </main>
 </div>
+
 </body>
 </html>
