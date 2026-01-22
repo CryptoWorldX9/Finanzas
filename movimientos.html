@@ -4,6 +4,9 @@
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>QuantyA - Historial de Pagos</title>
+    
+    <link rel="stylesheet" href="estilos-globales.css">
+    
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -163,7 +166,7 @@
 <div id="overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/60 z-40 hidden lg:hidden backdrop-blur-sm"></div>
 
 <div class="flex h-screen overflow-hidden relative">
-    <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 w-72 bg-[#0a0f1c] text-white flex flex-col shrink-0 border-r border-white/5 z-50 transition-transform duration-300 -translate-x-full lg:translate-x-0">
+    <aside id="sidebar" class="sidebar-container -translate-x-full lg:translate-x-0">
         <div class="p-8">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-4">
@@ -185,34 +188,34 @@
             <div>
                 <p class="px-4 text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mb-4">Gestión Principal</p>
                 <div class="space-y-1.5">
-                    <a href="panel.html" class="group flex items-center gap-3.5 px-4 py-3 text-slate-400 hover:bg-white/[0.03] hover:text-white rounded-2xl transition-all">
-                        <span class="material-symbols-outlined text-[22px] transition-transform group-hover:scale-110">dashboard</span>
-                        <span class="font-bold text-[13px] tracking-tight">Panel de Control</span>
+                    <a href="panel.html" class="nav-link-idle">
+                        <span class="material-symbols-outlined nav-icon-idle">dashboard</span>
+                        <span class="nav-text">Panel de Control</span>
                     </a>
-                    <a href="billetera.html" class="group flex items-center gap-3.5 px-4 py-3 text-slate-400 hover:bg-white/[0.03] hover:text-white rounded-2xl transition-all">
-                        <span class="material-symbols-outlined text-[22px] transition-transform group-hover:scale-110">wallet</span>
-                        <span class="font-bold text-[13px] tracking-tight">Billetera</span>
+                    <a href="billetera.html" class="nav-link-idle">
+                        <span class="material-symbols-outlined nav-icon-idle">wallet</span>
+                        <span class="nav-text">Billetera</span>
                     </a>
-                    <a href="movimientos.html" class="flex items-center gap-3.5 px-4 py-3 bg-primary/10 border border-primary/20 text-white rounded-2xl shadow-xl shadow-primary/5 transition-all">
-                        <span class="material-symbols-outlined text-[22px] font-fill text-primary">swap_horiz</span>
-                        <span class="font-bold text-[13px] tracking-tight">Historial de Pagos</span>
+                    <a href="movimientos.html" class="nav-link-active">
+                        <span class="material-symbols-outlined nav-icon-active">swap_horiz</span>
+                        <span class="nav-text">Historial de Pagos</span>
                     </a>
                 </div>
             </div>
             <div>
                 <p class="px-4 text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mb-4">Análisis y Metas</p>
                 <div class="space-y-1.5">
-                    <a href="reportes.html" class="group flex items-center gap-3.5 px-4 py-3 text-slate-400 hover:bg-white/[0.03] hover:text-white rounded-2xl transition-all">
-                        <span class="material-symbols-outlined text-[22px] transition-transform group-hover:scale-110">description</span>
-                        <span class="font-bold text-[13px] tracking-tight">Reportes Mensuales</span>
+                    <a href="reportes.html" class="nav-link-idle">
+                        <span class="material-symbols-outlined nav-icon-idle">description</span>
+                        <span class="nav-text">Reportes Mensuales</span>
                     </a>
-                    <a href="analisis.html" class="group flex items-center gap-3.5 px-4 py-3 text-slate-400 hover:bg-white/[0.03] hover:text-white rounded-2xl transition-all">
-                        <span class="material-symbols-outlined text-[22px] transition-transform group-hover:scale-110">analytics</span>
-                        <span class="font-bold text-[13px] tracking-tight">Gráficos de Gastos</span>
+                    <a href="analisis.html" class="nav-link-idle">
+                        <span class="material-symbols-outlined nav-icon-idle">analytics</span>
+                        <span class="nav-text">Gráficos de Gastos</span>
                     </a>
-                    <a href="metas.html" class="group flex items-center gap-3.5 px-4 py-3 text-slate-400 hover:bg-white/[0.03] hover:text-white rounded-2xl transition-all">
-                        <span class="material-symbols-outlined text-[22px] transition-transform group-hover:scale-110">track_changes</span>
-                        <span class="font-bold text-[13px] tracking-tight">Objetivos de Ahorro</span>
+                    <a href="metas.html" class="nav-link-idle">
+                        <span class="material-symbols-outlined nav-icon-idle">track_changes</span>
+                        <span class="nav-text">Objetivos de Ahorro</span>
                     </a>
                 </div>
             </div>
