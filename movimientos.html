@@ -66,7 +66,7 @@
                     const listas = snapshot.val();
                     llenarSelect('filter-categoria', listas.categoria, "Todas las Categorías");
                     llenarSelect('edit-categoria', listas.categoria, "Seleccionar Categoría");
-                    llenarSelect('edit-pago', listas.pago, "Seleccionar Pago");
+                    llenarSelect('edit-pago', listas.pago, "Pago Desde");
                 }
             });
 
@@ -90,16 +90,17 @@
             const body = document.getElementById('table-body');
             body.innerHTML = datos.map(m => {
                 const isIngreso = m.tipo?.toLowerCase().includes('ingreso') || m.tipo?.toLowerCase().includes('venta');
+                const montoFormateado = new Intl.NumberFormat('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(m.monto);
                 return `
                     <tr class="hover:bg-slate-50 transition-colors border-b border-slate-100 group">
                         <td class="px-6 py-4 text-xs font-semibold text-slate-500">${m.fecha}</td>
                         <td class="px-6 py-4">
                             <p class="text-sm font-bold text-slate-800">${m.concepto}</p>
-                            <p class="text-[9px] font-black text-primary uppercase">${m.pago || ''}</p>
+                            <p class="text-[9px] font-black text-primary uppercase">${m.pago || ''} ${m.cuotas ? `(${m.cuotas} cuotas)` : ''}</p>
                         </td>
                         <td class="px-6 py-4"><span class="bg-slate-100 text-slate-600 text-[9px] px-2 py-1 rounded-lg font-black uppercase">${m.categoria}</span></td>
                         <td class="px-6 py-4 text-sm font-black text-right ${isIngreso ? 'text-emerald-500' : 'text-red-500'}">
-                            $${new Intl.NumberFormat('es-CL').format(m.monto)}
+                            $${montoFormateado}
                         </td>
                         <td class="px-6 py-4 text-right flex justify-end gap-1">
                              <button onclick='abrirModalEditar(${JSON.stringify(m).replace(/'/g, "&apos;")})' class="p-2 hover:bg-blue-50 text-slate-400 hover:text-blue-500 rounded-xl transition-all">
@@ -115,37 +116,38 @@
 
         window.abrirModalEditar = (mov) => {
             document.getElementById('edit-id').value = mov.id;
+            document.getElementById('edit-tipo').value = mov.tipo || "";
             document.getElementById('edit-fecha').value = mov.fecha;
             document.getElementById('edit-concepto').value = mov.concepto;
-            document.getElementById('edit-monto').value = mov.monto;
+            document.getElementById('edit-monto').value = Math.round(mov.monto);
             document.getElementById('edit-categoria').value = mov.categoria;
             document.getElementById('edit-pago').value = mov.pago || "";
-            document.getElementById('modal-editar').classList.remove('hidden');
-            document.getElementById('modal-editar').classList.add('flex');
+            document.getElementById('edit-cuotas').value = mov.cuotas || "";
+            
+            document.getElementById('modal-editar').classList.replace('hidden', 'flex');
         };
 
         window.cerrarModal = () => {
-            document.getElementById('modal-editar').classList.add('hidden');
-            document.getElementById('modal-editar').classList.remove('flex');
+            document.getElementById('modal-editar').classList.replace('flex', 'hidden');
         };
 
         window.guardarCambios = async (e) => {
             e.preventDefault();
             const id = document.getElementById('edit-id').value;
             const data = {
+                tipo: document.getElementById('edit-tipo').value,
                 fecha: document.getElementById('edit-fecha').value,
                 concepto: document.getElementById('edit-concepto').value,
-                monto: Number(document.getElementById('edit-monto').value),
+                monto: Math.round(Number(document.getElementById('edit-monto').value)),
                 categoria: document.getElementById('edit-categoria').value,
-                pago: document.getElementById('edit-pago').value
+                pago: document.getElementById('edit-pago').value,
+                cuotas: document.getElementById('edit-cuotas').value
             };
             
             try {
                 await update(ref(db, `usuarios/${currentUser.uid}/movimientos/${id}`), data);
                 cerrarModal();
-            } catch (error) {
-                alert("Error al actualizar");
-            }
+            } catch (error) { console.error(error); }
         };
 
         window.eliminarMovimiento = async (id) => {
@@ -175,29 +177,50 @@
             </div>
             <form onsubmit="guardarCambios(event)" class="space-y-4">
                 <input type="hidden" id="edit-id">
-                <div>
-                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Concepto</label>
-                    <input id="edit-concepto" required class="w-full mt-1 px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm font-bold">
-                </div>
+                
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Monto</label>
-                        <input id="edit-monto" type="number" required class="w-full mt-1 px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm font-bold text-primary">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Tipo</label>
+                        <select id="edit-tipo" required class="w-full mt-1 px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm font-bold">
+                            <option value="Gasto">Gasto</option>
+                            <option value="Ingreso">Ingreso</option>
+                            <option value="Venta">Venta</option>
+                        </select>
                     </div>
                     <div>
                         <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Fecha</label>
                         <input id="edit-fecha" type="date" required class="w-full mt-1 px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm font-bold">
                     </div>
                 </div>
+
                 <div>
-                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Categoría</label>
-                    <select id="edit-categoria" required class="w-full mt-1 px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm font-bold"></select>
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Concepto</label>
+                    <input id="edit-concepto" required class="w-full mt-1 px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm font-bold">
                 </div>
-                <div>
-                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Medio de Pago</label>
-                    <select id="edit-pago" required class="w-full mt-1 px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm font-bold"></select>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Pago Desde</label>
+                        <select id="edit-pago" required class="w-full mt-1 px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm font-bold"></select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Cuotas</label>
+                        <input id="edit-cuotas" type="number" placeholder="1" class="w-full mt-1 px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm font-bold">
+                    </div>
                 </div>
-                <button type="submit" class="w-full py-4 bg-primary text-white rounded-2xl font-black text-sm shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform mt-4">GUARDAR CAMBIOS</button>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Categoría</label>
+                        <select id="edit-categoria" required class="w-full mt-1 px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm font-bold"></select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Monto</label>
+                        <input id="edit-monto" type="number" step="1" required class="w-full mt-1 px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm font-bold text-primary">
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full py-4 bg-primary text-white rounded-2xl font-black text-sm shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform mt-4">ACTUALIZAR REGISTRO</button>
             </form>
         </div>
     </div>
