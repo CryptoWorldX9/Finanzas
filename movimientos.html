@@ -31,7 +31,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getDatabase, ref, onValue, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCO6WXu9iZsyEUmNNxrE4oWToLYY8wl-y4",
@@ -65,6 +65,8 @@
                 if (snapshot.exists()) {
                     const listas = snapshot.val();
                     llenarSelect('filter-categoria', listas.categoria, "Todas las Categorías");
+                    llenarSelect('edit-categoria', listas.categoria, "Seleccionar Categoría");
+                    llenarSelect('edit-pago', listas.pago, "Seleccionar Pago");
                 }
             });
 
@@ -78,7 +80,7 @@
 
         function llenarSelect(id, datos, defaultText) {
             const el = document.getElementById(id);
-            if (!el) return;
+            if (!el || !datos) return;
             let html = `<option value="">${defaultText}</option>`;
             Object.values(datos).forEach(d => { html += `<option value="${d.nombre}">${d.nombre}</option>`; });
             el.innerHTML = html;
@@ -99,7 +101,10 @@
                         <td class="px-6 py-4 text-sm font-black text-right ${isIngreso ? 'text-emerald-500' : 'text-red-500'}">
                             $${new Intl.NumberFormat('es-CL').format(m.monto)}
                         </td>
-                        <td class="px-6 py-4 text-right">
+                        <td class="px-6 py-4 text-right flex justify-end gap-1">
+                             <button onclick='abrirModalEditar(${JSON.stringify(m).replace(/'/g, "&apos;")})' class="p-2 hover:bg-blue-50 text-slate-400 hover:text-blue-500 rounded-xl transition-all">
+                                <span class="material-symbols-outlined text-lg">edit</span>
+                            </button>
                              <button onclick="eliminarMovimiento('${m.id}')" class="p-2 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-xl transition-all">
                                 <span class="material-symbols-outlined text-lg">delete</span>
                             </button>
@@ -107,6 +112,41 @@
                     </tr>`;
             }).join('');
         }
+
+        window.abrirModalEditar = (mov) => {
+            document.getElementById('edit-id').value = mov.id;
+            document.getElementById('edit-fecha').value = mov.fecha;
+            document.getElementById('edit-concepto').value = mov.concepto;
+            document.getElementById('edit-monto').value = mov.monto;
+            document.getElementById('edit-categoria').value = mov.categoria;
+            document.getElementById('edit-pago').value = mov.pago || "";
+            document.getElementById('modal-editar').classList.remove('hidden');
+            document.getElementById('modal-editar').classList.add('flex');
+        };
+
+        window.cerrarModal = () => {
+            document.getElementById('modal-editar').classList.add('hidden');
+            document.getElementById('modal-editar').classList.remove('flex');
+        };
+
+        window.guardarCambios = async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('edit-id').value;
+            const data = {
+                fecha: document.getElementById('edit-fecha').value,
+                concepto: document.getElementById('edit-concepto').value,
+                monto: Number(document.getElementById('edit-monto').value),
+                categoria: document.getElementById('edit-categoria').value,
+                pago: document.getElementById('edit-pago').value
+            };
+            
+            try {
+                await update(ref(db, `usuarios/${currentUser.uid}/movimientos/${id}`), data);
+                cerrarModal();
+            } catch (error) {
+                alert("Error al actualizar");
+            }
+        };
 
         window.eliminarMovimiento = async (id) => {
             if(confirm('¿Eliminar este registro?')) {
@@ -125,6 +165,43 @@
 <body>
 
 <div id="overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/60 z-40 hidden lg:hidden backdrop-blur-sm"></div>
+
+<div id="modal-editar" class="fixed inset-0 z-[60] hidden items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+    <div class="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-100">
+        <div class="p-8">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-black text-slate-800 tracking-tight">Modificar Registro</h3>
+                <button onclick="cerrarModal()" class="text-slate-400 hover:text-slate-600"><span class="material-symbols-outlined">close</span></button>
+            </div>
+            <form onsubmit="guardarCambios(event)" class="space-y-4">
+                <input type="hidden" id="edit-id">
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Concepto</label>
+                    <input id="edit-concepto" required class="w-full mt-1 px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm font-bold">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Monto</label>
+                        <input id="edit-monto" type="number" required class="w-full mt-1 px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm font-bold text-primary">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Fecha</label>
+                        <input id="edit-fecha" type="date" required class="w-full mt-1 px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm font-bold">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Categoría</label>
+                    <select id="edit-categoria" required class="w-full mt-1 px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm font-bold"></select>
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Medio de Pago</label>
+                    <select id="edit-pago" required class="w-full mt-1 px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm font-bold"></select>
+                </div>
+                <button type="submit" class="w-full py-4 bg-primary text-white rounded-2xl font-black text-sm shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform mt-4">GUARDAR CAMBIOS</button>
+            </form>
+        </div>
+    </div>
+</div>
 
 <div class="flex h-screen overflow-hidden relative">
     <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 w-72 bg-[#0a0f1c] text-white flex flex-col shrink-0 border-r border-white/5 z-50 transition-transform duration-300 -translate-x-full lg:translate-x-0">
