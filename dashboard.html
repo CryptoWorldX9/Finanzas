@@ -30,8 +30,8 @@
         let currentUser = null;
         let editNodeId = null;
         let tarjetasBilletera = {};
+        let listaPagosConfig = [];
 
-        // Formateador de moneda: Enteros con punto
         const fmt = new Intl.NumberFormat('es-CL', {
             style: 'currency',
             currency: 'CLP',
@@ -51,23 +51,67 @@
 
         window.cerrarSesion = () => signOut(auth).then(() => window.location.href = "index.html");
 
+        function actualizarSelectorPago() {
+            const selectPago = document.getElementById('op-pago');
+            const currentVal = selectPago.value;
+            selectPago.innerHTML = '<option value="">Seleccionar Cuenta</option>';
+
+            // 1. Agregar opciones de la lista maestra "pago" (Configuración)
+            listaPagosConfig.forEach(nombre => {
+                const opt = document.createElement('option');
+                opt.value = nombre;
+                opt.textContent = nombre;
+                selectPago.appendChild(opt);
+            });
+
+            // 2. Agregar tarjetas de la Billetera
+            Object.values(tarjetasBilletera).forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t.nombre; // Usamos el nombre como valor para consistencia
+                opt.textContent = t.nombre;
+                opt.dataset.isWallet = "true";
+                opt.dataset.categoria = t.categoria;
+                selectPago.appendChild(opt);
+            });
+
+            if(currentVal) selectPago.value = currentVal;
+        }
+
         function cargarDatos() {
-            // Cargar Cuentas/Tarjetas para el mapeo de saldos
+            // Escuchar tarjetas de billetera
             onValue(ref(db, `usuarios/${currentUser.uid}/tarjetas`), (snapshot) => {
                 tarjetasBilletera = {};
                 snapshot.forEach((child) => {
                     const t = child.val();
                     tarjetasBilletera[child.key] = { ...t, id: child.key };
                 });
+                actualizarSelectorPago();
             });
 
-            // CARGA DE LISTAS MAESTRAS (Incluyendo Pago desde Configuración)
+            // Lógica de Cuotas Dinámica
+            document.getElementById('op-pago').addEventListener('change', (e) => {
+                const selectedOption = e.target.options[e.target.selectedIndex];
+                const divCuotas = document.getElementById('div-cuotas-dinamico');
+                
+                // Si es una tarjeta de la billetera y es de Crédito, mostramos cuotas
+                if (selectedOption && selectedOption.dataset.isWallet === "true" && selectedOption.dataset.categoria === 'Crédito') {
+                    divCuotas.classList.remove('hidden');
+                } else {
+                    divCuotas.classList.add('hidden');
+                    document.getElementById('op-cuotas').value = 1;
+                }
+            });
+
+            // Escuchar listas maestras
             onValue(ref(db, `usuarios/${currentUser.uid}/listas`), (snapshot) => {
                 const listas = snapshot.val() || {};
+                
+                // Guardar pagos de config para el selector unificado
+                listaPagosConfig = listas['pago'] ? Object.values(listas['pago']).map(i => i.nombre) : [];
+                
                 const mapeo = {
                     'tipo': 'op-tipo',
                     'categoria': 'op-categoria',
-                    'pago': 'op-pago', // Vinculación con Pago de Configuración
                     'recurrente': 'op-recurrente'
                 };
 
@@ -90,21 +134,18 @@
                     }
                     if(currentVal) selectElement.value = currentVal;
                 });
+                actualizarSelectorPago();
             });
 
-            // Cargar Movimientos y Resumen
             onValue(ref(db, `usuarios/${currentUser.uid}/movimientos`), (snapshot) => {
                 const moves = [];
                 let ingresos = 0, egresos = 0;
                 
                 snapshot.forEach((child) => {
                     const m = child.val();
-                    const id = child.key;
-                    moves.push({ ...m, id });
-                    
+                    moves.push({ ...m, id: child.key });
                     const monto = Math.round(parseFloat(m.monto)) || 0;
                     const tipoLower = m.tipo.toLowerCase();
-                    
                     if (tipoLower.includes('ingreso') || tipoLower.includes('venta') || tipoLower.includes('sueldo')) {
                         ingresos += monto;
                     } else {
@@ -115,7 +156,6 @@
                 document.getElementById('total-ingresos').innerText = fmt.format(ingresos);
                 document.getElementById('total-egresos').innerText = fmt.format(egresos);
                 document.getElementById('total-balance').innerText = fmt.format(ingresos - egresos);
-                
                 renderizarTabla(moves.reverse().slice(0, 10));
             });
         }
@@ -131,16 +171,12 @@
                 const metodoNombre = document.getElementById('op-pago').value;
                 const cuotas = parseInt(document.getElementById('op-cuotas')?.value) || 1;
                 
-                // Buscar si el nombre del pago coincide con alguna tarjeta para actualizar saldo
                 const esTarjeta = Object.values(tarjetasBilletera).find(t => t.nombre === metodoNombre);
-                
                 const tipoOp = document.getElementById('op-tipo').value;
-                const tipoLower = tipoOp.toLowerCase();
-                const esIngreso = tipoLower.includes('ingreso') || tipoLower.includes('venta') || tipoLower.includes('sueldo');
+                const esIngreso = tipoOp.toLowerCase().match(/ingreso|venta|sueldo/);
 
-                if(!metodoNombre) throw new Error("Por favor selecciona una cuenta de pago.");
+                if(!metodoNombre) throw new Error("Selecciona un método de pago.");
 
-                // 1. Guardar en Movimientos
                 for(let i=0; i<cuotas; i++){
                     let f = new Date(document.getElementById('op-fecha').value + "T00:00:00");
                     f.setMonth(f.getMonth() + i);
@@ -156,15 +192,9 @@
                         monto: Math.round(montoRaw / cuotas),
                         timestamp: Date.now()
                     };
-
-                    if(editNodeId && i === 0) {
-                        await update(ref(db, `usuarios/${currentUser.uid}/movimientos/${editNodeId}`), data);
-                    } else {
-                        await push(ref(db, `usuarios/${currentUser.uid}/movimientos`), data);
-                    }
+                    await push(ref(db, `usuarios/${currentUser.uid}/movimientos`), data);
                 }
 
-                // 2. Sincronizar Billetera (Si existe vinculación por nombre)
                 if (esTarjeta) {
                     const updates = {};
                     let disp = Math.round(Number(esTarjeta.saldoDisponibleActual)) || 0;
@@ -172,22 +202,17 @@
 
                     if (esIngreso) {
                         updates[`usuarios/${currentUser.uid}/tarjetas/${esTarjeta.id}/saldoDisponibleActual`] = disp + montoRaw;
-                        if (esTarjeta.categoria === 'Crédito') {
-                            updates[`usuarios/${currentUser.uid}/tarjetas/${esTarjeta.id}/montoUtilizado`] = Math.max(0, util - montoRaw);
-                        }
+                        if (esTarjeta.categoria === 'Crédito') updates[`usuarios/${currentUser.uid}/tarjetas/${esTarjeta.id}/montoUtilizado`] = Math.max(0, util - montoRaw);
                     } else {
                         updates[`usuarios/${currentUser.uid}/tarjetas/${esTarjeta.id}/saldoDisponibleActual`] = disp - montoRaw;
-                        if (esTarjeta.categoria === 'Crédito') {
-                            updates[`usuarios/${currentUser.uid}/tarjetas/${esTarjeta.id}/montoUtilizado`] = util + montoRaw;
-                        }
+                        if (esTarjeta.categoria === 'Crédito') updates[`usuarios/${currentUser.uid}/tarjetas/${esTarjeta.id}/montoUtilizado`] = util + montoRaw;
                     }
                     await update(ref(db), updates);
                 }
 
-                editNodeId = null;
                 e.target.reset();
                 document.getElementById('div-cuotas-dinamico').classList.add('hidden');
-                alert("Operación registrada y saldo actualizado con éxito.");
+                alert("Registrado correctamente.");
 
             } catch (err) {
                 alert("Error: " + err.message);
@@ -212,8 +237,8 @@
                         <span class="px-3 py-1 bg-slate-100 rounded-full text-[9px] font-black text-slate-500 uppercase tracking-tighter">${m.categoria}</span>
                     </td>
                     <td class="px-6 py-4 text-right">
-                        <span class="text-[13px] font-black ${m.tipo.toLowerCase().includes('ingreso') || m.tipo.toLowerCase().includes('sueldo') ? 'text-emerald-500' : 'text-red-500'} font-mono">
-                            ${m.tipo.toLowerCase().includes('ingreso') || m.tipo.toLowerCase().includes('sueldo') ? '+' : '-'}${fmt.format(Math.round(m.monto))}
+                        <span class="text-[13px] font-black ${m.tipo.toLowerCase().match(/ingreso|sueldo/) ? 'text-emerald-500' : 'text-red-500'} font-mono">
+                            ${m.tipo.toLowerCase().match(/ingreso|sueldo/) ? '+' : '-'}${fmt.format(Math.round(m.monto))}
                         </span>
                     </td>
                     <td class="px-8 py-4 text-right opacity-0 group-hover:opacity-100 transition-all">
@@ -225,20 +250,10 @@
             `).join('');
         }
 
-        window.eliminarMovimiento = (id) => {
-            if(confirm("¿Estás seguro de eliminar este registro? (No afectará el saldo actual de la billetera)")) {
-                remove(ref(db, `usuarios/${currentUser.uid}/movimientos/${id}`));
-            }
-        };
-
+        window.eliminarMovimiento = (id) => { if(confirm("¿Eliminar?")) remove(ref(db, `usuarios/${currentUser.uid}/movimientos/${id}`)); };
         window.toggleSidebar = () => {
             document.getElementById('sidebar').classList.toggle('-translate-x-full');
             document.getElementById('overlay').classList.toggle('hidden');
-        };
-
-        window.checkCuotas = (val) => {
-            const div = document.getElementById('div-cuotas-dinamico');
-            val === 'Tarjeta de Crédito' ? div.classList.remove('hidden') : div.classList.add('hidden');
         };
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -250,14 +265,7 @@
     </script>
 
     <script id="tailwind-config">
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: { "primary": "#176282" },
-                    fontFamily: { sans: ["Plus Jakarta Sans", "sans-serif"] }
-                }
-            }
-        }
+        tailwind.config = { theme: { extend: { colors: { "primary": "#176282" }, fontFamily: { sans: ["Plus Jakarta Sans", "sans-serif"] } } } }
     </script>
     <style type="text/tailwindcss">
         @layer base { body { @apply bg-[#f8fafc] text-slate-800 antialiased font-sans; } }
@@ -271,7 +279,6 @@
 <div id="overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/60 z-40 hidden lg:hidden backdrop-blur-sm"></div>
 
 <div class="flex h-screen overflow-hidden">
-    
     <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 w-72 bg-[#0a0f1c] text-white flex flex-col shrink-0 border-r border-white/5 z-50 transition-transform duration-300 -translate-x-full lg:translate-x-0">
         <div class="p-8">
             <div class="flex items-center justify-between">
@@ -460,15 +467,11 @@
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Tipo de Movimiento</label>
-                                    <select id="op-tipo" onchange="checkCuotas(this.value)" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-[12px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all">
-                                        <option value="">Cargando...</option>
-                                    </select>
+                                    <select id="op-tipo" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-[12px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all"></select>
                                 </div>
                                 <div>
                                     <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Categoría Principal</label>
-                                    <select id="op-categoria" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-[12px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all">
-                                        <option value="">Cargando...</option>
-                                    </select>
+                                    <select id="op-categoria" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-[12px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all"></select>
                                 </div>
                             </div>
 
@@ -492,9 +495,7 @@
                                 </div>
                                 <div>
                                     <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Recurrencia</label>
-                                    <select id="op-recurrente" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-[12px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all">
-                                        <option value="">Cargando...</option>
-                                    </select>
+                                    <select id="op-recurrente" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-[12px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all"></select>
                                 </div>
                             </div>
 
