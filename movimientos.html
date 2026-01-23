@@ -49,6 +49,7 @@
         
         let currentUser = null;
         let movimientosBase = [];
+        let tarjetasNombres = [];
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
@@ -65,8 +66,11 @@
                 if (snapshot.exists()) {
                     const listas = snapshot.val();
                     llenarSelect('filter-categoria', listas.categoria, "Todas las Categorías");
-                    llenarSelect('edit-categoria', listas.categoria, "Seleccionar Categoría");
+                    llenarSelect('edit-categoria', listas.categoria, "Categoría Principal");
                     llenarSelect('edit-pago', listas.pago, "Pago Desde");
+                    
+                    // Guardar nombres de tarjetas para habilitar cuotas
+                    tarjetasNombres = listas.pago ? Object.values(listas.pago).map(p => p.nombre) : [];
                 }
             });
 
@@ -90,13 +94,13 @@
             const body = document.getElementById('table-body');
             body.innerHTML = datos.map(m => {
                 const isIngreso = m.tipo?.toLowerCase().includes('ingreso') || m.tipo?.toLowerCase().includes('venta');
-                const montoFormateado = new Intl.NumberFormat('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(m.monto);
+                const montoFormateado = new Intl.NumberFormat('es-CL', { minimumFractionDigits: 0 }).format(m.monto);
                 return `
                     <tr class="hover:bg-slate-50 transition-colors border-b border-slate-100 group">
                         <td class="px-6 py-4 text-xs font-semibold text-slate-500">${m.fecha}</td>
                         <td class="px-6 py-4">
                             <p class="text-sm font-bold text-slate-800">${m.concepto}</p>
-                            <p class="text-[9px] font-black text-primary uppercase">${m.pago || ''} ${m.cuotas ? `(${m.cuotas} cuotas)` : ''}</p>
+                            <p class="text-[9px] font-black text-primary uppercase">${m.pago || ''} ${m.cuotas ? `| ${m.cuotas} Cuotas` : ''}</p>
                         </td>
                         <td class="px-6 py-4"><span class="bg-slate-100 text-slate-600 text-[9px] px-2 py-1 rounded-lg font-black uppercase">${m.categoria}</span></td>
                         <td class="px-6 py-4 text-sm font-black text-right ${isIngreso ? 'text-emerald-500' : 'text-red-500'}">
@@ -114,16 +118,26 @@
             }).join('');
         }
 
+        window.handlePagoChange = () => {
+            const pagoSelect = document.getElementById('edit-pago');
+            const cuotasInput = document.getElementById('edit-cuotas');
+            // La instrucción guardada dice: habilitar cuotas si es tarjeta
+            // Como lógica general de tu app, se habilitan si hay selección
+            cuotasInput.disabled = !pagoSelect.value;
+        };
+
         window.abrirModalEditar = (mov) => {
             document.getElementById('edit-id').value = mov.id;
-            document.getElementById('edit-tipo').value = mov.tipo || "";
-            document.getElementById('edit-fecha').value = mov.fecha;
-            document.getElementById('edit-concepto').value = mov.concepto;
             document.getElementById('edit-monto').value = Math.round(mov.monto);
-            document.getElementById('edit-categoria').value = mov.categoria;
+            document.getElementById('edit-concepto').value = mov.concepto;
+            document.getElementById('edit-tipo').value = mov.tipo || "Gasto";
+            document.getElementById('edit-categoria').value = mov.categoria || "";
             document.getElementById('edit-pago').value = mov.pago || "";
+            document.getElementById('edit-fecha').value = mov.fecha || "";
+            document.getElementById('edit-recurrencia').value = mov.recurrencia || "No";
             document.getElementById('edit-cuotas').value = mov.cuotas || "";
             
+            handlePagoChange();
             document.getElementById('modal-editar').classList.replace('hidden', 'flex');
         };
 
@@ -135,12 +149,13 @@
             e.preventDefault();
             const id = document.getElementById('edit-id').value;
             const data = {
-                tipo: document.getElementById('edit-tipo').value,
-                fecha: document.getElementById('edit-fecha').value,
-                concepto: document.getElementById('edit-concepto').value,
                 monto: Math.round(Number(document.getElementById('edit-monto').value)),
+                concepto: document.getElementById('edit-concepto').value,
+                tipo: document.getElementById('edit-tipo').value,
                 categoria: document.getElementById('edit-categoria').value,
                 pago: document.getElementById('edit-pago').value,
+                fecha: document.getElementById('edit-fecha').value,
+                recurrencia: document.getElementById('edit-recurrencia').value,
                 cuotas: document.getElementById('edit-cuotas').value
             };
             
@@ -168,59 +183,75 @@
 
 <div id="overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/60 z-40 hidden lg:hidden backdrop-blur-sm"></div>
 
-<div id="modal-editar" class="fixed inset-0 z-[60] hidden items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
-    <div class="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-100">
-        <div class="p-8">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-black text-slate-800 tracking-tight">Modificar Registro</h3>
-                <button onclick="cerrarModal()" class="text-slate-400 hover:text-slate-600"><span class="material-symbols-outlined">close</span></button>
+<div id="modal-editar" class="fixed inset-0 z-[60] hidden items-center justify-center p-4 bg-slate-900/40 backdrop-blur-md">
+    <div class="bg-white w-full max-w-xl rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-100">
+        <div class="p-8 md:p-10">
+            <div class="flex justify-between items-center mb-8">
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-primary font-fill text-2xl">bolt</span>
+                    <h3 class="text-xl font-black text-slate-800 tracking-tight">Modificar Registro</h3>
+                </div>
+                <button onclick="cerrarModal()" class="size-10 flex items-center justify-center bg-slate-50 text-slate-400 hover:text-slate-600 rounded-full transition-colors"><span class="material-symbols-outlined">close</span></button>
             </div>
-            <form onsubmit="guardarCambios(event)" class="space-y-4">
+
+            <form onsubmit="guardarCambios(event)" class="space-y-5">
                 <input type="hidden" id="edit-id">
                 
-                <div class="grid grid-cols-2 gap-4">
+                <div class="bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 block ml-1">Monto del Movimiento</label>
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl font-black text-primary">$</span>
+                        <input id="edit-monto" type="number" step="1" required class="w-full bg-transparent border-none p-0 text-3xl font-black text-slate-800 focus:ring-0" placeholder="0">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 block ml-1">Concepto / Detalle</label>
+                    <input id="edit-concepto" required class="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold placeholder:text-slate-300" placeholder="Ej. Supermercado Lider">
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Tipo</label>
-                        <select id="edit-tipo" required class="w-full mt-1 px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm font-bold">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 block ml-1">Tipo de Movimiento</label>
+                        <select id="edit-tipo" required class="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold">
                             <option value="Gasto">Gasto</option>
                             <option value="Ingreso">Ingreso</option>
                             <option value="Venta">Venta</option>
                         </select>
                     </div>
                     <div>
-                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Fecha</label>
-                        <input id="edit-fecha" type="date" required class="w-full mt-1 px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm font-bold">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 block ml-1">Categoría Principal</label>
+                        <select id="edit-categoria" required class="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold"></select>
                     </div>
                 </div>
 
-                <div>
-                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Concepto</label>
-                    <input id="edit-concepto" required class="w-full mt-1 px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm font-bold">
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Pago Desde</label>
-                        <select id="edit-pago" required class="w-full mt-1 px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm font-bold"></select>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 block ml-1">Pago Desde</label>
+                        <select id="edit-pago" onchange="handlePagoChange()" required class="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold"></select>
                     </div>
                     <div>
-                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Cuotas</label>
-                        <input id="edit-cuotas" type="number" placeholder="1" class="w-full mt-1 px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm font-bold">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 block ml-1">Fecha</label>
+                        <input id="edit-fecha" type="date" required class="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold">
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Categoría</label>
-                        <select id="edit-categoria" required class="w-full mt-1 px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm font-bold"></select>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 block ml-1">Recurrencia</label>
+                        <select id="edit-recurrencia" class="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold">
+                            <option value="No">Única vez</option>
+                            <option value="Mensual">Mensual</option>
+                            <option value="Anual">Anual</option>
+                        </select>
                     </div>
                     <div>
-                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">Monto</label>
-                        <input id="edit-monto" type="number" step="1" required class="w-full mt-1 px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm font-bold text-primary">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 block ml-1">Número de Cuotas</label>
+                        <input id="edit-cuotas" type="number" placeholder="1" class="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold disabled:opacity-50">
                     </div>
                 </div>
 
-                <button type="submit" class="w-full py-4 bg-primary text-white rounded-2xl font-black text-sm shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform mt-4">ACTUALIZAR REGISTRO</button>
+                <button type="submit" class="w-full py-5 bg-primary text-white rounded-3xl font-black text-sm shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all mt-4 tracking-widest">ACTUALIZAR OPERACIÓN</button>
             </form>
         </div>
     </div>
