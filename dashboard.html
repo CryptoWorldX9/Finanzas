@@ -56,7 +56,6 @@
             const currentVal = selectPago.value;
             selectPago.innerHTML = '<option value="">Seleccionar Cuenta</option>';
 
-            // 1. Agregar opciones de la lista maestra "pago" (Configuración)
             listaPagosConfig.forEach(nombre => {
                 const opt = document.createElement('option');
                 opt.value = nombre;
@@ -64,10 +63,9 @@
                 selectPago.appendChild(opt);
             });
 
-            // 2. Agregar tarjetas de la Billetera
             Object.values(tarjetasBilletera).forEach(t => {
                 const opt = document.createElement('option');
-                opt.value = t.nombre; // Usamos el nombre como valor para consistencia
+                opt.value = t.nombre;
                 opt.textContent = t.nombre;
                 opt.dataset.isWallet = "true";
                 opt.dataset.categoria = t.categoria;
@@ -78,7 +76,6 @@
         }
 
         function cargarDatos() {
-            // Escuchar tarjetas de billetera
             onValue(ref(db, `usuarios/${currentUser.uid}/tarjetas`), (snapshot) => {
                 tarjetasBilletera = {};
                 snapshot.forEach((child) => {
@@ -88,12 +85,9 @@
                 actualizarSelectorPago();
             });
 
-            // Lógica de Cuotas Dinámica
             document.getElementById('op-pago').addEventListener('change', (e) => {
                 const selectedOption = e.target.options[e.target.selectedIndex];
                 const divCuotas = document.getElementById('div-cuotas-dinamico');
-                
-                // Si es una tarjeta de la billetera y es de Crédito, mostramos cuotas
                 if (selectedOption && selectedOption.dataset.isWallet === "true" && selectedOption.dataset.categoria === 'Crédito') {
                     divCuotas.classList.remove('hidden');
                 } else {
@@ -102,16 +96,14 @@
                 }
             });
 
-            // Escuchar listas maestras
             onValue(ref(db, `usuarios/${currentUser.uid}/listas`), (snapshot) => {
                 const listas = snapshot.val() || {};
-                
-                // Guardar pagos de config para el selector unificado
                 listaPagosConfig = listas['pago'] ? Object.values(listas['pago']).map(i => i.nombre) : [];
                 
                 const mapeo = {
                     'tipo': 'op-tipo',
                     'categoria': 'op-categoria',
+                    'sub_categoria': 'op-subcategoria',
                     'recurrente': 'op-recurrente'
                 };
 
@@ -121,7 +113,7 @@
                     if (!selectElement) return;
 
                     const currentVal = selectElement.value;
-                    selectElement.innerHTML = `<option value="">${keyLista.toUpperCase()}</option>`;
+                    selectElement.innerHTML = `<option value="">${keyLista.replace('_',' ').toUpperCase()}</option>`;
 
                     const items = listas[keyLista];
                     if (items) {
@@ -140,7 +132,6 @@
             onValue(ref(db, `usuarios/${currentUser.uid}/movimientos`), (snapshot) => {
                 const moves = [];
                 let ingresos = 0, egresos = 0;
-                
                 snapshot.forEach((child) => {
                     const m = child.val();
                     moves.push({ ...m, id: child.key });
@@ -152,7 +143,6 @@
                         egresos += monto;
                     }
                 });
-
                 document.getElementById('total-ingresos').innerText = fmt.format(ingresos);
                 document.getElementById('total-egresos').innerText = fmt.format(egresos);
                 document.getElementById('total-balance').innerText = fmt.format(ingresos - egresos);
@@ -165,12 +155,10 @@
             const btn = document.getElementById('btn-submit');
             btn.disabled = true;
             btn.innerText = "Sincronizando...";
-
             try {
                 const montoRaw = Math.round(parseInt(document.getElementById('op-monto').value.replace(/\D/g, "")));
                 const metodoNombre = document.getElementById('op-pago').value;
                 const cuotas = parseInt(document.getElementById('op-cuotas')?.value) || 1;
-                
                 const esTarjeta = Object.values(tarjetasBilletera).find(t => t.nombre === metodoNombre);
                 const tipoOp = document.getElementById('op-tipo').value;
                 const esIngreso = tipoOp.toLowerCase().match(/ingreso|venta|sueldo/);
@@ -180,7 +168,6 @@
                 for(let i=0; i<cuotas; i++){
                     let f = new Date(document.getElementById('op-fecha').value + "T00:00:00");
                     f.setMonth(f.getMonth() + i);
-                    
                     const data = {
                         concepto: cuotas > 1 ? `${document.getElementById('op-concepto').value} (${i+1}/${cuotas})` : document.getElementById('op-concepto').value,
                         tipo: tipoOp,
@@ -199,7 +186,6 @@
                     const updates = {};
                     let disp = Math.round(Number(esTarjeta.saldoDisponibleActual)) || 0;
                     let util = Math.round(Number(esTarjeta.montoUtilizado)) || 0;
-
                     if (esIngreso) {
                         updates[`usuarios/${currentUser.uid}/tarjetas/${esTarjeta.id}/saldoDisponibleActual`] = disp + montoRaw;
                         if (esTarjeta.categoria === 'Crédito') updates[`usuarios/${currentUser.uid}/tarjetas/${esTarjeta.id}/montoUtilizado`] = Math.max(0, util - montoRaw);
@@ -209,17 +195,11 @@
                     }
                     await update(ref(db), updates);
                 }
-
                 e.target.reset();
                 document.getElementById('div-cuotas-dinamico').classList.add('hidden');
                 alert("Registrado correctamente.");
-
-            } catch (err) {
-                alert("Error: " + err.message);
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "Registrar Operación";
-            }
+            } catch (err) { alert("Error: " + err.message); } 
+            finally { btn.disabled = false; btn.innerText = "Registrar Operación"; }
         };
 
         function renderizarTabla(moves) {
@@ -478,7 +458,9 @@
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Subcategoría</label>
-                                    <input id="op-subcategoria" type="text" placeholder="Ej: Supermercado" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-[12px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all"/>
+                                    <select id="op-subcategoria" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-[12px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all">
+                                        <option value="">Cargando...</option>
+                                    </select>
                                 </div>
                                 <div>
                                     <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Pago Desde</label>
