@@ -328,20 +328,36 @@
 </div>
 
 <div id="modal-tarjeta" class="fixed inset-0 z-[60] hidden flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4">
-    <div class="bg-white w-full max-w-xl rounded-[3rem] p-10 shadow-2xl max-h-[90vh] overflow-y-auto">
+    <div class="bg-white w-full max-w-xl rounded-[3rem] p-10 shadow-2xl max-h-[90vh] overflow-y-auto relative">
+        <button onclick="toggleModal('modal-tarjeta')" class="absolute top-8 right-8 size-10 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-all">
+            <span class="material-symbols-outlined">close</span>
+        </button>
+
         <h3 class="text-2xl font-black mb-8">Parámetros de Cuenta</h3>
         <form id="form-tarjeta" class="space-y-6" onsubmit="event.preventDefault(); saveCard();">
             <div class="grid grid-cols-2 gap-4">
-                <input id="card-nombre" type="text" placeholder="Alias Tarjeta" required class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold ring-1 ring-slate-200">
-                <input id="card-banco" type="text" placeholder="Banco" required class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold ring-1 ring-slate-200">
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Nombre de la Cuenta</label>
+                    <input id="card-nombre" type="text" placeholder="Alias Tarjeta" required class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold ring-1 ring-slate-200">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Institución / Banco</label>
+                    <input id="card-banco" type="text" placeholder="Banco" required class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold ring-1 ring-slate-200">
+                </div>
             </div>
             <div class="grid grid-cols-2 gap-4">
-                <select id="card-categoria" onchange="toggleCamposDebito()" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold ring-1 ring-slate-200">
-                    <option>Crédito</option><option>Débito</option>
-                </select>
-                <select id="card-estilo" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold ring-1 ring-slate-200">
-                    <option>Falabella (Verde)</option><option>Falabella (Negro)</option><option>Falabella (Dorada)</option><option>Santander (Rojo)</option><option>Chile (Azul)</option><option>BCI (Azul)</option><option>Itau (Naranja)</option><option>Scotiabank (Rojo)</option><option>Estado (Pato)</option><option>General (Gris)</option>
-                </select>
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Categoría</label>
+                    <select id="card-categoria" onchange="toggleCamposDebito()" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold ring-1 ring-slate-200">
+                        <option>Crédito</option><option>Débito</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Diseño Visual</label>
+                    <select id="card-estilo" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold ring-1 ring-slate-200">
+                        <option>Falabella (Verde)</option><option>Falabella (Negro)</option><option>Falabella (Dorada)</option><option>Santander (Rojo)</option><option>Chile (Azul)</option><option>BCI (Azul)</option><option>Itau (Naranja)</option><option>Scotiabank (Rojo)</option><option>Estado (Pato)</option><option>General (Gris)</option>
+                    </select>
+                </div>
             </div>
             <div id="seccion-principal">
                 <label class="text-[11px] font-black text-primary uppercase mb-2 block ml-1">Saldo Disponible Actual (Monto Real)</label>
@@ -349,20 +365,38 @@
             </div>
             <div id="seccion-credito" class="space-y-6 transition-all">
                 <div class="grid grid-cols-3 gap-4">
-                    <input id="card-limite" type="number" placeholder="Cupo Total" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold ring-1 ring-slate-200">
-                    <input id="card-utilizado" type="number" placeholder="M. Utilizado" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold ring-1 ring-slate-200">
-                    <input id="card-facturado" type="number" placeholder="M. Facturado" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold ring-1 ring-slate-200">
+                    <div>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Cupo Total</label>
+                        <input id="card-limite" type="number" placeholder="Cupo Total" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold ring-1 ring-slate-200">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Utilizado</label>
+                        <input id="card-utilizado" type="number" placeholder="M. Utilizado" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold ring-1 ring-slate-200">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Facturado</label>
+                        <input id="card-facturado" type="number" placeholder="M. Facturado" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold ring-1 ring-slate-200">
+                    </div>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
-                    <select id="card-estado" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold ring-1 ring-slate-200"><option>Pendiente</option><option>Pagado</option></select>
-                    <input id="card-cierre" type="number" placeholder="Día Cierre" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold ring-1 ring-slate-200">
+                    <div>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Estado Factura</label>
+                        <select id="card-estado" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold ring-1 ring-slate-200"><option>Pendiente</option><option>Pagado</option></select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Día de Cierre</label>
+                        <input id="card-cierre" type="number" placeholder="Día Cierre" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold ring-1 ring-slate-200">
+                    </div>
                 </div>
             </div>
-            <select id="card-tipo" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold ring-1 ring-slate-200">
-                <option>Visa</option><option>Mastercard</option>
-            </select>
+            <div>
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Red Transaccional</label>
+                <select id="card-tipo" class="w-full rounded-2xl bg-slate-50 border-none p-4 font-bold ring-1 ring-slate-200">
+                    <option>Visa</option><option>Mastercard</option>
+                </select>
+            </div>
             <input id="card-fecha-pago" type="date" class="hidden">
-            <button type="submit" class="w-full bg-primary text-white py-5 rounded-3xl font-black uppercase tracking-widest text-xs shadow-xl">Confirmar y Guardar</button>
+            <button type="submit" class="w-full bg-primary text-white py-5 rounded-3xl font-black uppercase tracking-widest text-xs shadow-xl hover:scale-[1.02] transition-all">Confirmar y Guardar</button>
         </form>
     </div>
 </div>
