@@ -10,9 +10,9 @@
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-        // Configuración proporcionada
         const firebaseConfig = {
             apiKey: "AIzaSyCO6WXu9iZsyEUmNNxrE4oWToLYY8wl-y4",
             authDomain: "misfinanzaspro-d2f3f.firebaseapp.com",
@@ -26,33 +26,56 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const db = getDatabase(app);
         const provider = new GoogleAuthProvider();
 
-        // Lógica de Autenticación Unificada
+        // Lógica de Autenticación Arreglada
         window.handleAuth = async (event) => {
             event.preventDefault();
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
+            // Corregimos la detección del modo (basado en el radio button seleccionado)
             const isRegister = document.querySelector('input[name="auth-mode"]:checked').value === "Create Account";
             const btnLabel = document.getElementById('btn-text');
 
             try {
                 btnLabel.innerText = "Procesando...";
+                
                 if (isRegister) {
-                    await createUserWithEmailAndPassword(auth, email, password);
-                    alert("¡Cuenta creada exitosamente!");
+                    // 1. Crear el usuario en Auth
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    const user = userCredential.user;
+
+                    // 2. Inicializar perfil básico en Database para que el sistema no falle al entrar
+                    await set(ref(db, `usuarios/${user.uid}/configuracion`), {
+                        moneda: "CLP",
+                        darkMode: false,
+                        zonaHoraria: "America/Santiago",
+                        fechaRegistro: Date.now()
+                    });
+
+                    alert("¡Cuenta corporativa creada con éxito!");
                 } else {
+                    // Login normal
                     await signInWithEmailAndPassword(auth, email, password);
                 }
+                
                 window.location.href = "dashboard.html";
             } catch (error) {
                 console.error(error);
-                alert("Error: " + error.message);
+                let mensajeError = "Error en la autenticación";
+                
+                // Traducción de errores comunes para el usuario
+                if (error.code === 'auth/email-already-in-use') mensajeError = "Este correo ya está registrado.";
+                else if (error.code === 'auth/weak-password') mensajeError = "La contraseña debe tener al menos 6 caracteres.";
+                else if (error.code === 'auth/invalid-credential') mensajeError = "Credenciales incorrectas.";
+                else mensajeError = error.message;
+
+                alert(mensajeError);
                 btnLabel.innerText = isRegister ? "Crear Cuenta Ahora" : "Iniciar Sesión al Panel";
             }
         };
 
-        // Autenticación con Google
         window.loginGoogle = async () => {
             try {
                 await signInWithPopup(auth, provider);
@@ -63,7 +86,6 @@
             }
         };
 
-        // Cambio de UI según el modo
         window.updateUI = (mode) => {
             const btnLabel = document.getElementById('btn-text');
             const mainTitle = document.getElementById('form-title');
