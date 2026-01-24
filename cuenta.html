@@ -3,14 +3,15 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>QuantyA - Mi Cuenta</title>
+    <title>QuantyA | Perfil Corporativo</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, updateProfile, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getDatabase, ref, get, update, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCO6WXu9iZsyEUmNNxrE4oWToLYY8wl-y4",
@@ -24,149 +25,242 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const db = getDatabase(app);
+
+        let currentUser = null;
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                document.getElementById('user-email').innerText = user.email;
-                document.getElementById('user-name-big').innerText = user.displayName || "Usuario QuantyA";
-                document.getElementById('user-initials').innerText = (user.displayName || "U").substring(0,2).toUpperCase();
+                currentUser = user;
+                actualizarInterfaz(user);
+                cargarPreferencias(user.uid);
             } else {
                 window.location.href = "index.html";
             }
         });
 
-        window.goBack = () => window.location.href = "dashboard.html";
-    </script>
+        function actualizarInterfaz(user) {
+            const name = user.displayName || "Usuario QuantyA";
+            document.getElementById('user-email').innerText = user.email;
+            document.getElementById('user-name-big').innerText = name;
+            document.getElementById('display-name-input').value = name;
+            document.getElementById('user-initials').innerText = name.substring(0,2).toUpperCase();
+        }
 
-    <script id="tailwind-config">
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: { "primary": "#176282" },
-                    fontFamily: { sans: ["Inter", "sans-serif"] },
+        async function cargarPreferencias(uid) {
+            const configRef = ref(db, `usuarios/${uid}/configuracion`);
+            onValue(configRef, (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    document.getElementById('notif-switch').checked = data.notificaciones || false;
+                    document.getElementById('privacidad-switch').checked = data.modoPrivacidad || false;
+                }
+            });
+        }
+
+        // --- FUNCIONES OPERATIVAS ---
+
+        window.actualizarNombre = async () => {
+            const newName = document.getElementById('display-name-input').value;
+            try {
+                await updateProfile(auth.currentUser, { displayName: newName });
+                await update(ref(db, `usuarios/${currentUser.uid}/configuracion`), { nombre: newName });
+                alert("Perfil actualizado correctamente.");
+                location.reload();
+            } catch (error) {
+                alert("Error al actualizar: " + error.message);
+            }
+        };
+
+        window.restablecerPassword = async () => {
+            if (confirm("¿Enviar correo de restablecimiento de contraseña a " + currentUser.email + "?")) {
+                try {
+                    await sendPasswordResetEmail(auth, currentUser.email);
+                    alert("Correo enviado. Revisa tu bandeja de entrada.");
+                } catch (error) {
+                    alert("Error: " + error.message);
                 }
             }
-        }
-    </script>
-</head>
-<body class="bg-[#fcfdfe] text-slate-700 font-sans">
+        };
 
-    <nav class="h-20 border-b border-slate-100 bg-white/80 backdrop-blur-md sticky top-0 z-50 px-6 lg:px-12 flex items-center justify-between">
-        <div class="flex items-center gap-4">
-            <button onclick="goBack()" class="flex items-center gap-2 text-slate-400 hover:text-primary transition-colors group">
-                <span class="material-symbols-outlined font-light">arrow_back</span>
-                <span class="text-xs font-black uppercase tracking-widest">Volver al Panel</span>
-            </button>
-        </div>
-        <div class="flex items-center gap-2">
-            <div class="size-8 bg-primary/10 rounded-lg flex items-center justify-center">
-                <span class="material-symbols-outlined text-primary text-sm fill">verified_user</span>
+        window.togglePreferencia = async (key, element) => {
+            const value = element.checked;
+            try {
+                await update(ref(db, `usuarios/${currentUser.uid}/configuracion`), { [key]: value });
+            } catch (error) {
+                console.error("Error al guardar preferencia", error);
+            }
+        };
+
+        window.goBack = () => window.location.href = "dashboard.html";
+        window.cerrarSesion = () => auth.signOut();
+    </script>
+
+    <style type="text/tailwindcss">
+        @layer base {
+            body { @apply bg-[#F8FAFC] text-slate-900 antialiased; }
+        }
+        .card-shadow { shadow-sm border border-slate-200/60 bg-white/80 backdrop-blur-sm }
+        .btn-primary { @apply bg-[#176282] text-white hover:bg-[#124d66] transition-all duration-300 shadow-lg shadow-blue-900/10 active:scale-95; }
+    </style>
+</head>
+<body>
+
+    <nav class="h-20 border-b border-slate-200/60 bg-white/70 backdrop-blur-xl sticky top-0 z-50 px-6 lg:px-12 flex items-center justify-between">
+        <button onclick="goBack()" class="flex items-center gap-3 text-slate-500 hover:text-[#176282] transition-all group">
+            <div class="size-10 rounded-full border border-slate-200 flex items-center justify-center group-hover:border-[#176282]/30 group-hover:bg-[#176282]/5">
+                <span class="material-symbols-outlined text-xl">arrow_back</span>
             </div>
-            <span class="text-[10px] font-black uppercase tracking-tighter text-slate-400">Sesión Segura Activada</span>
+            <span class="text-xs font-bold uppercase tracking-widest">Panel Central</span>
+        </button>
+        
+        <div class="flex items-center gap-4">
+            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest hidden md:block">Sistema Encriptado</span>
+            <button onclick="cerrarSesion()" class="text-xs font-bold text-red-500 hover:bg-red-50 px-4 py-2 rounded-xl transition-all">Cerrar Sesión</button>
         </div>
     </nav>
 
-    <main class="max-w-5xl mx-auto p-6 lg:p-12 space-y-12">
-        
-        <section class="flex flex-col md:flex-row items-center gap-8 bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm">
-            <div id="user-initials" class="size-32 bg-primary rounded-[2rem] flex items-center justify-center text-4xl font-black text-white shadow-2xl shadow-primary/20">
-                --
+    <main class="max-w-6xl mx-auto p-6 lg:p-12">
+        <section class="relative overflow-hidden bg-white p-8 md:p-12 rounded-[2.5rem] border border-slate-200/60 shadow-xl shadow-slate-200/40 mb-12">
+            <div class="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
+                <span class="material-symbols-outlined text-[15rem]">account_circle</span>
             </div>
-            <div class="text-center md:text-left flex-1">
-                <h1 id="user-name-big" class="text-3xl font-black text-slate-900 tracking-tight">Cargando...</h1>
-                <p id="user-email" class="text-slate-400 font-medium mb-4">cargando@correo.com</p>
-                <div class="flex flex-wrap justify-center md:justify-start gap-2">
-                    <span class="px-3 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase rounded-full">Cuenta Verificada</span>
-                    <span class="px-3 py-1 bg-slate-100 text-slate-500 text-[10px] font-black uppercase rounded-full">Plan Premium</span>
+            
+            <div class="relative z-10 flex flex-col md:flex-row items-center gap-10">
+                <div class="relative group">
+                    <div id="user-initials" class="size-36 bg-gradient-to-tr from-[#176282] to-[#328eb5] rounded-[2.5rem] flex items-center justify-center text-5xl font-black text-white shadow-2xl shadow-[#176282]/30 rotate-3 group-hover:rotate-0 transition-transform duration-500">
+                        --
+                    </div>
+                    <div class="absolute -bottom-2 -right-2 size-10 bg-emerald-500 border-4 border-white rounded-full flex items-center justify-center shadow-lg">
+                        <span class="material-symbols-outlined text-white text-lg font-bold">check</span>
+                    </div>
+                </div>
+
+                <div class="text-center md:text-left flex-1">
+                    <div class="flex flex-col md:flex-row md:items-center gap-3 mb-2">
+                        <h1 id="user-name-big" class="text-4xl font-black text-slate-900 tracking-tight">Cargando...</h1>
+                        <span class="w-fit mx-auto md:mx-0 px-3 py-1 bg-[#176282]/10 text-[#176282] text-[10px] font-black uppercase rounded-lg border border-[#176282]/20">Corporativo QuantyA</span>
+                    </div>
+                    <p id="user-email" class="text-slate-400 font-medium text-lg mb-6">cargando@correo.com</p>
+                    
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <div class="flex-1">
+                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Nombre Visual</label>
+                            <div class="flex gap-2">
+                                <input id="display-name-input" type="text" class="flex-1 h-12 px-4 rounded-xl border-slate-200 focus:ring-2 focus:ring-[#176282]/20 focus:border-[#176282] transition-all text-sm font-bold" placeholder="Tu nombre">
+                                <button onclick="actualizarNombre()" class="btn-primary px-6 rounded-xl text-[10px] font-black uppercase tracking-widest">Actualizar</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <button class="bg-primary text-white px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:brightness-110 transition-all shadow-lg shadow-primary/20">Editar Perfil</button>
         </section>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            
-            <div class="md:col-span-2 space-y-8">
-                <h3 class="text-xs font-black uppercase tracking-[0.2em] text-slate-400 px-4">Preferencias del Sistema</h3>
-                
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div class="bg-white p-8 rounded-[2.5rem] border border-slate-100 hover:border-primary/20 transition-all">
-                        <span class="material-symbols-outlined text-primary mb-4">notifications_active</span>
-                        <h4 class="font-bold text-slate-800 mb-2">Notificaciones</h4>
-                        <p class="text-xs text-slate-400 leading-relaxed mb-6">Recibe alertas sobre gastos inusuales y recordatorios de metas.</p>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" checked class="sr-only peer">
-                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                        </label>
-                    </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
+            <div class="lg:col-span-2 space-y-10">
+                <div>
+                    <h3 class="text-xs font-black uppercase tracking-[0.3em] text-slate-400 px-2 mb-6 flex items-center gap-2">
+                        <span class="size-1.5 bg-[#176282] rounded-full"></span> Preferencias Inteligentes
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white p-8 rounded-[2rem] border border-slate-200/60 shadow-sm hover:shadow-md transition-all group">
+                            <div class="size-12 rounded-2xl bg-blue-50 flex items-center justify-center mb-6 group-hover:bg-[#176282] group-hover:text-white transition-colors">
+                                <span class="material-symbols-outlined">notifications</span>
+                            </div>
+                            <h4 class="font-black text-slate-800 mb-2">Notificaciones</h4>
+                            <p class="text-xs text-slate-400 leading-relaxed mb-8">Alertas inteligentes sobre gastos y reportes mensuales.</p>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="notif-switch" onchange="togglePreferencia('notificaciones', this)" class="sr-only peer">
+                                <div class="w-14 h-7 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:rounded-full after:h-[20px] after:w-[20px] after:transition-all peer-checked:bg-[#176282]"></div>
+                            </label>
+                        </div>
 
-                    <div class="bg-white p-8 rounded-[2.5rem] border border-slate-100 hover:border-primary/20 transition-all">
-                        <span class="material-symbols-outlined text-primary mb-4">visibility</span>
-                        <h4 class="font-bold text-slate-800 mb-2">Modo Privacidad</h4>
-                        <p class="text-xs text-slate-400 leading-relaxed mb-6">Oculta automáticamente los saldos principales al abrir la app.</p>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" class="sr-only peer">
-                            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                        </label>
+                        <div class="bg-white p-8 rounded-[2rem] border border-slate-200/60 shadow-sm hover:shadow-md transition-all group">
+                            <div class="size-12 rounded-2xl bg-purple-50 flex items-center justify-center mb-6 group-hover:bg-[#176282] group-hover:text-white transition-colors">
+                                <span class="material-symbols-outlined">visibility_off</span>
+                            </div>
+                            <h4 class="font-black text-slate-800 mb-2">Modo Privacidad</h4>
+                            <p class="text-xs text-slate-400 leading-relaxed mb-8">Oculta saldos automáticamente en espacios públicos.</p>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="privacidad-switch" onchange="togglePreferencia('modoPrivacidad', this)" class="sr-only peer">
+                                <div class="w-14 h-7 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:rounded-full after:h-[20px] after:w-[20px] after:transition-all peer-checked:bg-[#176282]"></div>
+                            </label>
+                        </div>
                     </div>
                 </div>
 
-                <div class="bg-white p-8 rounded-[2.5rem] border border-slate-100 overflow-hidden">
-                    <div class="flex items-center gap-4 mb-8">
-                        <div class="p-3 bg-red-50 text-red-500 rounded-2xl"><span class="material-symbols-outlined fill">security</span></div>
-                        <h4 class="font-black text-slate-800 uppercase tracking-widest text-xs">Seguridad de la Cuenta</h4>
+                <div class="bg-white rounded-[2.5rem] border border-slate-200/60 overflow-hidden shadow-sm">
+                    <div class="p-8 border-b border-slate-100 flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="size-10 rounded-xl bg-red-50 text-red-500 flex items-center justify-center">
+                                <span class="material-symbols-outlined fill">shield</span>
+                            </div>
+                            <h4 class="font-black text-slate-800 uppercase tracking-widest text-xs">Centro de Seguridad</h4>
+                        </div>
                     </div>
-                    <div class="space-y-4">
-                        <button class="w-full flex items-center justify-between p-4 hover:bg-slate-50 rounded-2xl transition-all group">
+                    <div class="divide-y divide-slate-50">
+                        <button onclick="restablecerPassword()" class="w-full flex items-center justify-between p-6 hover:bg-slate-50 transition-all group">
                             <div class="flex items-center gap-4">
-                                <span class="material-symbols-outlined text-slate-400 group-hover:text-primary">lock_reset</span>
-                                <span class="text-sm font-bold text-slate-600">Cambiar Contraseña</span>
+                                <div class="size-10 rounded-lg border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-[#176282] transition-colors">
+                                    <span class="material-symbols-outlined">lock_reset</span>
+                                </div>
+                                <div class="text-left">
+                                    <p class="text-sm font-black text-slate-700">Cambiar Contraseña</p>
+                                    <p class="text-[10px] text-slate-400 uppercase font-bold tracking-tighter">Se enviará un enlace de seguridad</p>
+                                </div>
                             </div>
-                            <span class="material-symbols-outlined text-slate-300">chevron_right</span>
-                        </button>
-                        <button class="w-full flex items-center justify-between p-4 hover:bg-slate-50 rounded-2xl transition-all group">
-                            <div class="flex items-center gap-4">
-                                <span class="material-symbols-outlined text-slate-400 group-hover:text-primary">devices</span>
-                                <span class="text-sm font-bold text-slate-600">Sesiones Activas</span>
-                            </div>
-                            <span class="material-symbols-outlined text-slate-300">chevron_right</span>
+                            <span class="material-symbols-outlined text-slate-300 group-hover:translate-x-1 transition-transform">chevron_right</span>
                         </button>
                     </div>
                 </div>
             </div>
 
             <div class="space-y-8">
-                <h3 class="text-xs font-black uppercase tracking-[0.2em] text-slate-400 px-4">Estadísticas de Perfil</h3>
-                <div class="bg-[#0f172a] text-white p-8 rounded-[2.5rem] shadow-xl shadow-slate-900/20">
-                    <p class="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-6">Uso del Sistema</p>
-                    <div class="space-y-6">
+                <h3 class="text-xs font-black uppercase tracking-[0.3em] text-slate-400 px-2">Estatus de Cuenta</h3>
+                <div class="bg-[#0f172a] text-white p-8 rounded-[2.5rem] shadow-2xl shadow-slate-900/40 relative overflow-hidden">
+                    <div class="absolute -top-10 -right-10 size-40 bg-white/5 rounded-full blur-3xl"></div>
+                    
+                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-[#176282] mb-8">Nivel de Seguridad</p>
+                    
+                    <div class="space-y-8 relative z-10">
                         <div>
-                            <div class="flex justify-between text-xs mb-2 font-bold">
-                                <span>Datos Completados</span>
-                                <span class="text-primary">85%</span>
+                            <div class="flex justify-between text-[10px] mb-3 font-black uppercase tracking-widest">
+                                <span class="text-slate-400">Integridad de Datos</span>
+                                <span class="text-[#176282]">92%</span>
                             </div>
-                            <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                                <div class="h-full bg-primary w-[85%]"></div>
+                            <div class="h-2 bg-slate-800 rounded-full overflow-hidden">
+                                <div class="h-full bg-gradient-to-r from-[#176282] to-[#328eb5] w-[92%] rounded-full shadow-[0_0_15px_rgba(23,98,130,0.5)]"></div>
                             </div>
                         </div>
-                        <div>
-                            <div class="flex justify-between text-xs mb-2 font-bold">
-                                <span>Seguridad</span>
-                                <span class="text-emerald-500">Alta</span>
+
+                        <div class="bg-white/5 p-4 rounded-2xl border border-white/10">
+                            <div class="flex items-center gap-3 mb-2">
+                                <span class="material-symbols-outlined text-emerald-400 text-sm">verified</span>
+                                <span class="text-[10px] font-black uppercase">Protección Activa</span>
                             </div>
-                            <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                                <div class="h-full bg-emerald-500 w-[100%]"></div>
-                            </div>
+                            <p class="text-[11px] text-slate-400 leading-relaxed">Tu cuenta utiliza autenticación de Firebase con cifrado de nivel bancario.</p>
                         </div>
-                    </div>
-                    <div class="mt-10 pt-8 border-t border-slate-800">
-                        <p class="text-[10px] text-slate-500 font-bold mb-4 uppercase">Soporte QuantyA</p>
-                        <button class="w-full bg-slate-800 p-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 transition-colors">Solicitar Ayuda</button>
+
+                        <button class="w-full bg-[#176282] py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:brightness-110 transition-all shadow-xl shadow-black/20">
+                            Descargar Reporte Privacidad
+                        </button>
                     </div>
                 </div>
-            </div>
 
+                <div class="p-8 rounded-[2.5rem] border-2 border-dashed border-slate-200 flex flex-col items-center text-center">
+                    <span class="material-symbols-outlined text-slate-300 text-4xl mb-4 font-light">support_agent</span>
+                    <h5 class="text-sm font-black text-slate-800 mb-2">¿Necesitas ayuda técnica?</h5>
+                    <p class="text-[11px] text-slate-400 mb-6">Nuestro equipo corporativo está disponible 24/7 para clientes Premium.</p>
+                    <a href="mailto:soporte@quantya.com" class="text-[10px] font-black uppercase text-[#176282] hover:underline tracking-widest">Contactar Soporte</a>
+                </div>
+            </div>
         </div>
     </main>
+
+    <footer class="mt-20 py-10 border-t border-slate-100 text-center">
+        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em]">QuantyA Enterprise v2.0 &bull; Secure Financial Core</p>
+    </footer>
 
 </body>
 </html>
