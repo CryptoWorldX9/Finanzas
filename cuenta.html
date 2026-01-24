@@ -3,27 +3,33 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>QuantyA | Perfil Corporativo</title>
-    
+    <title>QuantyA | Perfil de Élite</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
 
     <script>
         tailwind.config = {
             theme: {
                 extend: {
+                    fontFamily: { sans: ['Plus Jakarta Sans', 'sans-serif'] },
                     colors: {
-                        primary: '#176282',
-                        darkBlue: '#0f172a'
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
+                        brand: {
+                            50: '#f0f7ff', 100: '#e0effe', 500: '#3b82f6', 600: '#2563eb', 900: '#1e3a8a'
+                        }
                     }
                 }
             }
         }
     </script>
+
+    <style>
+        .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.3); }
+        .bento-card { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid rgba(0,0,0,0.05); }
+        .bento-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.05); border-color: #3b82f6; }
+        .emoji-btn { cursor: pointer; transition: all 0.2s; font-size: 2rem; }
+        .emoji-btn:hover { transform: scale(1.2); filter: drop-shadow(0 0 8px rgba(0,0,0,0.1)); }
+    </style>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -48,152 +54,178 @@
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
-                document.getElementById('user-email').innerText = user.email;
-                const name = user.displayName || "Usuario QuantyA";
-                document.getElementById('user-name-big').innerText = name;
-                document.getElementById('display-name-input').value = name;
-                document.getElementById('user-initials').innerText = name.substring(0,2).toUpperCase();
-                
-                // Cargar Preferencias desde DB
-                onValue(ref(db, `usuarios/${user.uid}/configuracion`), (snapshot) => {
-                    const data = snapshot.val();
-                    if (data) {
-                        document.getElementById('notif-switch').checked = data.notificaciones || false;
-                        document.getElementById('privacidad-switch').checked = data.modoPrivacidad || false;
-                    }
-                });
-            } else {
-                window.location.href = "index.html";
-            }
+                cargarDatosUsuario();
+            } else { window.location.href = "index.html"; }
         });
 
-        window.actualizarNombre = async () => {
-            const newName = document.getElementById('display-name-input').value;
+        async function cargarDatosUsuario() {
+            onValue(ref(db, `usuarios/${currentUser.uid}/configuracion`), (snapshot) => {
+                const data = snapshot.val() || {};
+                
+                // Actualizar UI
+                document.getElementById('display-emoji').innerText = data.emoji || '👤';
+                document.getElementById('user-name-title').innerText = currentUser.displayName || 'Usuario Pro';
+                document.getElementById('user-email-sub').innerText = currentUser.email;
+                
+                // Llenar campos
+                document.getElementById('input-name').value = currentUser.displayName || '';
+                document.getElementById('input-phone').value = data.telefono || '';
+                document.getElementById('input-role').value = data.cargo || '';
+                document.getElementById('input-company').value = data.empresa || '';
+                
+                // Swatches
+                if(data.accentColor) document.documentElement.style.setProperty('--brand-color', data.accentColor);
+            });
+        }
+
+        window.saveProfile = async () => {
+            const updates = {
+                nombre: document.getElementById('input-name').value,
+                telefono: document.getElementById('input-phone').value,
+                cargo: document.getElementById('input-role').value,
+                empresa: document.getElementById('input-company').value
+            };
+            
             try {
-                await updateProfile(auth.currentUser, { displayName: newName });
-                await update(ref(db, `usuarios/${currentUser.uid}/configuracion`), { nombre: newName });
-                alert("Perfil actualizado.");
-                location.reload();
+                await updateProfile(auth.currentUser, { displayName: updates.nombre });
+                await update(ref(db, `usuarios/${currentUser.uid}/configuracion`), updates);
+                alert("🚀 Perfil actualizado con éxito");
             } catch (e) { alert("Error: " + e.message); }
         };
 
-        window.restablecerPassword = async () => {
-            if(confirm("¿Enviar link de cambio de clave?")) {
-                await sendPasswordResetEmail(auth, currentUser.email);
-                alert("Correo enviado.");
-            }
+        window.setEmoji = async (emoji) => {
+            await update(ref(db, `usuarios/${currentUser.uid}/configuracion`), { emoji: emoji });
+            document.getElementById('display-emoji').innerText = emoji;
         };
 
-        window.togglePreferencia = async (key, el) => {
-            await update(ref(db, `usuarios/${currentUser.uid}/configuracion`), { [key]: el.checked });
+        window.restablecerPass = () => {
+            sendPasswordResetEmail(auth, currentUser.email);
+            alert("📩 Link enviado a " + currentUser.email);
         };
 
         window.cerrarSesion = () => signOut(auth);
-        window.goBack = () => window.location.href = "dashboard.html";
     </script>
 </head>
 
-<body class="bg-slate-50 font-sans text-slate-900">
+<body class="bg-[#F4F7FA] text-slate-800 antialiased min-h-screen">
 
-    <nav class="h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-6 lg:px-12 sticky top-0 z-50">
-        <button onclick="goBack()" class="flex items-center gap-2 text-slate-500 hover:text-primary transition-all group">
-            <span class="material-symbols-outlined">arrow_back</span>
-            <span class="text-[10px] font-black uppercase tracking-widest">Volver al Panel</span>
-        </button>
-        <button onclick="cerrarSesion()" class="text-xs font-bold text-red-500 hover:bg-red-50 px-4 py-2 rounded-xl transition-all">Cerrar Sesión</button>
+    <nav class="h-20 px-8 flex items-center justify-between sticky top-0 z-50 glass border-b border-white">
+        <div class="flex items-center gap-4">
+            <button onclick="window.location.href='dashboard.html'" class="p-2 hover:bg-white rounded-full transition-all group">
+                <span class="material-symbols-outlined text-slate-400 group-hover:text-brand-500">arrow_back</span>
+            </button>
+            <span class="text-sm font-extrabold tracking-tighter uppercase text-slate-400">Identity / <span class="text-slate-900">QuantyA</span></span>
+        </div>
+        <button onclick="cerrarSesion()" class="bg-white px-6 py-2 rounded-full text-xs font-bold text-red-500 border border-red-100 hover:bg-red-50 transition-all shadow-sm">Cerrar Sesión</button>
     </nav>
 
-    <main class="max-w-6xl mx-auto p-6 lg:p-12 space-y-10">
+    <main class="max-w-7xl mx-auto p-6 lg:p-12">
         
-        <section class="bg-white rounded-[3rem] p-8 md:p-12 shadow-sm border border-slate-200 flex flex-col md:flex-row items-center gap-10">
-            <div id="user-initials" class="size-32 md:size-40 bg-primary rounded-[2.5rem] flex items-center justify-center text-5xl font-black text-white shadow-xl shadow-primary/20">
-                --
-            </div>
-            <div class="flex-1 text-center md:text-left">
-                <div class="flex flex-col md:flex-row items-center gap-3 mb-2">
-                    <h1 id="user-name-big" class="text-4xl font-black tracking-tight text-slate-900">Cargando...</h1>
-                    <span class="bg-emerald-100 text-emerald-700 text-[10px] font-black px-3 py-1 rounded-full uppercase">Cuenta Activa</span>
-                </div>
-                <p id="user-email" class="text-slate-400 text-lg mb-6">usuario@correo.com</p>
-                
-                <div class="max-w-sm">
-                    <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-1">Nombre de Usuario</label>
-                    <div class="flex gap-2">
-                        <input id="display-name-input" type="text" class="w-full h-12 px-4 rounded-xl border border-slate-200 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-bold text-sm">
-                        <button onclick="actualizarNombre()" class="bg-primary text-white px-6 rounded-xl text-[10px] font-black uppercase tracking-widest hover:brightness-110">Guardar</button>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
             
-            <div class="lg:col-span-2 space-y-8">
-                <h3 class="text-xs font-black uppercase tracking-[0.3em] text-slate-400 ml-4">Configuraciones de la cuenta</h3>
+            <div class="lg:col-span-4 flex flex-col gap-8">
+                <div class="bg-white p-8 rounded-[3rem] shadow-xl shadow-slate-200/50 flex flex-col items-center text-center relative overflow-hidden bento-card">
+                    <div class="absolute top-0 left-0 w-full h-24 bg-gradient-to-r from-brand-500 to-blue-400 opacity-10"></div>
+                    
+                    <div class="relative mt-8">
+                        <div id="display-emoji" class="size-32 bg-white rounded-full flex items-center justify-center text-6xl shadow-inner border-4 border-white ring-8 ring-slate-50 mb-6">👤</div>
+                        <button onclick="document.getElementById('emoji-selector').classList.toggle('hidden')" class="absolute bottom-4 right-0 size-10 bg-white rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-all">
+                            <span class="material-symbols-outlined text-sm text-brand-500">edit</span>
+                        </button>
+                    </div>
+
+                    <h2 id="user-name-title" class="text-3xl font-extrabold tracking-tight text-slate-900">Cargando...</h2>
+                    <p id="user-email-sub" class="text-slate-400 font-medium text-sm mb-6">---</p>
+                    
+                    <div class="flex gap-2 mb-8">
+                        <span class="px-3 py-1 bg-brand-50 text-brand-500 text-[10px] font-black uppercase rounded-lg border border-brand-100">Miembro Gold</span>
+                        <span class="px-3 py-1 bg-slate-50 text-slate-400 text-[10px] font-black uppercase rounded-lg">ID: Verified</span>
+                    </div>
+
+                    <div id="emoji-selector" class="hidden absolute inset-0 bg-white/95 backdrop-blur-md p-6 z-20 flex flex-wrap justify-center gap-4 items-center">
+                        <span class="emoji-btn" onclick="setEmoji('🤵')">🤵</span>
+                        <span class="emoji-btn" onclick="setEmoji('👩‍💼')">👩‍💼</span>
+                        <span class="emoji-btn" onclick="setEmoji('🚀')">🚀</span>
+                        <span class="emoji-btn" onclick="setEmoji('🤑')">🤑</span>
+                        <span class="emoji-btn" onclick="setEmoji('🎯')">🎯</span>
+                        <span class="emoji-btn" onclick="setEmoji('🦁')">🦁</span>
+                        <span class="emoji-btn" onclick="setEmoji('⚡')">⚡</span>
+                        <button onclick="document.getElementById('emoji-selector').classList.add('hidden')" class="w-full text-xs font-bold text-slate-400 uppercase mt-4">Cerrar</button>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 p-8 rounded-[3rem] text-white bento-card relative overflow-hidden">
+                    <span class="material-symbols-outlined absolute -right-4 -bottom-4 text-white opacity-5 text-9xl">shield</span>
+                    <h3 class="text-sm font-black uppercase tracking-widest text-brand-500 mb-6">Seguridad Crítica</h3>
+                    <p class="text-xs text-slate-400 mb-8 leading-relaxed">Protege tu acceso con encriptación de grado militar AES-256 integrada.</p>
+                    <button onclick="restablecerPass()" class="w-full py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all border border-white/10">Cambiar Contraseña</button>
+                </div>
+            </div>
+
+            <div class="lg:col-span-8 space-y-8">
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
-                        <span class="material-symbols-outlined text-primary mb-4 text-3xl">notifications</span>
-                        <h4 class="font-bold text-slate-800 mb-2">Notificaciones</h4>
-                        <p class="text-xs text-slate-400 mb-6">Alertas inteligentes de gastos y reportes.</p>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="notif-switch" onchange="togglePreferencia('notificaciones', this)" class="sr-only peer">
-                            <div class="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:bg-primary after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
-                        </label>
-                    </div>
-
-                    <div class="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
-                        <span class="material-symbols-outlined text-primary mb-4 text-3xl">visibility_off</span>
-                        <h4 class="font-bold text-slate-800 mb-2">Modo Privacidad</h4>
-                        <p class="text-xs text-slate-400 mb-6">Ocultar saldos en la pantalla principal.</p>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="privacidad-switch" onchange="togglePreferencia('modoPrivacidad', this)" class="sr-only peer">
-                            <div class="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:bg-primary after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-[2.5rem] border border-slate-200 overflow-hidden shadow-sm">
-                    <div class="p-6 border-b border-slate-100 bg-slate-50/50">
-                        <h4 class="text-[10px] font-black uppercase text-slate-500 tracking-widest">Seguridad Avanzada</h4>
-                    </div>
-                    <button onclick="restablecerPassword()" class="w-full flex items-center justify-between p-6 hover:bg-slate-50 transition-all group">
-                        <div class="flex items-center gap-4">
-                            <div class="size-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center group-hover:bg-red-500 group-hover:text-white transition-all">
-                                <span class="material-symbols-outlined">lock_reset</span>
-                            </div>
-                            <div class="text-left">
-                                <p class="text-sm font-bold text-slate-700">Cambiar Contraseña</p>
-                                <p class="text-[10px] text-slate-400">Recibe un correo de seguridad para actualizar tu clave.</p>
-                            </div>
-                        </div>
-                        <span class="material-symbols-outlined text-slate-300">chevron_right</span>
-                    </button>
-                </div>
-            </div>
-
-            <div class="space-y-6">
-                <div class="bg-darkBlue p-8 rounded-[2.5rem] text-white shadow-2xl shadow-slate-900/20">
-                    <p class="text-[10px] font-black uppercase tracking-widest text-primary mb-6">Nivel de Seguridad</p>
-                    <div class="space-y-6">
+                <div class="bg-white p-10 rounded-[3rem] shadow-xl shadow-slate-200/50 bento-card">
+                    <div class="flex justify-between items-center mb-10">
                         <div>
-                            <div class="flex justify-between text-xs mb-2">
-                                <span>Integridad</span>
-                                <span class="text-primary font-bold">98%</span>
-                            </div>
-                            <div class="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                                <div class="h-full bg-primary w-[98%]"></div>
-                            </div>
+                            <h3 class="text-2xl font-extrabold text-slate-900">Perfil Personal</h3>
+                            <p class="text-sm text-slate-400 font-medium">Gestiona tu identidad corporativa dentro de QuantyA.</p>
                         </div>
-                        <div class="pt-6 border-t border-slate-800">
-                            <p class="text-[10px] text-slate-400 mb-4">SOPORTE QUANTYA</p>
-                            <button class="w-full py-4 bg-slate-800 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 transition-all">Reportar un problema</button>
+                        <button onclick="saveProfile()" class="bg-brand-500 text-white px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-brand-600 shadow-xl shadow-brand-500/20 transition-all">Guardar Cambios</button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Nombre Completo</label>
+                            <input id="input-name" type="text" class="w-full h-14 bg-slate-50 border-none rounded-2xl px-6 font-bold text-slate-700 focus:ring-2 focus:ring-brand-500/20 transition-all outline-none" placeholder="Ej: Juan Pérez">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">WhatsApp / Teléfono</label>
+                            <input id="input-phone" type="text" class="w-full h-14 bg-slate-50 border-none rounded-2xl px-6 font-bold text-slate-700 focus:ring-2 focus:ring-brand-500/20 transition-all outline-none" placeholder="+56 9 ...">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Cargo Corporativo</label>
+                            <input id="input-role" type="text" class="w-full h-14 bg-slate-50 border-none rounded-2xl px-6 font-bold text-slate-700 focus:ring-2 focus:ring-brand-500/20 transition-all outline-none" placeholder="Ej: Director de Finanzas">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Organización</label>
+                            <input id="input-company" type="text" class="w-full h-14 bg-slate-50 border-none rounded-2xl px-6 font-bold text-slate-700 focus:ring-2 focus:ring-brand-500/20 transition-all outline-none" placeholder="Nombre de la Empresa">
                         </div>
                     </div>
                 </div>
-            </div>
 
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white p-8 rounded-[2.5rem] shadow-sm bento-card">
+                        <span class="material-symbols-outlined text-brand-500 mb-4">palette</span>
+                        <h4 class="font-bold text-slate-900 mb-1">Color de Marca</h4>
+                        <p class="text-[10px] text-slate-400 uppercase font-black mb-4">Personaliza tu UI</p>
+                        <div class="flex gap-2">
+                            <div class="size-6 bg-brand-500 rounded-full cursor-pointer ring-offset-2 hover:ring-2 ring-brand-500"></div>
+                            <div class="size-6 bg-emerald-500 rounded-full cursor-pointer opacity-30"></div>
+                            <div class="size-6 bg-purple-500 rounded-full cursor-pointer opacity-30"></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-8 rounded-[2.5rem] shadow-sm bento-card">
+                        <span class="material-symbols-outlined text-brand-500 mb-4">history</span>
+                        <h4 class="font-bold text-slate-900 mb-1">Actividad</h4>
+                        <p class="text-[10px] text-slate-400 uppercase font-black mb-4">Último acceso</p>
+                        <span class="text-xs font-bold text-slate-700">Hoy, hace 5 min</span>
+                    </div>
+
+                    <div class="bg-brand-50 p-8 rounded-[2.5rem] shadow-sm border border-brand-100 flex flex-col justify-center items-center text-center group">
+                        <span class="material-symbols-outlined text-brand-500 mb-2 group-hover:scale-125 transition-transform">cloud_upload</span>
+                        <p class="text-[10px] font-black text-brand-500 uppercase tracking-widest">Sincronización Cloud Activada</p>
+                    </div>
+                </div>
+
+            </div>
         </div>
+
     </main>
+
+    <footer class="mt-12 py-12 text-center">
+        <p class="text-[10px] font-black text-slate-300 uppercase tracking-[0.4em]">QuantyA Enterprise v2.0 &bull; Secure Financial Core</p>
+    </footer>
+
 </body>
 </html>
