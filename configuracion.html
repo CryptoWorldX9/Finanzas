@@ -4,14 +4,36 @@
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>QuantyA - Configuración</title>
+    
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
 
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: { "primary": "#176282" },
+                    fontFamily: { sans: ["Plus Jakarta Sans", "sans-serif"] },
+                }
+            }
+        }
+    </script>
+
+    <style type="text/tailwindcss">
+        @layer base { 
+            body { @apply bg-[#f8fafc] dark:bg-[#0a0f1c] text-slate-800 dark:text-slate-300 antialiased; } 
+        }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300; }
+        .material-symbols-outlined.font-fill { font-variation-settings: 'FILL' 1, 'wght' 400; }
+        #sidebar::-webkit-scrollbar { width: 0px; }
+    </style>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getDatabase, ref, get, set, update, onValue, push, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, update, onValue, push, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCO6WXu9iZsyEUmNNxrE4oWToLYY8wl-y4",
@@ -40,15 +62,11 @@
             if (user) {
                 currentUser = user;
                 document.getElementById('user-name-display').innerText = user.displayName || "Usuario";
-                iniciarSincronizacionRealtime();
-            } else {
-                window.location.href = "index.html";
-            }
+                iniciarSincronizacion();
+            } else { window.location.href = "index.html"; }
         });
 
-        window.cerrarSesion = () => {
-            signOut(auth).then(() => { window.location.href = "index.html"; });
-        };
+        window.cerrarSesion = () => { signOut(auth).then(() => { window.location.href = "index.html"; }); };
 
         window.toggleSidebar = () => {
             const sidebar = document.getElementById('sidebar');
@@ -57,19 +75,15 @@
             overlay.classList.toggle('hidden');
         };
 
-        function iniciarSincronizacionRealtime() {
-            const selectMoneda = document.getElementById('conf-moneda');
-            const selectZona = document.getElementById('conf-zona');
-            const checkDarkMode = document.getElementById('conf-darkmode');
-
+        function iniciarSincronizacion() {
             onValue(ref(db, `usuarios/${currentUser.uid}/configuracion`), (snapshot) => {
                 if (snapshot.exists()) {
                     const data = snapshot.val();
-                    if(data.moneda) selectMoneda.value = data.moneda;
-                    if(data.zonaHoraria) selectZona.value = data.zonaHoraria;
+                    if(data.moneda) document.getElementById('conf-moneda').value = data.moneda;
+                    if(data.zonaHoraria) document.getElementById('conf-zona').value = data.zonaHoraria;
                     if(data.darkMode !== undefined) {
-                        checkDarkMode.checked = data.darkMode;
-                        aplicarModoVisual(data.darkMode);
+                        document.getElementById('conf-darkmode').checked = data.darkMode;
+                        document.documentElement.classList.toggle('dark', data.darkMode);
                     }
                 }
             });
@@ -79,92 +93,52 @@
             });
         }
 
-        function aplicarModoVisual(isDark) {
-            if(isDark) {
-                document.documentElement.classList.add('dark');
-            } else {
-                document.documentElement.classList.remove('dark');
-            }
-        }
-
         function renderizarListas(dataFirebase) {
-            const containerMaestro = document.getElementById('master-lists-container');
-            containerMaestro.innerHTML = '';
+            const container = document.getElementById('master-lists-container');
+            container.innerHTML = '';
             LISTAS_REQUERIDAS.forEach(lista => {
-                const divCol = document.createElement('div');
-                divCol.className = "space-y-4";
-                divCol.innerHTML = `
-                    <h4 class="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex justify-between items-center">
-                        ${lista.nombre}
-                    </h4>
-                    <div id="list-${lista.id}" class="flex flex-wrap gap-2"></div>
-                `;
-                containerMaestro.appendChild(divCol);
-                
-                const listContainer = divCol.querySelector(`#list-${lista.id}`);
-                const items = dataFirebase[lista.id];
-                
-                if (items) {
-                    Object.keys(items).forEach(itemId => {
-                        const span = document.createElement('span');
-                        span.className = "px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-bold text-slate-600 dark:text-slate-300 flex items-center gap-2 border border-slate-200 dark:border-slate-700";
-                        span.innerHTML = `${items[itemId].nombre} <button onclick="eliminarItem('${lista.id}', '${itemId}')" class="hover:text-red-500 font-black text-lg leading-none">×</button>`;
-                        listContainer.appendChild(span);
-                    });
-                }
+                const items = dataFirebase[lista.id] || {};
+                let itemsHtml = Object.keys(items).map(id => `
+                    <span class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-xl text-[11px] font-bold text-slate-600 dark:text-slate-300 flex items-center gap-2 border border-slate-200 dark:border-slate-700">
+                        ${items[id].nombre} 
+                        <button onclick="eliminarItem('${lista.id}', '${id}')" class="hover:text-red-500 font-black text-lg leading-none">×</button>
+                    </span>
+                `).join('');
 
-                const btnAdd = document.createElement('button');
-                btnAdd.className = "px-3 py-1.5 border border-dashed border-slate-300 dark:border-slate-700 rounded-lg text-[10px] font-black uppercase tracking-tighter text-slate-500 hover:border-primary hover:text-primary transition-colors";
-                btnAdd.innerHTML = "+ Añadir";
-                btnAdd.onclick = () => agregarDatoALista(lista.id, lista.nombre);
-                listContainer.appendChild(btnAdd);
+                container.innerHTML += `
+                    <div class="space-y-4">
+                        <h4 class="text-[10px] font-black text-slate-400 dark:text-slate-600 uppercase tracking-widest">${lista.nombre}</h4>
+                        <div class="flex flex-wrap gap-2">
+                            ${itemsHtml}
+                            <button onclick="agregarDatoALista('${lista.id}', '${lista.nombre}')" class="px-3 py-1.5 border border-dashed border-slate-300 dark:border-slate-700 rounded-xl text-[10px] font-black uppercase tracking-tighter text-slate-500 hover:border-primary hover:text-primary transition-all">+ Añadir</button>
+                        </div>
+                    </div>
+                `;
             });
         }
 
-        window.agregarDatoALista = async (listaId, listaNombre) => {
-            const nombre = prompt(`Nueva opción para ${listaNombre}:`);
-            if (nombre && nombre.trim() !== "") {
-                await push(ref(db, `usuarios/${currentUser.uid}/listas/${listaId}`), { nombre: nombre.trim() });
-            }
+        window.agregarDatoALista = async (lId, lNom) => {
+            const nom = prompt(`Nueva opción para ${lNom}:`);
+            if (nom?.trim()) await push(ref(db, `usuarios/${currentUser.uid}/listas/${lId}`), { nombre: nom.trim() });
         };
 
-        window.eliminarItem = async (listaId, itemId) => {
-            if(confirm("¿Eliminar esta opción?")) {
-                await remove(ref(db, `usuarios/${currentUser.uid}/listas/${listaId}/${itemId}`));
-            }
+        window.eliminarItem = async (lId, iId) => {
+            if(confirm("¿Eliminar esta opción?")) await remove(ref(db, `usuarios/${currentUser.uid}/listas/${lId}/${iId}`));
         };
 
         window.guardarCambiosGlobales = async () => {
-            const updates = {
+            const data = {
                 moneda: document.getElementById('conf-moneda').value,
                 zonaHoraria: document.getElementById('conf-zona').value,
                 darkMode: document.getElementById('conf-darkmode').checked,
                 lastUpdated: Date.now()
             };
-            await update(ref(db, `usuarios/${currentUser.uid}/configuracion`), updates);
-            alert("Configuración guardada correctamente.");
+            await update(ref(db, `usuarios/${currentUser.uid}/configuracion`), data);
+            alert("Configuración actualizada.");
         };
     </script>
-
-    <script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: { "primary": "#176282" },
-                    fontFamily: { sans: ["Plus Jakarta Sans", "sans-serif"] },
-                }
-            }
-        }
-    </script>
-    <style type="text/tailwindcss">
-        @layer base { body { @apply antialiased bg-[#f8fafc] dark:bg-[#0a0f1c]; } }
-        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300; }
-        .material-symbols-outlined.font-fill { font-variation-settings: 'FILL' 1, 'wght' 400; }
-        #sidebar::-webkit-scrollbar { width: 0px; }
-    </style>
 </head>
-<body class="text-slate-800 dark:text-slate-300 flex h-screen overflow-hidden">
+<body class="flex h-screen overflow-hidden">
 
 <div id="overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/60 z-40 hidden lg:hidden backdrop-blur-sm"></div>
 
@@ -237,7 +211,7 @@
             <div class="flex items-center gap-3 mb-4">
                 <div class="size-10 rounded-xl bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center font-bold text-xs text-white border border-white/10 shadow-inner">QA</div>
                 <div class="flex-1 overflow-hidden">
-                    <p id="user-name-display" class="text-xs font-black truncate text-white tracking-tight">Cargando...</p>
+                    <p id="user-name-display" class="text-xs font-black truncate text-white tracking-tight">Usuario</p>
                     <p class="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Mi Perfil</p>
                 </div>
             </div>
@@ -245,90 +219,83 @@
                 <a href="configuracion.html" class="flex items-center gap-3 px-3 py-2 text-white bg-white/5 rounded-lg transition-colors text-xs font-bold">
                     <span class="material-symbols-outlined text-lg">settings</span> Ajustes
                 </a>
-                <button onclick="cerrarSesion()" class="flex items-center gap-3 px-3 py-2 text-red-400/80 hover:text-red-400 transition-colors text-xs font-bold w-full text-left">
-                    <span class="material-symbols-outlined text-lg">logout</span> Salir
+                <button onclick="cerrarSesion()" class="w-full flex items-center gap-3 px-3 py-2 text-red-400/80 hover:text-red-400 transition-colors text-xs font-bold">
+                    <span class="material-symbols-outlined text-lg">logout</span> Cerrar Sesión
                 </button>
             </div>
         </div>
     </div>
 </aside>
 
-<main class="flex-1 flex flex-col overflow-hidden bg-slate-50 dark:bg-[#0f172a]">
-    <header class="h-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-6 md:px-10 flex items-center justify-between sticky top-0 z-40">
+<main class="flex-1 overflow-y-auto">
+    <header class="sticky top-0 z-40 h-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 px-4 md:px-10 flex items-center justify-between">
         <div class="flex items-center gap-4">
-            <button onclick="toggleSidebar()" class="lg:hidden p-2 bg-slate-50 dark:bg-slate-800 rounded-lg">
+            <button onclick="toggleSidebar()" class="lg:hidden p-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-slate-600 dark:text-slate-300">
                 <span class="material-symbols-outlined">menu</span>
             </button>
-            <div>
-                <h2 class="text-lg md:text-2xl font-black tracking-tight text-slate-800 dark:text-white">Configuración</h2>
-                <p class="hidden sm:block text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Preferencias y parámetros maestros</p>
-            </div>
+            <h2 class="text-xl font-black text-slate-800 dark:text-white tracking-tight">Configuración</h2>
         </div>
-        <button onclick="guardarCambiosGlobales()" class="bg-primary hover:bg-primary/90 text-white text-[9px] md:text-[10px] font-black uppercase tracking-widest px-4 md:px-8 py-3 rounded-xl transition-all shadow-lg shadow-primary/20">
-            <span class="sm:inline hidden">Guardar Cambios</span>
-            <span class="sm:hidden inline">Guardar</span>
+        <button onclick="guardarCambiosGlobales()" class="bg-primary hover:bg-primary/90 text-white text-[10px] font-black uppercase tracking-widest px-8 py-3 rounded-2xl transition-all shadow-xl shadow-primary/20">
+            GUARDAR CAMBIOS
         </button>
     </header>
 
-    <div class="flex-1 overflow-y-auto p-6 md:p-10 space-y-8 max-w-[1400px] mx-auto w-full">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8">
-            <section class="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+    <div class="p-4 md:p-10 max-w-[1400px] mx-auto space-y-8">
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <section class="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
                 <div class="flex items-center gap-3 border-b border-slate-50 dark:border-slate-800 pb-4">
-                    <span class="material-symbols-outlined text-primary font-fill">settings_applications</span>
-                    <h3 class="font-black text-lg tracking-tight">Parámetros Globales</h3>
+                    <span class="material-symbols-outlined text-primary font-fill text-2xl">settings_applications</span>
+                    <h3 class="font-black text-lg tracking-tight dark:text-white">Parámetros Globales</h3>
                 </div>
-                <div class="space-y-6">
+                <div class="grid grid-cols-1 gap-6">
                     <div class="space-y-2">
-                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Moneda del Sistema</label>
-                        <select id="conf-moneda" class="w-full rounded-2xl border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-sm font-semibold p-4 focus:ring-4 focus:ring-primary/5">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Moneda del Sistema</label>
+                        <select id="conf-moneda" class="w-full rounded-2xl border-none bg-slate-50 dark:bg-slate-800/50 text-sm font-bold p-4 focus:ring-4 focus:ring-primary/5 dark:text-white">
                             <option value="CLP">Peso Chileno (CLP)</option>
                             <option value="USD">Dólar Estadounidense (USD)</option>
                             <option value="EUR">Euro (EUR)</option>
-                            <option value="MXN">Peso Mexicano (MXN)</option>
                         </select>
                     </div>
                     <div class="space-y-2">
-                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Zona Horaria</label>
-                        <select id="conf-zona" class="w-full rounded-2xl border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-sm font-semibold p-4 focus:ring-4 focus:ring-primary/5">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Zona Horaria</label>
+                        <select id="conf-zona" class="w-full rounded-2xl border-none bg-slate-50 dark:bg-slate-800/50 text-sm font-bold p-4 focus:ring-4 focus:ring-primary/5 dark:text-white">
                             <option value="America/Santiago">(UTC-04:00) Santiago</option>
-                            <option value="America/Bogota">(UTC-05:00) Bogotá/Lima</option>
-                            <option value="America/Mexico_City">(UTC-06:00) CDMX</option>
+                            <option value="America/Bogota">(UTC-05:00) Bogotá</option>
                         </select>
                     </div>
                 </div>
             </section>
 
-            <section class="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+            <section class="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
                 <div class="flex items-center gap-3 border-b border-slate-50 dark:border-slate-800 pb-4">
-                    <span class="material-symbols-outlined text-primary font-fill">palette</span>
-                    <h3 class="font-black text-lg tracking-tight">Interfaz Visual</h3>
+                    <span class="material-symbols-outlined text-primary font-fill text-2xl">palette</span>
+                    <h3 class="font-black text-lg tracking-tight dark:text-white">Interfaz Visual</h3>
                 </div>
-                <div class="space-y-8">
-                    <div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
-                        <div>
-                            <p class="text-sm font-bold">Modo Oscuro</p>
-                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Cambiar tema visual</p>
-                        </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input id="conf-darkmode" type="checkbox" class="sr-only peer">
-                            <div class="w-12 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                        </label>
+                <div class="flex items-center justify-between p-6 bg-slate-50 dark:bg-slate-800/50 rounded-[2rem]">
+                    <div>
+                        <p class="text-sm font-black dark:text-white">Modo Oscuro</p>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase">Cambiar tema visual</p>
                     </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input id="conf-darkmode" type="checkbox" class="sr-only peer">
+                        <div class="w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:rounded-full after:h-5 after:w-6 after:transition-all peer-checked:bg-primary"></div>
+                    </label>
                 </div>
             </section>
 
-            <section class="lg:col-span-2 bg-white dark:bg-slate-900 p-6 md:p-8 rounded-[1.5rem] md:rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm space-y-8">
+            <section class="lg:col-span-2 bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm space-y-8">
                 <div class="flex items-center gap-3 border-b border-slate-50 dark:border-slate-800 pb-6">
-                    <span class="material-symbols-outlined text-primary font-fill">list_alt</span>
-                    <h3 class="font-black text-xl tracking-tight">Gestión de Listas Maestras</h3>
+                    <span class="material-symbols-outlined text-primary font-fill text-2xl">list_alt</span>
+                    <h3 class="font-black text-xl tracking-tight dark:text-white">Gestión de Listas Maestras</h3>
                 </div>
-                <div id="master-lists-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 md:gap-10">
-                </div>
+                <div id="master-lists-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-10">
+                    </div>
             </section>
         </div>
-        
-        <footer class="text-center py-6 md:py-10 border-t border-slate-100 dark:border-slate-800">
-            <p class="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">QuantyA Financial v2.0 • 2026</p>
+
+        <footer class="text-center py-10 border-t border-slate-100 dark:border-slate-800">
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">QuantyA Financial v2.0 • 2026</p>
         </footer>
     </div>
 </main>
