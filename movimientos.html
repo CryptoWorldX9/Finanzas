@@ -121,8 +121,6 @@
         window.handlePagoChange = () => {
             const pagoSelect = document.getElementById('edit-pago');
             const cuotasInput = document.getElementById('edit-cuotas');
-            // La instrucción guardada dice: habilitar cuotas si es tarjeta
-            // Como lógica general de tu app, se habilitan si hay selección
             cuotasInput.disabled = !pagoSelect.value;
         };
 
@@ -314,23 +312,23 @@
         </nav>
 
         <div class="p-4 mt-auto">
-            <div class="bg-white/[0.03] border border-white/5 rounded-3xl p-4 mb-3">
+            <a href="cuenta.html" class="block bg-white/[0.03] border border-white/5 rounded-3xl p-4 mb-3 hover:bg-white/[0.06] transition-all">
                 <div class="flex items-center gap-3 mb-4">
-                    <div class="size-10 rounded-xl bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center font-bold text-xs text-white border border-white/10 shadow-inner group-hover:border-primary/50">QA</div>
+                    <div class="size-10 rounded-xl bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center font-bold text-xs text-white border border-white/10 shadow-inner">QA</div>
                     <div class="flex-1 overflow-hidden">
                         <p id="user-name-display" class="text-xs font-black truncate text-white tracking-tight">Usuario</p>
                         <p class="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Mi Perfil</p>
                     </div>
                 </div>
                 <div class="space-y-1">
-                    <a href="configuracion.html" class="flex items-center gap-3 px-3 py-2 text-slate-400 hover:text-white transition-colors text-xs font-bold">
+                    <div class="flex items-center gap-3 px-3 py-2 text-slate-400 hover:text-white transition-colors text-xs font-bold">
                         <span class="material-symbols-outlined text-lg">settings</span> Ajustes
-                    </a>
-                    <button onclick="cerrarSesion()" class="w-full flex items-center gap-3 px-3 py-2 text-red-400/80 hover:text-red-400 transition-colors text-xs font-bold">
+                    </div>
+                    <button onclick="event.preventDefault(); cerrarSesion()" class="w-full flex items-center gap-3 px-3 py-2 text-red-400/80 hover:text-red-400 transition-colors text-xs font-bold">
                         <span class="material-symbols-outlined text-lg">logout</span> Cerrar Sesión
                     </button>
                 </div>
-            </div>
+            </a>
         </div>
     </aside>
 
