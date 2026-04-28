@@ -1,17 +1,213 @@
 <!DOCTYPE html>
-<html class="light" lang="es">
+<html lang="es">
 <head>
-    <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>QuantyA - Panel</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>QuantyA - Panel de Control</title>
+    <!-- Tailwind + fuentes -->
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { "primary": "#176282" },
+                    fontFamily: { sans: ["Plus Jakarta Sans", "sans-serif"] }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <!-- CSS global unificado -->
+    <link rel="stylesheet" href="global.css">
+    <style>
+        /* Ajustes específicos de la página si son necesarios (opcional) */
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300; }
+        .material-symbols-outlined.font-fill { font-variation-settings: 'FILL' 1, 'wght' 400; }
+    </style>
+</head>
+<body>
+    <div class="app-wrapper">
+        <!-- Sidebar unificado (igual en todas las páginas) -->
+        <aside class="sidebar-modern" id="sidebarPrincipal">
+            <div class="brand">
+                <div class="logo">
+                    <div class="logo-icon">Q</div>
+                    <div class="logo-text">Quanty<span>A</span></div>
+                </div>
+            </div>
+            <div class="nav-list">
+                <a href="dashboard.html" class="nav-item active"><span class="material-symbols-outlined">dashboard</span> Panel de Control</a>
+                <a href="billetera.html" class="nav-item"><span class="material-symbols-outlined">wallet</span> Billetera</a>
+                <a href="movimientos.html" class="nav-item"><span class="material-symbols-outlined">swap_horiz</span> Historial de Pagos</a>
+                <a href="metas.html" class="nav-item"><span class="material-symbols-outlined">track_changes</span> Objetivos de Ahorro</a>
+                <a href="reportes.html" class="nav-item"><span class="material-symbols-outlined">description</span> Reportes Mensuales</a>
+                <a href="analisis.html" class="nav-item"><span class="material-symbols-outlined">analytics</span> Gráficos de Gastos</a>
+                <a href="configuracion.html" class="nav-item"><span class="material-symbols-outlined">settings</span> Configuración</a>
+            </div>
+            <div class="user-section">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center font-bold text-white">U</div>
+                    <div><p id="user-name-display" class="text-sm font-bold text-white">Cargando...</p></div>
+                </div>
+                <button id="logout-btn" class="mt-4 w-full text-left text-red-400 text-sm font-bold hover:text-red-300">Cerrar sesión</button>
+            </div>
+        </aside>
+        <div class="overlay" id="overlaySidebar"></div>
+        <main class="main-content">
+            <!-- ========== CONTENIDO ESPECÍFICO DEL DASHBOARD (SIN DUPLICAR HEADER/SIDEBAR) ========== -->
+            <div class="p-6 md:p-10 max-w-[1600px] mx-auto space-y-8 md:space-y-10">
+                <!-- Banner principal (sin cambios) -->
+                <div class="bg-gradient-to-r from-[#176282] to-[#1e293b] rounded-[2rem] md:rounded-[3rem] p-6 md:p-10 text-white relative overflow-hidden shadow-2xl shadow-primary/20">
+                    <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
+                        <div class="max-w-2xl space-y-4 md:space-y-6">
+                            <div class="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md rounded-full border border-white/10">
+                                <span class="material-symbols-outlined text-sm font-fill text-blue-300">auto_awesome</span>
+                                <span class="text-[10px] font-black uppercase tracking-widest">Inteligencia Financiera</span>
+                            </div>
+                            <h3 class="text-3xl md:text-5xl font-black tracking-tighter leading-[1.1]">Tu ahorro este mes ha subido un <span class="text-blue-300">12%</span></h3>
+                            <p class="text-slate-300 text-sm md:text-lg font-medium leading-relaxed max-w-xl">Basado en tus gastos de la última semana, si mantienes este ritmo podrías alcanzar tu meta de "Viaje a Europa" 2 meses antes.</p>
+                            <div class="flex flex-wrap items-center gap-4 pt-4 md:pt-6">
+                                <button class="px-6 md:px-8 py-3 md:py-4 bg-white text-slate-900 rounded-2xl font-black text-xs md:text-sm shadow-xl hover:scale-105 transition-all">Ver Análisis IA</button>
+                                <button class="px-6 md:px-8 py-3 md:py-4 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/10 rounded-2xl font-black text-xs md:text-sm transition-all">Configurar Metas</button>
+                            </div>
+                        </div>
+                        <div class="hidden xl:block relative">
+                            <div class="size-64 bg-blue-500/20 rounded-full blur-[80px] absolute -top-10 -right-10 animate-pulse"></div>
+                            <div class="relative bg-white/5 backdrop-blur-2xl p-8 rounded-[2.5rem] border border-white/10 shadow-2xl space-y-6 w-80 rotate-3">
+                                <div class="flex items-center justify-between"><p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Proyección Mensual</p><span class="material-symbols-outlined text-blue-400">trending_up</span></div>
+                                <div class="space-y-2"><p class="text-3xl font-black">$425.000</p><p class="text-[11px] font-bold text-emerald-400 flex items-center gap-1"><span class="material-symbols-outlined text-sm">check_circle</span> Por debajo del presupuesto</p></div>
+                                <div class="h-2 bg-white/10 rounded-full overflow-hidden"><div class="w-[65%] h-full bg-gradient-to-r from-blue-400 to-emerald-400 rounded-full"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
+                <!-- Tarjetas de KPI -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden group">
+                        <div class="relative z-10">
+                            <p class="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Total Ingresos</p>
+                            <h3 id="total-ingresos" class="text-3xl font-black text-slate-800 font-mono tracking-tighter">$0</h3>
+                        </div>
+                        <div class="absolute -right-4 -bottom-4 size-24 bg-emerald-50 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <span class="material-symbols-outlined text-emerald-500 text-4xl">trending_up</span>
+                        </div>
+                    </div>
+                    <div class="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden group">
+                        <div class="relative z-10">
+                            <p class="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Total Egresos</p>
+                            <h3 id="total-egresos" class="text-3xl font-black text-slate-800 font-mono tracking-tighter">$0</h3>
+                        </div>
+                        <div class="absolute -right-4 -bottom-4 size-24 bg-red-50 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <span class="material-symbols-outlined text-red-500 text-4xl">trending_down</span>
+                        </div>
+                    </div>
+                    <div class="bg-[#176282] p-8 rounded-[2.5rem] shadow-2xl shadow-primary/20 relative overflow-hidden">
+                        <div class="relative z-10">
+                            <p class="text-[11px] font-black text-white/50 uppercase tracking-[0.2em] mb-3">Balance Neto</p>
+                            <h3 id="total-balance" class="text-3xl font-black text-white font-mono tracking-tighter">$0</h3>
+                        </div>
+                        <div class="absolute -right-4 -bottom-4 size-24 bg-white/10 rounded-full flex items-center justify-center">
+                            <span class="material-symbols-outlined text-white text-4xl">account_balance</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección principal: formulario + tabla reciente -->
+                <div class="grid grid-cols-1 xl:grid-cols-12 gap-10">
+                    <!-- Formulario de operación rápida -->
+                    <div class="xl:col-span-4">
+                        <div class="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-8 sticky top-32">
+                            <h3 class="text-xl font-black text-slate-800 mb-8 flex items-center gap-3">
+                                <span class="size-8 bg-primary/10 rounded-lg flex items-center justify-center text-primary"><span class="material-symbols-outlined text-xl">bolt</span></span>
+                                Operación Rápida
+                            </h3>
+                            <form onsubmit="registrarOperacion(event)" class="space-y-5">
+                                <div>
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Monto del Movimiento</label>
+                                    <div class="relative">
+                                        <span class="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
+                                        <input required id="op-monto" type="text" placeholder="0" class="w-full bg-slate-50 border-none rounded-2xl py-4 pl-10 pr-6 text-lg font-black text-slate-800 focus:ring-2 focus:ring-primary/20 transition-all"/>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Concepto / Detalle</label>
+                                    <input required id="op-concepto" type="text" placeholder="Ej: Compra Supermercado" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-6 text-[13px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all"/>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Tipo de Movimiento</label>
+                                        <select id="op-tipo" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-[12px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all"></select>
+                                    </div>
+                                    <div>
+                                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Categoría Principal</label>
+                                        <select id="op-categoria" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-[12px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all"></select>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Subcategoría</label>
+                                        <select id="op-subcategoria" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-[12px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all"></select>
+                                    </div>
+                                    <div>
+                                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Pago Desde</label>
+                                        <select required id="op-pago" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-[12px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all"></select>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Fecha</label>
+                                        <input required id="op-fecha" type="date" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-[12px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all"/>
+                                    </div>
+                                    <div>
+                                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Recurrencia</label>
+                                        <select id="op-recurrente" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-[12px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all"></select>
+                                    </div>
+                                </div>
+                                <div id="div-cuotas-dinamico" class="hidden">
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Número de Cuotas</label>
+                                    <input id="op-cuotas" type="number" value="1" min="1" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-6 text-[13px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all"/>
+                                </div>
+                                <button type="submit" id="btn-submit" class="w-full bg-primary text-white font-black py-5 rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all text-xs uppercase tracking-widest mt-4">Registrar Operación</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de movimientos recientes -->
+                    <div class="xl:col-span-8">
+                        <div class="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col h-full">
+                            <div class="p-8 border-b border-slate-50 flex items-center justify-between">
+                                <h3 class="font-black text-slate-800 uppercase tracking-widest text-[10px]">Recientes</h3>
+                                <a href="movimientos.html" class="bg-white px-3 py-1.5 border border-slate-200 rounded-lg text-primary text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-white transition-all">Ver Todo</a>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left min-w-[500px]">
+                                    <thead>
+                                        <tr class="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 bg-slate-50/20">
+                                            <th class="px-8 py-4">Fecha</th>
+                                            <th class="px-6 py-4">Detalle & Cuenta</th>
+                                            <th class="px-6 py-4 hidden md:table-cell">Categoría</th>
+                                            <th class="px-6 py-4 text-right">Monto</th>
+                                            <th class="px-8 py-4 text-right"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="recent-moves-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts: Firebase y lógica completa del dashboard (sin cambios funcionales) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getDatabase, ref, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { cargarLayout } from "./layout.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCO6WXu9iZsyEUmNNxrE4oWToLYY8wl-y4",
@@ -28,17 +224,12 @@
         const db = getDatabase(app);
 
         let currentUser = null;
-        let editNodeId = null;
         let tarjetasBilletera = {};
         let listaPagosConfig = [];
 
-        const fmt = new Intl.NumberFormat('es-CL', {
-            style: 'currency',
-            currency: 'CLP',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0
-        });
+        const fmt = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
+        // Cargar layout y autenticación
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
@@ -50,19 +241,18 @@
         });
 
         window.cerrarSesion = () => signOut(auth).then(() => window.location.href = "index.html");
+        document.getElementById('logout-btn')?.addEventListener('click', () => window.cerrarSesion());
 
         function actualizarSelectorPago() {
             const selectPago = document.getElementById('op-pago');
             const currentVal = selectPago.value;
             selectPago.innerHTML = '<option value="">Seleccionar Cuenta</option>';
-
             listaPagosConfig.forEach(nombre => {
                 const opt = document.createElement('option');
                 opt.value = nombre;
                 opt.textContent = nombre;
                 selectPago.appendChild(opt);
             });
-
             Object.values(tarjetasBilletera).forEach(t => {
                 const opt = document.createElement('option');
                 opt.value = t.nombre;
@@ -71,7 +261,6 @@
                 opt.dataset.categoria = t.categoria;
                 selectPago.appendChild(opt);
             });
-
             if(currentVal) selectPago.value = currentVal;
         }
 
@@ -99,22 +288,18 @@
             onValue(ref(db, `usuarios/${currentUser.uid}/listas`), (snapshot) => {
                 const listas = snapshot.val() || {};
                 listaPagosConfig = listas['pago'] ? Object.values(listas['pago']).map(i => i.nombre) : [];
-                
                 const mapeo = {
                     'tipo': 'op-tipo',
                     'categoria': 'op-categoria',
                     'sub_categoria': 'op-subcategoria',
                     'recurrente': 'op-recurrente'
                 };
-
                 Object.keys(mapeo).forEach(keyLista => {
                     const selectId = mapeo[keyLista];
                     const selectElement = document.getElementById(selectId);
                     if (!selectElement) return;
-
                     const currentVal = selectElement.value;
                     selectElement.innerHTML = `<option value="">${keyLista.replace('_',' ').toUpperCase()}</option>`;
-
                     const items = listas[keyLista];
                     if (items) {
                         Object.keys(items).forEach(itemId => {
@@ -162,9 +347,7 @@
                 const esTarjeta = Object.values(tarjetasBilletera).find(t => t.nombre === metodoNombre);
                 const tipoOp = document.getElementById('op-tipo').value;
                 const esIngreso = tipoOp.toLowerCase().match(/ingreso|venta|sueldo/);
-
                 if(!metodoNombre) throw new Error("Selecciona un método de pago.");
-
                 for(let i=0; i<cuotas; i++){
                     let f = new Date(document.getElementById('op-fecha').value + "T00:00:00");
                     f.setMonth(f.getMonth() + i);
@@ -181,7 +364,6 @@
                     };
                     await push(ref(db, `usuarios/${currentUser.uid}/movimientos`), data);
                 }
-
                 if (esTarjeta) {
                     const updates = {};
                     let disp = Math.round(Number(esTarjeta.saldoDisponibleActual)) || 0;
@@ -231,294 +413,17 @@
         }
 
         window.eliminarMovimiento = (id) => { if(confirm("¿Eliminar?")) remove(ref(db, `usuarios/${currentUser.uid}/movimientos/${id}`)); };
-        window.toggleSidebar = () => {
-            document.getElementById('sidebar').classList.toggle('-translate-x-full');
-            document.getElementById('overlay').classList.toggle('hidden');
-        };
 
         document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('op-monto').addEventListener('input', (e) => {
-                let val = e.target.value.replace(/\D/g, "");
-                e.target.value = val ? parseInt(val).toLocaleString('es-CL') : "";
-            });
+            const montoInput = document.getElementById('op-monto');
+            if(montoInput) {
+                montoInput.addEventListener('input', (e) => {
+                    let val = e.target.value.replace(/\D/g, "");
+                    e.target.value = val ? parseInt(val).toLocaleString('es-CL') : "";
+                });
+            }
+            cargarLayout();
         });
     </script>
-
-    <script id="tailwind-config">
-        tailwind.config = { theme: { extend: { colors: { "primary": "#176282" }, fontFamily: { sans: ["Plus Jakarta Sans", "sans-serif"] } } } }
-    </script>
-    <style type="text/tailwindcss">
-        @layer base { body { @apply bg-[#f8fafc] text-slate-800 antialiased font-sans; } }
-        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300; }
-        .material-symbols-outlined.font-fill { font-variation-settings: 'FILL' 1, 'wght' 400; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-    </style>
-</head>
-<body>
-
-<div id="overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-slate-900/60 z-40 hidden lg:hidden backdrop-blur-sm"></div>
-
-<div class="flex h-screen overflow-hidden">
-    <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 w-72 bg-[#0a0f1c] text-white flex flex-col shrink-0 border-r border-white/5 z-50 transition-transform duration-300 -translate-x-full lg:translate-x-0">
-        <div class="p-8">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-4">
-                    <div class="size-11 bg-gradient-to-tr from-primary to-blue-400 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
-                        <span class="material-symbols-outlined text-2xl font-fill">account_balance_wallet</span>
-                    </div>
-                    <div class="flex flex-col">
-                        <h1 class="text-xl font-black tracking-tighter leading-none">QuantyA</h1>
-                        <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1">Smart Finance</span>
-                    </div>
-                </div>
-                <button onclick="toggleSidebar()" class="lg:hidden p-2 text-slate-400 hover:text-white transition-colors">
-                    <span class="material-symbols-outlined">close</span>
-                </button>
-            </div>
-        </div>
-
-        <nav class="flex-1 px-4 space-y-8 overflow-y-auto no-scrollbar">
-            <div>
-                <p class="px-4 text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mb-4">Gestión Principal</p>
-                <div class="space-y-1.5">
-                    <a href="dashboard.html" class="flex items-center gap-3.5 px-4 py-3 bg-primary/10 border border-primary/20 text-white rounded-2xl shadow-xl shadow-primary/5 transition-all">
-                        <span class="material-symbols-outlined text-[22px] font-fill text-primary">dashboard</span>
-                        <span class="font-bold text-[13px] tracking-tight">Panel de Control</span>
-                    </a>
-                    <a href="billetera.html" class="group flex items-center gap-3.5 px-4 py-3 text-slate-400 hover:bg-white/[0.03] hover:text-white rounded-2xl transition-all">
-                        <span class="material-symbols-outlined text-[22px] transition-transform group-hover:scale-110">wallet</span>
-                        <span class="font-bold text-[13px] tracking-tight">Billetera</span>
-                    </a>
-                    <a href="movimientos.html" class="group flex items-center gap-3.5 px-4 py-3 text-slate-400 hover:bg-white/[0.03] hover:text-white rounded-2xl transition-all">
-                        <span class="material-symbols-outlined text-[22px] transition-transform group-hover:scale-110">swap_horiz</span>
-                        <span class="font-bold text-[13px] tracking-tight">Historial de Pagos</span>
-                    </a>
-                </div>
-            </div>
-
-            <div>
-                <p class="px-4 text-[10px] font-black text-slate-600 uppercase tracking-[0.2em] mb-4">Análisis y Metas</p>
-                <div class="space-y-1.5">
-                    <a href="reportes.html" class="group flex items-center gap-3.5 px-4 py-3 text-slate-400 hover:bg-white/[0.03] hover:text-white rounded-2xl transition-all">
-                        <span class="material-symbols-outlined text-[22px] transition-transform group-hover:scale-110">description</span>
-                        <span class="font-bold text-[13px] tracking-tight">Reportes Mensuales</span>
-                    </a>
-                    <a href="analisis.html" class="group flex items-center gap-3.5 px-4 py-3 text-slate-400 hover:bg-white/[0.03] hover:text-white rounded-2xl transition-all">
-                        <span class="material-symbols-outlined text-[22px] transition-transform group-hover:scale-110">analytics</span>
-                        <span class="font-bold text-[13px] tracking-tight">Gráficos de Gastos</span>
-                    </a>
-                    <a href="metas.html" class="group flex items-center gap-3.5 px-4 py-3 text-slate-400 hover:bg-white/[0.03] hover:text-white rounded-2xl transition-all">
-                        <span class="material-symbols-outlined text-[22px] transition-transform group-hover:scale-110">track_changes</span>
-                        <span class="font-bold text-[13px] tracking-tight">Objetivos de Ahorro</span>
-                    </a>
-                </div>
-            </div>
-        </nav>
-
-        <div class="p-4 mt-auto">
-            <div class="bg-white/[0.03] border border-white/5 rounded-3xl p-4 mb-3">
-                <a href="cuenta.html" class="block group">
-                    <div class="flex items-center gap-3 mb-4 transition-all group-hover:bg-white/5 p-2 rounded-2xl">
-                        <div class="size-10 rounded-xl bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center font-bold text-xs text-white border border-white/10 shadow-inner group-hover:from-primary group-hover:to-blue-600 transition-all">QA</div>
-                        <div class="flex-1 overflow-hidden">
-                            <p id="user-name-display" class="text-xs font-black truncate text-white tracking-tight">Cargando...</p>
-                            <p class="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Mi Perfil</p>
-                        </div>
-                        <span class="material-symbols-outlined text-slate-600 text-sm group-hover:text-white">arrow_forward_ios</span>
-                    </div>
-                </a>
-                <div class="space-y-1">
-                    <a href="configuracion.html" class="flex items-center gap-3 px-3 py-2 text-slate-400 hover:text-white transition-colors text-xs font-bold">
-                        <span class="material-symbols-outlined text-lg">settings</span> Ajustes
-                    </a>
-                    <button onclick="cerrarSesion()" class="w-full flex items-center gap-3 px-3 py-2 text-red-400/80 hover:text-red-400 transition-colors text-xs font-bold">
-                        <span class="material-symbols-outlined text-lg">logout</span> Cerrar Sesión
-                    </button>
-                </div>
-            </div>
-        </div>
-    </aside>
-
-    <main class="flex-1 overflow-y-auto no-scrollbar">
-        <header class="h-24 bg-white/80 backdrop-blur-md border-b border-slate-100 px-6 md:px-10 flex items-center justify-between sticky top-0 z-30">
-            <div class="flex items-center gap-4">
-                <button onclick="toggleSidebar()" class="lg:hidden p-2.5 bg-slate-100 rounded-xl text-slate-600 hover:bg-slate-200 transition-all"><span class="material-symbols-outlined">menu</span></button>
-                <div class="flex flex-col">
-                    <h2 class="text-xl md:text-2xl font-black text-slate-800 tracking-tight">Panel de Control</h2>
-                    <p class="text-[10px] md:text-[11px] font-bold text-slate-400 uppercase tracking-widest">Resumen General de Finanzas</p>
-                </div>
-            </div>
-            <div class="flex items-center gap-3 md:gap-6">
-                <button class="size-10 md:size-12 bg-white border border-slate-100 rounded-2xl flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-all relative">
-                    <span class="material-symbols-outlined text-[20px] md:text-[22px]">notifications</span>
-                    <span class="absolute top-3 right-3 size-2 bg-red-500 rounded-full border-2 border-white"></span>
-                </button>
-                <div class="h-8 md:h-10 w-[1px] bg-slate-100"></div>
-                <div class="flex items-center gap-3 pl-1 md:pl-2">
-                    <div class="flex flex-col items-end hidden sm:flex">
-                        <p class="text-[11px] md:text-[13px] font-black text-slate-800 leading-none">Premium</p>
-                        <p class="text-[9px] md:text-[10px] font-bold text-emerald-500 uppercase tracking-tighter mt-1">Plan Pro Activo</p>
-                    </div>
-                    <div class="size-10 md:size-12 rounded-2xl bg-slate-100 border-2 border-white shadow-sm overflow-hidden">
-                        <img src="https://ui-avatars.com/api/?name=User&background=176282&color=fff" alt="Profile" class="w-full h-full object-cover">
-                    </div>
-                </div>
-            </div>
-        </header>
-
-        <div class="p-6 md:p-10 max-w-[1600px] mx-auto space-y-8 md:space-y-10">
-            <div class="bg-gradient-to-r from-[#176282] to-[#1e293b] rounded-[2rem] md:rounded-[3rem] p-6 md:p-10 text-white relative overflow-hidden shadow-2xl shadow-primary/20">
-                <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
-                    <div class="max-w-2xl space-y-4 md:space-y-6">
-                        <div class="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md rounded-full border border-white/10">
-                            <span class="material-symbols-outlined text-sm font-fill text-blue-300">auto_awesome</span>
-                            <span class="text-[10px] font-black uppercase tracking-widest">Inteligencia Financiera</span>
-                        </div>
-                        <h3 class="text-3xl md:text-5xl font-black tracking-tighter leading-[1.1]">Tu ahorro este mes ha subido un <span class="text-blue-300">12%</span></h3>
-                        <p class="text-slate-300 text-sm md:text-lg font-medium leading-relaxed max-w-xl">Basado en tus gastos de la última semana, si mantienes este ritmo podrías alcanzar tu meta de "Viaje a Europa" 2 meses antes.</p>
-                        <div class="flex flex-wrap items-center gap-4 pt-4 md:pt-6">
-                            <button class="px-6 md:px-8 py-3 md:py-4 bg-white text-slate-900 rounded-2xl font-black text-xs md:text-sm shadow-xl hover:scale-105 transition-all">Ver Análisis IA</button>
-                            <button class="px-6 md:px-8 py-3 md:py-4 bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/10 rounded-2xl font-black text-xs md:text-sm transition-all">Configurar Metas</button>
-                        </div>
-                    </div>
-                    <div class="hidden xl:block relative">
-                        <div class="size-64 bg-blue-500/20 rounded-full blur-[80px] absolute -top-10 -right-10 animate-pulse"></div>
-                        <div class="relative bg-white/5 backdrop-blur-2xl p-8 rounded-[2.5rem] border border-white/10 shadow-2xl space-y-6 w-80 rotate-3">
-                            <div class="flex items-center justify-between"><p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Proyección Mensual</p><span class="material-symbols-outlined text-blue-400">trending_up</span></div>
-                            <div class="space-y-2"><p class="text-3xl font-black">$425.000</p><p class="text-[11px] font-bold text-emerald-400 flex items-center gap-1"><span class="material-symbols-outlined text-sm">check_circle</span> Por debajo del presupuesto</p></div>
-                            <div class="h-2 bg-white/10 rounded-full overflow-hidden"><div class="w-[65%] h-full bg-gradient-to-r from-blue-400 to-emerald-400 rounded-full"></div></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden group">
-                    <div class="relative z-10">
-                        <p class="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Total Ingresos</p>
-                        <h3 id="total-ingresos" class="text-3xl font-black text-slate-800 font-mono tracking-tighter">$0</h3>
-                    </div>
-                    <div class="absolute -right-4 -bottom-4 size-24 bg-emerald-50 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <span class="material-symbols-outlined text-emerald-500 text-4xl">trending_up</span>
-                    </div>
-                </div>
-                <div class="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden group">
-                    <div class="relative z-10">
-                        <p class="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Total Egresos</p>
-                        <h3 id="total-egresos" class="text-3xl font-black text-slate-800 font-mono tracking-tighter">$0</h3>
-                    </div>
-                    <div class="absolute -right-4 -bottom-4 size-24 bg-red-50 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <span class="material-symbols-outlined text-red-500 text-4xl">trending_down</span>
-                    </div>
-                </div>
-                <div class="bg-[#176282] p-8 rounded-[2.5rem] shadow-2xl shadow-primary/20 relative overflow-hidden">
-                    <div class="relative z-10">
-                        <p class="text-[11px] font-black text-white/50 uppercase tracking-[0.2em] mb-3">Balance Neto</p>
-                        <h3 id="total-balance" class="text-3xl font-black text-white font-mono tracking-tighter">$0</h3>
-                    </div>
-                    <div class="absolute -right-4 -bottom-4 size-24 bg-white/10 rounded-full flex items-center justify-center">
-                        <span class="material-symbols-outlined text-white text-4xl">account_balance</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 xl:grid-cols-12 gap-10">
-                <div class="xl:col-span-4">
-                    <div class="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-8 sticky top-32">
-                        <h3 class="text-xl font-black text-slate-800 mb-8 flex items-center gap-3">
-                            <span class="size-8 bg-primary/10 rounded-lg flex items-center justify-center text-primary"><span class="material-symbols-outlined text-xl">bolt</span></span>
-                            Operación Rápida
-                        </h3>
-                        
-                        <form onsubmit="registrarOperacion(event)" class="space-y-5">
-                            <div>
-                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Monto del Movimiento</label>
-                                <div class="relative">
-                                    <span class="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 font-bold">$</span>
-                                    <input required id="op-monto" type="text" placeholder="0" class="w-full bg-slate-50 border-none rounded-2xl py-4 pl-10 pr-6 text-lg font-black text-slate-800 focus:ring-2 focus:ring-primary/20 transition-all"/>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Concepto / Detalle</label>
-                                <input required id="op-concepto" type="text" placeholder="Ej: Compra Supermercado" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-6 text-[13px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all"/>
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Tipo de Movimiento</label>
-                                    <select id="op-tipo" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-[12px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all"></select>
-                                </div>
-                                <div>
-                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Categoría Principal</label>
-                                    <select id="op-categoria" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-[12px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all"></select>
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Subcategoría</label>
-                                    <select id="op-subcategoria" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-[12px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all">
-                                        <option value="">Cargando...</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Pago Desde</label>
-                                    <select required id="op-pago" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-[12px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all">
-                                        <option value="">Cargando...</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Fecha</label>
-                                    <input required id="op-fecha" type="date" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-[12px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all"/>
-                                </div>
-                                <div>
-                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Recurrencia</label>
-                                    <select id="op-recurrente" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-5 text-[12px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all"></select>
-                                </div>
-                            </div>
-
-                            <div id="div-cuotas-dinamico" class="hidden">
-                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-1 mb-2 block">Número de Cuotas</label>
-                                <input id="op-cuotas" type="number" value="1" min="1" class="w-full bg-slate-50 border-none rounded-2xl py-4 px-6 text-[13px] font-bold text-slate-700 focus:ring-2 focus:ring-primary/20 transition-all"/>
-                            </div>
-
-                            <button type="submit" id="btn-submit" class="w-full bg-primary text-white font-black py-5 rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all text-xs uppercase tracking-widest mt-4">
-                                Registrar Operación
-                            </button>
-                        </form>
-                    </div>
-                </div>
-
-                <div class="xl:col-span-8">
-                    <div class="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col h-full">
-                        <div class="p-8 border-b border-slate-50 flex items-center justify-between">
-                            <h3 class="font-black text-slate-800 uppercase tracking-widest text-[10px]">Recientes</h3>
-                            <a href="movimientos.html" class="bg-white px-3 py-1.5 border border-slate-200 rounded-lg text-primary text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-white transition-all">Ver Todo</a>
-                        </div>
-                        <div class="overflow-x-auto no-scrollbar flex-1">
-                            <table class="w-full text-left min-w-[500px]">
-                                <thead>
-                                    <tr class="text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 bg-slate-50/20">
-                                        <th class="px-8 py-4">Fecha</th>
-                                        <th class="px-6 py-4">Detalle & Cuenta</th>
-                                        <th class="px-6 py-4 hidden md:table-cell">Categoría</th>
-                                        <th class="px-6 py-4 text-right">Monto</th>
-                                        <th class="px-8 py-4 text-right"></th>
-                                    </tr>
-                                </thead>
-                                <tbody id="recent-moves-body"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
-</div>
-
 </body>
 </html>
